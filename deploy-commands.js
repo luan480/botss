@@ -1,6 +1,6 @@
 /* ========================================================================
-   ARQUIVO: deploy-commands.js (VERSÃO INTELIGENTE)
-   DESCRIÇÃO: Registra comandos automaticamente sem precisar de lista negra.
+   ARQUIVO: deploy-commands.js
+   DESCRIÇÃO: Registra os Slash Commands somente na guilda autorizada.
    ======================================================================== */
 
 const { REST, Routes } = require('discord.js');
@@ -10,36 +10,49 @@ const config = require('./config.json');
 
 const token = config.token;
 const clientId = config.clientId;
+const guildId = config.guildId || '849696655510863914';
 
-if (!token || !clientId) {
-    console.error('❌ ERRO CRÍTICO: "token" ou "clientId" não encontrados no config.json!');
+if (!token || !clientId || !guildId) {
+    console.error('❌ ERRO CRÍTICO: "token", "clientId" ou "guildId" não encontrados no config.json!');
     process.exit(1);
 }
 
 const commands = [];
+const commandNames = new Set();
 const commandsPath = path.join(__dirname, 'commands');
 
-// Função recursiva para ler pastas de forma inteligente
 function readCommands(dir) {
-    const files = fs.readdirSync(dir);
+    if (!fs.existsSync(dir)) return;
 
-    for (const file of files) {
+    for (const file of fs.readdirSync(dir)) {
         const filePath = path.join(dir, file);
         const stat = fs.statSync(filePath);
 
         if (stat.isDirectory()) {
-            readCommands(filePath); // Entra na subpasta
-        } else if (file.endsWith('.js')) {
-            try {
-                const command = require(filePath);
-                // O pulo do gato: Só registra se for um comando de verdade (tem data e execute)
-                if (command.data && command.data.toJSON && command.execute) {
-                    commands.push(command.data.toJSON());
-                    console.log(`[CARREGAR] ${command.data.name} ✅`);
-                }
-            } catch (err) {
-                // Arquivos de sistema/botoes dão erro ao tentar ler como comando, e o bot ignora em silêncio
+            readCommands(filePath);
+            continue;
+        }
+
+        if (!file.endsWith('.js')) continue;
+
+        try {
+            const command = require(filePath);
+
+            if (!command?.data || typeof command.data.toJSON !== 'function' || typeof command.execute !== 'function') {
+                continue;
             }
+
+            const name = command.data.name;
+            if (!name || commandNames.has(name)) {
+                console.warn(`[IGNORADO] Comando inválido ou duplicado: ${name || file}`);
+                continue;
+            }
+
+            commandNames.add(name);
+            commands.push(command.data.toJSON());
+            console.log(`[CARREGAR] ${name} ✅`);
+        } catch (err) {
+            console.error(`[ERRO] Não foi possível carregar ${filePath}:`, err.message);
         }
     }
 }
@@ -51,17 +64,23 @@ const rest = new REST({ version: '10' }).setToken(token);
 
 (async () => {
     try {
-        console.log(`🚀 Iniciando atualização de ${commands.length} comandos globais.`);
+        console.log(`🚀 Sincronizando ${commands.length} comandos na guilda ${guildId}.`);
 
         const data = await rest.put(
-            Routes.applicationCommands(clientId),
-            { body: commands },
+            Routes.applicationGuildCommands(clientId, guildId),
+            { body: commands }
         );
 
-        console.log(`✅ SUCESSO! ${data.length} comandos foram registrados.`);
-        console.log('⏳ Pode levar alguns minutos para atualizar no Discord.');
-        
+        // Remove qualquer comando global antigo para evitar duplicação/conflito.
+        await rest.put(
+            Routes.applicationCommands(clientId),
+            { body: [] }
+        );
+
+        console.log(`✅ SUCESSO! ${data.length} comandos registrados na guilda autorizada.`);
+        console.log('✅ Comandos globais antigos removidos.');
     } catch (error) {
         console.error('❌ ERRO no deploy:', error);
+        process.exitCode = 1;
     }
 })();

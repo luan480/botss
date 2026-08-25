@@ -140,6 +140,7 @@ const ARQUIVOS_IGNORADOS = new Set([
 
     'index.js',
 
+    // Não carregar handlers como comandos
     'buttons.js',
 
     'interactionPatch.js'
@@ -367,6 +368,11 @@ client.once(
             `🤖 ${c.user.tag} está online!`
         );
 
+
+        // ================================================================
+        // STATUS
+        // ================================================================
+
         try {
 
             c.user.setPresence({
@@ -405,14 +411,21 @@ client.once(
 
         }
 
+
+        // ================================================================
+        // VALIDAR SERVIDORES
+        // ================================================================
+
         try {
 
             const guilds =
                 await c.guilds.fetch();
 
+
             console.log(
                 `🌐 Total de servidores na API: ${guilds.size}`
             );
+
 
             for (
                 const [, guildData]
@@ -425,13 +438,18 @@ client.once(
                 ) {
 
                     console.log(
-                        `🚨 Servidor não autorizado detectado: ${guildData.name} (${guildData.id})`
+
+                        `🚨 Servidor não autorizado detectado: ` +
+                        `${guildData.name} (${guildData.id})`
+
                     );
+
 
                     const guild =
                         c.guilds.cache.get(
                             guildData.id
                         );
+
 
                     if (
                         guild
@@ -458,12 +476,18 @@ client.once(
 
         }
 
+
+        // ================================================================
+        // SINCRONIZAR COMANDOS
+        // ================================================================
+
         try {
 
             const guild =
                 c.guilds.cache.get(
                     ID_SERVIDOR_AUTORIZADO
                 );
+
 
             if (
                 !guild
@@ -481,14 +505,29 @@ client.once(
                             command.data.toJSON()
                     );
 
+
+                // --------------------------------------------------------
+                // LIMPAR COMANDOS GLOBAIS
+                // --------------------------------------------------------
+
                 await c.application.commands.set([]);
+
+
+                // --------------------------------------------------------
+                // REGISTRAR SOMENTE NA GUILDA AUTORIZADA
+                // --------------------------------------------------------
 
                 await guild.commands.set(
                     comandosArray
                 );
 
+
                 console.log(
-                    `✅ ${comandosArray.length} comandos de barra sincronizados exclusivamente na guilda: ${guild.name}`
+
+                    `✅ ${comandosArray.length} comandos de barra ` +
+                    `sincronizados exclusivamente na guilda: ` +
+                    `${guild.name}`
+
                 );
 
             }
@@ -502,12 +541,18 @@ client.once(
 
         }
 
+
+        // ================================================================
+        // PROMOTION HANDLER
+        // ================================================================
+
         try {
 
             const handler =
                 require(
                     './commands/promocao/promotionHandler.js'
                 );
+
 
             if (
                 typeof handler === 'function'
@@ -532,12 +577,18 @@ client.once(
 
         }
 
+
+        // ================================================================
+        // AUTO APROVAÇÃO
+        // ================================================================
+
         try {
 
             const syncEngine =
                 require(
                     './commands/promocao/syncEngine.js'
                 );
+
 
             if (
                 typeof syncEngine.executarVarreduraCanal === 'function'
@@ -562,12 +613,18 @@ client.once(
 
         }
 
+
+        // ================================================================
+        // REACTION
+        // ================================================================
+
         try {
 
             const handler =
                 require(
                     './commands/promocao/reactionAddHandler.js'
                 );
+
 
             if (
                 typeof handler === 'function'
@@ -588,12 +645,18 @@ client.once(
 
         }
 
+
+        // ================================================================
+        // ADMIN LOG
+        // ================================================================
+
         try {
 
             const handler =
                 require(
                     './commands/adm/adminLogHandler.js'
                 );
+
 
             if (
                 typeof handler === 'function'
@@ -614,12 +677,18 @@ client.once(
 
         }
 
+
+        // ================================================================
+        // VOICE
+        // ================================================================
+
         try {
 
             const handler =
                 require(
                     './commands/voz/voiceControlHandler.js'
                 );
+
 
             if (
                 typeof handler === 'function'
@@ -640,12 +709,18 @@ client.once(
 
         }
 
+
+        // ================================================================
+        // TEMP VOICE
+        // ================================================================
+
         try {
 
             const handler =
                 require(
                     './commands/adm/temporaryVoiceHandler.js'
                 );
+
 
             if (
                 typeof handler === 'function'
@@ -666,12 +741,18 @@ client.once(
 
         }
 
+
+        // ================================================================
+        // RELATÓRIOS
+        // ================================================================
+
         try {
 
             const handler =
                 require(
                     './commands/adm/weeklyReportHandler.js'
                 );
+
 
             if (
                 typeof handler === 'function'
@@ -696,12 +777,18 @@ client.once(
 
         }
 
+
+        // ================================================================
+        // ECONOMIA
+        // ================================================================
+
         try {
 
             const handler =
                 require(
                     './commands/economy/economyTextHandler.js'
                 );
+
 
             if (
                 typeof handler === 'function'
@@ -722,12 +809,18 @@ client.once(
 
         }
 
+
+        // ================================================================
+        // AUTO RESPONSE
+        // ================================================================
+
         try {
 
             const handler =
                 require(
                     './commands/adm/autoResponseHandler.js'
                 );
+
 
             if (
                 typeof handler === 'function'
@@ -748,12 +841,18 @@ client.once(
 
         }
 
+
+        // ================================================================
+        // ANTI NUKE
+        // ================================================================
+
         try {
 
             const handler =
                 require(
                     './commands/adm/antiNukeHandler.js'
                 );
+
 
             if (
                 typeof handler === 'function'
@@ -778,12 +877,18 @@ client.once(
 
         }
 
+
+        // ================================================================
+        // ONBOARDING
+        // ================================================================
+
         try {
 
             const handler =
                 require(
                     './commands/adm/onboardingSyncHandler.js'
                 );
+
 
             if (
                 typeof handler === 'function'
@@ -807,6 +912,7 @@ client.once(
             );
 
         }
+
 
         console.log('');
         console.log(
@@ -847,9 +953,14 @@ client.on(
 
         }
 
+
         console.log(
-            `🚨 Tentativa de invasão bloqueada! ${guild.name} (${guild.id})`
+
+            `🚨 Tentativa de invasão bloqueada! ` +
+            `${guild.name} (${guild.id})`
+
         );
+
 
         await guild
             .leave()
@@ -869,6 +980,10 @@ client.on(
     Events.InteractionCreate,
     async interaction => {
 
+        // ================================================================
+        // SERVIDOR AUTORIZADO
+        // ================================================================
+
         if (
             interaction.guildId !==
             ID_SERVIDOR_AUTORIZADO
@@ -879,11 +994,15 @@ client.on(
             ) {
 
                 const resposta = {
+
                     content:
                         '❌ Este bot é de uso exclusivo e restrito.',
+
                     flags:
                         MessageFlags.Ephemeral
+
                 };
+
 
                 if (
                     interaction.replied ||
@@ -900,6 +1019,7 @@ client.on(
 
                 }
 
+
                 return interaction
                     .reply(
                         resposta
@@ -910,12 +1030,19 @@ client.on(
 
             }
 
+
             return;
 
         }
 
+
         const customId =
             interaction.customId || '';
+
+
+        // ================================================================
+        // SLASH COMMAND
+        // ================================================================
 
         if (
             interaction.isChatInputCommand()
@@ -926,17 +1053,22 @@ client.on(
                     interaction.commandName
                 );
 
+
             if (
                 !command
             ) {
 
                 console.warn(
-                    `[CMD] Comando não encontrado: ${interaction.commandName}`
+
+                    `[CMD] Comando não encontrado: ` +
+                    `${interaction.commandName}`
+
                 );
 
                 return;
 
             }
+
 
             try {
 
@@ -947,16 +1079,24 @@ client.on(
             } catch (erro) {
 
                 console.error(
+
                     `[CMD] Erro em /${interaction.commandName}:`,
+
                     erro
+
                 );
 
+
                 const resposta = {
+
                     content:
                         '❌ Erro ao executar o comando.',
+
                     flags:
                         MessageFlags.Ephemeral
+
                 };
+
 
                 try {
 
@@ -989,9 +1129,15 @@ client.on(
 
             }
 
+
             return;
 
         }
+
+
+        // ================================================================
+        // MODAIS
+        // ================================================================
 
         if (
             interaction.isModalSubmit()
@@ -1019,6 +1165,7 @@ client.on(
                         erro
                     );
 
+
                     if (
                         !interaction.replied &&
                         !interaction.deferred
@@ -1026,10 +1173,13 @@ client.on(
 
                         await interaction
                             .reply({
+
                                 content:
                                     '❌ Erro ao editar o evento.',
+
                                 flags:
                                     MessageFlags.Ephemeral
+
                             })
                             .catch(
                                 () => {}
@@ -1039,24 +1189,44 @@ client.on(
 
                 }
 
+
                 return;
 
             }
 
         }
 
+
+        // ================================================================
+        // BOTÕES / SELECTS
+        // ================================================================
+
         if (
+
             interaction.isButton() ||
+
             interaction.isStringSelectMenu() ||
+
             interaction.isUserSelectMenu() ||
+
             interaction.isRoleSelectMenu() ||
+
             interaction.isChannelSelectMenu() ||
+
             interaction.isMentionableSelectMenu()
+
         ) {
 
+            // ============================================================
+            // HALL
+            // ============================================================
+
             if (
+
                 customId.startsWith('hist_') ||
+
                 customId.startsWith('hall_')
+
             ) {
 
                 try {
@@ -1075,6 +1245,7 @@ client.on(
                         erro
                     );
 
+
                     if (
                         !interaction.replied &&
                         !interaction.deferred
@@ -1082,10 +1253,13 @@ client.on(
 
                         await interaction
                             .reply({
+
                                 content:
                                     '❌ Erro ao processar o Hall da Fama.',
+
                                 flags:
                                     MessageFlags.Ephemeral
+
                             })
                             .catch(
                                 () => {}
@@ -1095,9 +1269,15 @@ client.on(
 
                 }
 
+
                 return;
 
             }
+
+
+            // ============================================================
+            // REVERTER PARTIDA
+            // ============================================================
 
             if (
                 customId.startsWith(
@@ -1108,10 +1288,15 @@ client.on(
                 try {
 
                     await handleReverter(
+
                         client,
+
                         interaction,
+
                         pontuacaoPath,
+
                         partidasPath
+
                     );
 
                 } catch (erro) {
@@ -1121,6 +1306,7 @@ client.on(
                         erro
                     );
 
+
                     if (
                         !interaction.replied &&
                         !interaction.deferred
@@ -1128,10 +1314,13 @@ client.on(
 
                         await interaction
                             .reply({
+
                                 content:
                                     '❌ Erro ao anular a partida.',
+
                                 flags:
                                     MessageFlags.Ephemeral
+
                             })
                             .catch(
                                 () => {}
@@ -1141,9 +1330,15 @@ client.on(
 
                 }
 
+
                 return;
 
             }
+
+
+            // ============================================================
+            // TICKETS
+            // ============================================================
 
             if (
                 customId.startsWith(
@@ -1157,6 +1352,7 @@ client.on(
                         require(
                             './commands/ticket/buttonRouter.js'
                         );
+
 
                     await handler(
                         interaction,
@@ -1172,9 +1368,15 @@ client.on(
 
                 }
 
+
                 return;
 
             }
+
+
+            // ============================================================
+            // STATUS PROMOÇÃO
+            // ============================================================
 
             if (
                 customId.startsWith(
@@ -1188,6 +1390,7 @@ client.on(
                         require(
                             './commands/promocao/statusHandler.js'
                         );
+
 
                     await handler(
                         interaction,
@@ -1203,9 +1406,15 @@ client.on(
 
                 }
 
+
                 return;
 
             }
+
+
+            // ============================================================
+            // RANKING
+            // ============================================================
 
             if (
                 customId.startsWith(
@@ -1219,6 +1428,7 @@ client.on(
                         require(
                             './commands/promocao/rankingHandler.js'
                         );
+
 
                     await handler(
                         interaction,
@@ -1234,14 +1444,24 @@ client.on(
 
                 }
 
+
                 return;
 
             }
 
+
+            // ============================================================
+            // EMBEDS
+            // ============================================================
+
             if (
+
                 customId.startsWith('emb_') ||
+
                 customId.startsWith('mdl_') ||
+
                 customId.startsWith('eb_')
+
             ) {
 
                 try {
@@ -1250,6 +1470,7 @@ client.on(
                         require(
                             './commands/adm/embedSystem.js'
                         );
+
 
                     if (
                         typeof embedSystem.handleInteraction ===
@@ -1272,9 +1493,15 @@ client.on(
 
                 }
 
+
                 return;
 
             }
+
+
+            // ============================================================
+            // TEMP VOICE
+            // ============================================================
 
             if (
                 customId.startsWith(
@@ -1288,6 +1515,7 @@ client.on(
                         require(
                             './commands/adm/tempVoiceButtonHandler.js'
                         );
+
 
                     await handler(
                         interaction,
@@ -1303,9 +1531,15 @@ client.on(
 
                 }
 
+
                 return;
 
             }
+
+
+            // ============================================================
+            // VCALL
+            // ============================================================
 
             if (
                 customId.startsWith(
@@ -1321,24 +1555,31 @@ client.on(
                     ) {
 
                         return interaction.reply({
+
                             content:
                                 '❌ Nenhum usuário selecionado.',
+
                             flags:
                                 MessageFlags.Ephemeral
+
                         });
 
                     }
 
+
                     const targetUserId =
                         interaction.values[0];
 
+
                     interaction.customId =
                         `vcall_k_${targetUserId}`;
+
 
                     const handler =
                         require(
                             './commands/voz/voiceControlHandler.js'
                         );
+
 
                     if (
                         typeof handler === 'function'
@@ -1360,24 +1601,67 @@ client.on(
 
                 }
 
+
                 return;
 
             }
 
+
+            // ============================================================
+            // LIGA
+            // ============================================================
+            //
+            // IMPORTANTE:
+            // Todos os componentes liga_* passam por UM ÚNICO handler.
+            //
+            // Isso inclui:
+            // liga_estat_*
+            // liga_guia
+            // liga_ranking
+            // liga_regras
+            // liga_status
+            // etc.
+            //
+            // Os IDs antigos da Liga que não começam com liga_
+            // continuam sendo aceitos abaixo.
+            // ============================================================
+
             if (
-                customId.startsWith('liga_') ||
+
+                customId.startsWith(
+                    'liga_'
+                ) ||
+
                 [
+
                     'iniciar_contabilizacao',
+
                     'ver_ranking',
+
                     'ver_todos_competidores',
+
                     'registrar',
+
                     'add_abate',
+
                     'fim_abates',
+
                     'add_cont',
+
                     'fim_cont'
-                ].includes(customId) ||
-                customId.startsWith('sel_') ||
-                customId.startsWith('reset_')
+
+                ].includes(
+                    customId
+                ) ||
+
+                customId.startsWith(
+                    'sel_'
+                ) ||
+
+                customId.startsWith(
+                    'reset_'
+                )
+
             ) {
 
                 try {
@@ -1387,11 +1671,10 @@ client.on(
                             './commands/liga/buttons.js'
                         );
 
+
                     await handler(
                         client,
-                        interaction,
-                        pontuacaoPath,
-                        partidasPath
+                        interaction
                     );
 
                 } catch (erro) {
@@ -1401,12 +1684,17 @@ client.on(
                         erro
                     );
 
+
                     const resposta = {
+
                         content:
                             '❌ Erro ao processar esta ação da Liga.',
+
                         flags:
                             MessageFlags.Ephemeral
+
                     };
+
 
                     try {
 
@@ -1439,6 +1727,7 @@ client.on(
 
                 }
 
+
                 return;
 
             }
@@ -1456,20 +1745,25 @@ client.on(
 process.on(
     'unhandledRejection',
     erro => {
+
         console.error(
             '[PROCESS] Unhandled Rejection:',
             erro
         );
+
     }
 );
+
 
 process.on(
     'uncaughtException',
     erro => {
+
         console.error(
             '[PROCESS] Uncaught Exception:',
             erro
         );
+
     }
 );
 
@@ -1491,6 +1785,7 @@ if (
     );
 
 }
+
 
 client.login(
     config.token

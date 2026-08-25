@@ -1,15 +1,17 @@
 /* ========================================================================
    ARQUIVO: commands/promocao/historicoHandler.js
 
-   HALL DA FAMA — UM EVENTO POR PÁGINA
+   HALL DA FAMA — UM EVENTO REAL POR PÁGINA
 
-   IMPORTANTE:
-   - O mural público nunca é alterado.
-   - O Hall abre em resposta efêmera.
-   - Um único evento é mostrado por página.
-   - Cada evento possui visual próprio.
-   - Compatível com registros antigos em string.
-   - Compatível com registros novos em objeto.
+   CORREÇÕES:
+   - Agrupa registros antigos que estavam salvos como linhas soltas.
+   - Liga/Imperador: 1 ano = 1 evento.
+   - Eventos: título + resultados = 1 evento.
+   - Records: todos os records históricos = 1 evento.
+   - Ignora linhas vazias como páginas.
+   - Paginação usa a quantidade de eventos reais.
+   - Mantém compatibilidade com registros novos em objeto.
+   - Hall privado/efêmero preservado.
    ======================================================================== */
 
 const {
@@ -20,24 +22,19 @@ const {
     MessageFlags
 } = require('discord.js');
 
-const path =
-    require('path');
+const path = require('path');
 
-const {
-    safeReadJson
-} =
-    require('../liga/utils/helpers.js');
+const { safeReadJson } = require('../liga/utils/helpers.js');
 
 
 // ========================================================================
 // CAMINHO
 // ========================================================================
 
-const HISTORICO_PATH =
-    path.join(
-        __dirname,
-        'historico.json'
-    );
+const HISTORICO_PATH = path.join(
+    __dirname,
+    'historico.json'
+);
 
 
 // ========================================================================
@@ -45,431 +42,245 @@ const HISTORICO_PATH =
 // ========================================================================
 
 const CATEGORIAS = {
-
     liga: {
-
-        titulo:
-            '🏆 HALL DA FAMA — LIGA',
-
-        cor:
-            '#3498DB',
-
-        emoji:
-            '🏆'
-
+        titulo: '🏆 HALL DA FAMA — LIGA',
+        cor: '#3498DB',
+        emoji: '🏆'
     },
 
     imperador: {
-
-        titulo:
-            '👑 HALL DA FAMA — IMPERADORES',
-
-        cor:
-            '#F1C40F',
-
-        emoji:
-            '👑'
-
+        titulo: '👑 HALL DA FAMA — IMPERADORES',
+        cor: '#F1C40F',
+        emoji: '👑'
     },
 
     eventos: {
-
-        titulo:
-            '⚔️ HALL DA FAMA — EVENTOS',
-
-        cor:
-            '#95A5A6',
-
-        emoji:
-            '⚔️'
-
+        titulo: '⚔️ HALL DA FAMA — EVENTOS',
+        cor: '#95A5A6',
+        emoji: '⚔️'
     },
 
     records: {
-
-        titulo:
-            '📊 HALL DA FAMA — RECORDS',
-
-        cor:
-            '#E74C3C',
-
-        emoji:
-            '📊'
-
+        titulo: '📊 HALL DA FAMA — RECORDS',
+        cor: '#E74C3C',
+        emoji: '📊'
     }
-
 };
 
-
-// ========================================================================
-// TIPOS
-// ========================================================================
 
 const NOMES_TIPOS = {
-
-    semanal:
-        '📅 Evento semanal',
-
-    individual:
-        '👤 Evento individual',
-
-    campeonato:
-        '🏆 Campeonato',
-
-    recorde:
-        '📊 Recorde',
-
-    destaque:
-        '🌟 Destaque especial'
-
+    semanal: '📅 Evento semanal',
+    individual: '👤 Evento individual',
+    campeonato: '🏆 Campeonato',
+    recorde: '📊 Recorde',
+    destaque: '🌟 Destaque especial'
 };
 
 
 // ========================================================================
-// CARREGAR
+// CARREGAR HISTÓRICO
 // ========================================================================
 
 function carregarHistorico() {
+    const dados = safeReadJson(HISTORICO_PATH);
 
-    const dados =
-        safeReadJson(
-            HISTORICO_PATH
-        );
-
-
-    if (
-        !dados ||
-        typeof dados !== 'object'
-    ) {
-
+    if (!dados || typeof dados !== 'object') {
         return {
-
-            destaque:
-                '',
-
-            liga:
-                [],
-
-            imperador:
-                [],
-
-            eventos:
-                [],
-
-            records:
-                []
-
+            destaque: '',
+            liga: [],
+            imperador: [],
+            eventos: [],
+            records: []
         };
-
     }
 
-
     return {
-
-        destaque:
-            typeof dados.destaque === 'string'
-                ? dados.destaque
-                : '',
-
-        liga:
-            Array.isArray(dados.liga)
-                ? dados.liga
-                : [],
-
-        imperador:
-            Array.isArray(dados.imperador)
-                ? dados.imperador
-                : [],
-
-        eventos:
-            Array.isArray(dados.eventos)
-                ? dados.eventos
-                : [],
-
-        records:
-            Array.isArray(dados.records)
-                ? dados.records
-                : []
-
+        destaque: typeof dados.destaque === 'string' ? dados.destaque : '',
+        liga: Array.isArray(dados.liga) ? dados.liga : [],
+        imperador: Array.isArray(dados.imperador) ? dados.imperador : [],
+        eventos: Array.isArray(dados.eventos) ? dados.eventos : [],
+        records: Array.isArray(dados.records) ? dados.records : []
     };
-
 }
 
 
 // ========================================================================
-// FORMATAR REGISTRO ANTIGO
+// HELPERS DE TEXTO
 // ========================================================================
 
-function formatarRegistroAntigo(
-    registro
-) {
+function limparMarkdown(texto) {
+    return String(texto || '')
+        .replace(/\*\*/g, '')
+        .trim();
+}
 
-    const texto =
-        String(
-            registro || ''
-        ).trim();
+function limitarCampo(valor) {
+    const texto = String(valor || '');
+    return texto.length <= 1024
+        ? texto
+        : `${texto.slice(0, 1021)}...`;
+}
+
+function ehCabecalhoAno(linha) {
+    return /^\*\*📅\s*\d{4}\*\*$/u.test(String(linha || '').trim());
+}
+
+function extrairAno(linha) {
+    const match = String(linha || '').match(/(\d{4})/u);
+    return match ? match[1] : 'Ano histórico';
+}
+
+function ehTituloEventoAntigo(linha) {
+    return /^[^\s]+\s+\*\*.+\*\*$/u.test(String(linha || '').trim());
+}
 
 
-    if (
-        !texto
-    ) {
+// ========================================================================
+// NORMALIZAÇÃO DOS REGISTROS ANTIGOS
+// ========================================================================
 
-        return {
+function normalizarRegistros(categoria, registros) {
+    const eventos = [];
 
-            titulo:
-                'Evento histórico',
+    // ---------------------------------------------------------------
+    // LIGA / IMPERADOR
+    // O JSON antigo guarda:
+    //  **📅 2022**
+    //  • Janeiro: @alguem
+    //  • Fevereiro: @alguem
+    //  ...
+    // Cada ano deve virar uma única página.
+    // ---------------------------------------------------------------
 
-            descricao:
-                '*Registro vazio.*'
+    if (categoria === 'liga' || categoria === 'imperador') {
+        let atual = null;
 
-        };
+        for (const item of registros) {
+            if (typeof item === 'object' && item !== null) {
+                if (atual) {
+                    eventos.push(atual);
+                    atual = null;
+                }
+                eventos.push(item);
+                continue;
+            }
 
+            const linha = String(item || '').trim();
+            if (!linha) continue;
+
+            if (ehCabecalhoAno(linha)) {
+                if (atual) eventos.push(atual);
+
+                const ano = extrairAno(linha);
+                atual = {
+                    __historicoNormalizado: true,
+                    tipo: 'ano',
+                    ano,
+                    nome: ano,
+                    linhas: []
+                };
+                continue;
+            }
+
+            if (!atual) {
+                atual = {
+                    __historicoNormalizado: true,
+                    tipo: 'legado',
+                    nome: 'Histórico',
+                    linhas: []
+                };
+            }
+
+            atual.linhas.push(limparMarkdown(linha));
+        }
+
+        if (atual) eventos.push(atual);
+        return eventos;
     }
 
+    // ---------------------------------------------------------------
+    // EVENTOS
+    // Título + resultados até o próximo título = 1 página.
+    // ---------------------------------------------------------------
 
-    const linhas =
-        texto
-            .split('\n')
-            .map(
-                linha =>
-                    linha
-                        .replace(
-                            /\*\*/g,
-                            ''
-                        )
-                        .trim()
-            )
-            .filter(
-                Boolean
-            );
+    if (categoria === 'eventos') {
+        let atual = null;
 
+        for (const item of registros) {
+            if (typeof item === 'object' && item !== null) {
+                if (atual) {
+                    eventos.push(atual);
+                    atual = null;
+                }
+                eventos.push(item);
+                continue;
+            }
 
-    let titulo =
-        'Evento histórico';
+            const linha = String(item || '').trim();
+            if (!linha) continue;
 
+            if (ehTituloEventoAntigo(linha)) {
+                if (atual) eventos.push(atual);
 
-    const participantes =
-        [];
+                atual = {
+                    __historicoNormalizado: true,
+                    tipo: 'evento_antigo',
+                    nome: limparMarkdown(
+                        linha.replace(/^\S+\s+/u, '')
+                    ),
+                    emoji: linha.match(/^[^\s]+/u)?.[0] || '⚔️',
+                    linhas: []
+                };
+                continue;
+            }
 
+            if (!atual) {
+                atual = {
+                    __historicoNormalizado: true,
+                    tipo: 'evento_antigo',
+                    nome: 'Evento histórico',
+                    emoji: '⚔️',
+                    linhas: []
+                };
+            }
 
-    const detalhes =
-        [];
-
-
-    for (
-        const linha
-        of linhas
-    ) {
-
-        // ---------------------------------------------------------------
-        // Nome
-        // ---------------------------------------------------------------
-
-        if (
-
-            linha.startsWith(
-                '🏆'
-            ) ||
-
-            linha.startsWith(
-                '⚔️'
-            )
-
-        ) {
-
-            titulo =
-                linha
-
-                    .replace(
-                        /^🏆\s*/u,
-                        ''
-                    )
-
-                    .replace(
-                        /^⚔️\s*/u,
-                        ''
-                    )
-
-                    .trim();
-
-
-            continue;
-
+            atual.linhas.push(limparMarkdown(linha));
         }
 
+        if (atual) eventos.push(atual);
+        return eventos;
+    }
 
-        // ---------------------------------------------------------------
-        // Primeiro
-        // ---------------------------------------------------------------
+    // ---------------------------------------------------------------
+    // RECORDS
+    // Todos os records antigos pertencem ao mesmo painel.
+    // ---------------------------------------------------------------
 
-        if (
-            /^(1ª|1º|🥇)/u.test(
-                linha
-            )
-        ) {
+    if (categoria === 'records') {
+        const linhas = registros
+            .filter(item => typeof item === 'string')
+            .map(limparMarkdown)
+            .filter(Boolean);
 
-            detalhes.push(
-
-                `🥇 **Vencedor:** ` +
-
-                linha.replace(
-                    /^(1ª|1º|🥇)\s*/u,
-                    ''
-                )
-
-            );
-
-
-            continue;
-
-        }
-
-
-        // ---------------------------------------------------------------
-        // Segundo
-        // ---------------------------------------------------------------
-
-        if (
-            /^(2ª|2º|🥈)/u.test(
-                linha
-            )
-        ) {
-
-            detalhes.push(
-
-                `🥈 **2º lugar:** ` +
-
-                linha.replace(
-                    /^(2ª|2º|🥈)\s*/u,
-                    ''
-                )
-
-            );
-
-
-            continue;
-
-        }
-
-
-        // ---------------------------------------------------------------
-        // Terceiro
-        // ---------------------------------------------------------------
-
-        if (
-            /^(3ª|3º|🥉)/u.test(
-                linha
-            )
-        ) {
-
-            detalhes.push(
-
-                `🥉 **3º lugar:** ` +
-
-                linha.replace(
-                    /^(3ª|3º|🥉)\s*/u,
-                    ''
-                )
-
-            );
-
-
-            continue;
-
-        }
-
-
-        // ---------------------------------------------------------------
-        // Data
-        // ---------------------------------------------------------------
-
-        if (
-            linha.startsWith(
-                '📅'
-            )
-        ) {
-
-            detalhes.push(
-                linha
-            );
-
-
-            continue;
-
-        }
-
-
-        // ---------------------------------------------------------------
-        // Descrição
-        // ---------------------------------------------------------------
-
-        if (
-            linha.startsWith(
-                '📝'
-            )
-        ) {
-
-            detalhes.push(
-                linha
-            );
-
-
-            continue;
-
-        }
-
-
-        // ---------------------------------------------------------------
-        // Valor
-        // ---------------------------------------------------------------
-
-        if (
-            linha.startsWith(
-                '📊'
-            )
-        ) {
-
-            detalhes.push(
-                linha
-            );
-
-
-            continue;
-
-        }
-
-
-        // ---------------------------------------------------------------
-        // Participantes
-        // ---------------------------------------------------------------
-
-        participantes.push(
-            linha
+        const objetos = registros.filter(
+            item => typeof item === 'object' && item !== null
         );
 
+        if (linhas.length) {
+            eventos.push({
+                __historicoNormalizado: true,
+                tipo: 'records_antigos',
+                nome: 'Records históricos',
+                linhas
+            });
+        }
+
+        eventos.push(...objetos);
+        return eventos;
     }
 
-
-    return {
-
-        titulo,
-
-        descricao:
-
-            detalhes.length > 0
-
-                ? detalhes.join(
-                    '\n\n'
-                )
-
-                : participantes.length > 0
-
-                    ? `👥 **Informações:**\n${participantes.join('\n')}`
-
-                    : '*Nenhuma informação adicional.*'
-
-    };
-
+    // Fallback
+    return registros.filter(item => item !== null && item !== undefined && item !== '');
 }
 
 
@@ -477,280 +288,145 @@ function formatarRegistroAntigo(
 // FORMATAR REGISTRO NOVO
 // ========================================================================
 
-function formatarRegistroNovo(
-    registro
-) {
-
+function formatarRegistroNovo(registro) {
     const campos = [];
 
-
-    // ====================================================================
-    // TIPO
-    // ====================================================================
-
-    if (
-        registro.tipo
-    ) {
-
+    if (registro.tipo) {
         campos.push({
-
-            name:
-                '🏷️ TIPO',
-
-            value:
-
-                NOMES_TIPOS[
-                    registro.tipo
-                ] ||
-
-                registro.tipo,
-
-            inline:
-                true
-
+            name: '🏷️ TIPO',
+            value: NOMES_TIPOS[registro.tipo] || registro.tipo,
+            inline: true
         });
-
     }
 
-
-    // ====================================================================
-    // PARTICIPANTES
-    // ====================================================================
-
-    if (
-        registro.participantes
-    ) {
-
+    if (registro.participantes) {
         campos.push({
-
-            name:
-                '👥 PARTICIPANTES',
-
-            value:
-                registro.participantes,
-
-            inline:
-                false
-
+            name: '👥 PARTICIPANTES',
+            value: registro.participantes,
+            inline: false
         });
-
     }
 
-
-    // ====================================================================
-    // VENCEDOR
-    // ====================================================================
-
-    if (
-        registro.vencedor
-    ) {
-
+    if (registro.vencedor) {
         campos.push({
-
-            name:
-                '🥇 VENCEDOR',
-
-            value:
-                registro.vencedor,
-
-            inline:
-                true
-
+            name: '🥇 VENCEDOR',
+            value: registro.vencedor,
+            inline: true
         });
-
     }
 
-
-    // ====================================================================
-    // SEGUNDO
-    // ====================================================================
-
-    if (
-        registro.segundo
-    ) {
-
+    if (registro.segundo) {
         campos.push({
-
-            name:
-                '🥈 2º LUGAR',
-
-            value:
-                registro.segundo,
-
-            inline:
-                true
-
+            name: '🥈 2º LUGAR',
+            value: registro.segundo,
+            inline: true
         });
-
     }
 
-
-    // ====================================================================
-    // TERCEIRO
-    // ====================================================================
-
-    if (
-        registro.terceiro
-    ) {
-
+    if (registro.terceiro) {
         campos.push({
-
-            name:
-                '🥉 3º LUGAR',
-
-            value:
-                registro.terceiro,
-
-            inline:
-                true
-
+            name: '🥉 3º LUGAR',
+            value: registro.terceiro,
+            inline: true
         });
-
     }
 
-
-    // ====================================================================
-    // PRÊMIO
-    // ====================================================================
-
-    if (
-        registro.premio
-    ) {
-
+    if (registro.premio) {
         campos.push({
-
-            name:
-                '🎁 PRÊMIO',
-
-            value:
-                registro.premio,
-
-            inline:
-                true
-
+            name: '🎁 PRÊMIO',
+            value: registro.premio,
+            inline: true
         });
-
     }
 
-
-    // ====================================================================
-    // VALOR
-    // ====================================================================
-
-    if (
-
-        registro.valor !== null &&
-
-        registro.valor !== undefined
-
-    ) {
-
+    if (registro.valor !== null && registro.valor !== undefined) {
         campos.push({
-
-            name:
-                '📊 VALOR',
-
-            value:
-                String(
-                    registro.valor
-                ),
-
-            inline:
-                true
-
+            name: '📊 VALOR',
+            value: String(registro.valor),
+            inline: true
         });
-
     }
 
-
-    // ====================================================================
-    // DESCRIÇÃO
-    // ====================================================================
-
-    if (
-        registro.descricao
-    ) {
-
+    if (registro.descricao) {
         campos.push({
-
-            name:
-                '📝 DESCRIÇÃO',
-
-            value:
-                registro.descricao,
-
-            inline:
-                false
-
+            name: '📝 DESCRIÇÃO',
+            value: registro.descricao,
+            inline: false
         });
-
     }
 
-
-    // ====================================================================
-    // OBSERVAÇÕES
-    // ====================================================================
-
-    if (
-        registro.observacoes
-    ) {
-
+    if (registro.observacoes) {
         campos.push({
-
-            name:
-                '📌 OBSERVAÇÕES',
-
-            value:
-                registro.observacoes,
-
-            inline:
-                false
-
+            name: '📌 OBSERVAÇÕES',
+            value: registro.observacoes,
+            inline: false
         });
-
     }
 
-
-    // ====================================================================
-    // DATA
-    // ====================================================================
-
-    if (
-        registro.data
-    ) {
-
+    if (registro.data) {
         campos.push({
-
-            name:
-                '📅 DATA',
-
-            value:
-
-                registro.horario
-
-                    ? `${registro.data} às ${registro.horario}`
-
-                    : registro.data,
-
-            inline:
-                true
-
+            name: '📅 DATA',
+            value: registro.horario
+                ? `${registro.data} às ${registro.horario}`
+                : registro.data,
+            inline: true
         });
-
     }
-
 
     return {
-
-        titulo:
-
-            registro.nome ||
-            'Evento histórico',
-
+        titulo: registro.nome || 'Evento histórico',
         campos
-
     };
+}
 
+
+// ========================================================================
+// FORMATAR REGISTRO NORMALIZADO
+// ========================================================================
+
+function formatarRegistroNormalizado(registro) {
+    if (registro.tipo === 'ano') {
+        return {
+            titulo: registro.ano,
+            campos: [
+                {
+                    name: '📅 HISTÓRICO DO ANO',
+                    value: registro.linhas.join('\n'),
+                    inline: false
+                }
+            ]
+        };
+    }
+
+    if (registro.tipo === 'evento_antigo') {
+        return {
+            titulo: registro.nome || 'Evento histórico',
+            campos: [
+                {
+                    name: '🏆 RESULTADO',
+                    value: registro.linhas.length
+                        ? registro.linhas.join('\n')
+                        : '*Sem informações adicionais.*',
+                    inline: false
+                }
+            ]
+        };
+    }
+
+    if (registro.tipo === 'records_antigos') {
+        return {
+            titulo: 'Records históricos',
+            campos: [
+                {
+                    name: '📊 RECORDS',
+                    value: registro.linhas.join('\n'),
+                    inline: false
+                }
+            ]
+        };
+    }
+
+    return formatarRegistroNovo(registro);
 }
 
 
@@ -758,153 +434,24 @@ function formatarRegistroNovo(
 // FORMATAR REGISTRO
 // ========================================================================
 
-function formatarRegistro(
-    registro
-) {
-
-    if (
-        typeof registro === 'string'
-    ) {
-
-        const antigo =
-            formatarRegistroAntigo(
-                registro
-            );
-
-
-        return {
-
-            titulo:
-                antigo.titulo,
-
-            campos: [
-
-                {
-
-                    name:
-                        '📜 REGISTRO',
-
-                    value:
-                        antigo.descricao,
-
-                    inline:
-                        false
-
-                }
-
-            ]
-
-        };
-
-    }
-
-
+function formatarRegistro(registro) {
     if (
         registro &&
         typeof registro === 'object'
     ) {
-
-        return formatarRegistroNovo(
-            registro
-        );
-
+        return formatarRegistroNormalizado(registro);
     }
-
 
     return {
-
-        titulo:
-            'Evento histórico',
-
+        titulo: 'Evento histórico',
         campos: [
-
             {
-
-                name:
-                    '📜 REGISTRO',
-
-                value:
-                    '*Registro inválido.*',
-
-                inline:
-                    false
-
+                name: '📜 REGISTRO',
+                value: limitarCampo(limparMarkdown(registro) || 'Registro vazio.'),
+                inline: false
             }
-
         ]
-
     };
-
-}
-
-
-// ========================================================================
-// LIMITAR CAMPO
-// ========================================================================
-
-function limitarCampo(
-    valor
-) {
-
-    const texto =
-        String(
-            valor || ''
-        );
-
-
-    if (
-        texto.length <= 1024
-    ) {
-
-        return texto;
-
-    }
-
-
-    return (
-        texto.slice(
-            0,
-            1021
-        ) +
-        '...'
-    );
-
-}
-
-
-// ========================================================================
-// PAGINAÇÃO
-// ========================================================================
-
-function calcularPagina(
-    total,
-    pagina
-) {
-
-    const totalPaginas =
-        Math.max(
-            1,
-            total
-        );
-
-
-    const atual =
-        Number(
-            pagina
-        ) || 1;
-
-
-    return Math.min(
-
-        Math.max(
-            1,
-            atual
-        ),
-
-        totalPaginas
-
-    );
-
 }
 
 
@@ -912,242 +459,95 @@ function calcularPagina(
 // BOTÕES
 // ========================================================================
 
-function criarBotoes(
-    categoria,
-    pagina,
-    totalPaginas
-) {
+function criarBotoes(categoria, pagina, totalPaginas) {
+    return new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+            .setCustomId(`hist_ephem_prev_${categoria}_${pagina}`)
+            .setLabel('Anterior')
+            .setEmoji('⬅️')
+            .setStyle(ButtonStyle.Secondary)
+            .setDisabled(pagina <= 1),
 
-    const row =
-        new ActionRowBuilder()
-            .addComponents(
+        new ButtonBuilder()
+            .setCustomId(`hist_ephem_page_${categoria}_${pagina}`)
+            .setLabel(`${pagina}/${totalPaginas}`)
+            .setStyle(ButtonStyle.Secondary)
+            .setDisabled(true),
 
-                new ButtonBuilder()
+        new ButtonBuilder()
+            .setCustomId(`hist_ephem_next_${categoria}_${pagina}`)
+            .setLabel('Próximo')
+            .setEmoji('➡️')
+            .setStyle(ButtonStyle.Secondary)
+            .setDisabled(pagina >= totalPaginas),
 
-                    .setCustomId(
-                        `hist_ephem_prev_${categoria}_${pagina}`
-                    )
-
-                    .setLabel(
-                        'Anterior'
-                    )
-
-                    .setEmoji(
-                        '⬅️'
-                    )
-
-                    .setStyle(
-                        ButtonStyle.Secondary
-                    )
-
-                    .setDisabled(
-                        pagina <= 1
-                    ),
-
-
-                new ButtonBuilder()
-
-                    .setCustomId(
-                        `hist_ephem_page_${categoria}_${pagina}`
-                    )
-
-                    .setLabel(
-                        `${pagina}/${totalPaginas}`
-                    )
-
-                    .setStyle(
-                        ButtonStyle.Secondary
-                    )
-
-                    .setDisabled(
-                        true
-                    ),
-
-
-                new ButtonBuilder()
-
-                    .setCustomId(
-                        `hist_ephem_next_${categoria}_${pagina}`
-                    )
-
-                    .setLabel(
-                        'Próximo'
-                    )
-
-                    .setEmoji(
-                        '➡️'
-                    )
-
-                    .setStyle(
-                        ButtonStyle.Secondary
-                    )
-
-                    .setDisabled(
-                        pagina >= totalPaginas
-                    ),
-
-
-                new ButtonBuilder()
-
-                    .setCustomId(
-                        'hist_ephem_fechar'
-                    )
-
-                    .setLabel(
-                        'Fechar'
-                    )
-
-                    .setEmoji(
-                        '✖️'
-                    )
-
-                    .setStyle(
-                        ButtonStyle.Danger
-                    )
-
-            );
-
-
-    return row;
-
+        new ButtonBuilder()
+            .setCustomId('hist_ephem_fechar')
+            .setLabel('Fechar')
+            .setEmoji('✖️')
+            .setStyle(ButtonStyle.Danger)
+    );
 }
 
 
 // ========================================================================
-// EMBED DE UM ÚNICO EVENTO
+// EMBED
 // ========================================================================
 
-function criarEmbedEvento(
-    categoria,
-    registro,
-    pagina,
-    totalPaginas
-) {
+function criarEmbedEvento(categoria, registro, pagina, totalPaginas) {
+    const config = CATEGORIAS[categoria];
+    if (!config) return null;
 
-    const config =
-        CATEGORIAS[
-            categoria
-        ];
+    const formatado = formatarRegistro(registro);
 
-
-    if (
-        !config
-    ) {
-
-        return null;
-
-    }
-
-
-    const formatado =
-        formatarRegistro(
-            registro
+    const embed = new EmbedBuilder()
+        .setTitle(`${config.emoji} ${formatado.titulo}`)
+        .setColor(config.cor)
+        .setDescription(
+            `📄 **Evento ${pagina} de ${totalPaginas}**\n\n` +
+            '━━━━━━━━━━━━━━━━━━━━'
         );
 
-
-    const embed =
-        new EmbedBuilder()
-
-            .setTitle(
-                `${config.emoji} ${formatado.titulo}`
-            )
-
-            .setColor(
-                config.cor
-            )
-
-            .setDescription(
-
-                `📄 **Evento ${pagina} de ${totalPaginas}**\n\n` +
-
-                '━━━━━━━━━━━━━━━━━━━━'
-
-            );
-
-
-    // ====================================================================
-    // CAMPOS
-    // ====================================================================
-
-    for (
-        const campo
-        of formatado.campos
-    ) {
-
+    for (const campo of formatado.campos) {
         embed.addFields({
-
-            name:
-
-                limitarCampo(
-                    campo.name
-                ),
-
-            value:
-
-                limitarCampo(
-                    campo.value
-                ),
-
-            inline:
-                Boolean(
-                    campo.inline
-                )
-
+            name: limitarCampo(campo.name),
+            value: limitarCampo(campo.value),
+            inline: Boolean(campo.inline)
         });
-
     }
 
-
-    // ====================================================================
-    // IMAGEM
-    // ====================================================================
-
     if (
-
         registro &&
         typeof registro === 'object' &&
         registro.imagem
-
     ) {
-
         try {
-
-            const url =
-                new URL(
-                    registro.imagem
-                );
-
-
-            if (
-                url.protocol === 'http:' ||
-                url.protocol === 'https:'
-            ) {
-
-                embed.setImage(
-                    registro.imagem
-                );
-
+            const url = new URL(registro.imagem);
+            if (url.protocol === 'http:' || url.protocol === 'https:') {
+                embed.setImage(registro.imagem);
             }
-
         } catch {}
-
     }
 
-
-    // ====================================================================
-    // FOOTER
-    // ====================================================================
-
     embed.setFooter({
-
-        text:
-            `WorldWarBR • Hall da Fama • Página ${pagina}/${totalPaginas}`
-
+        text: `WorldWarBR • Hall da Fama • Página ${pagina}/${totalPaginas}`
     });
 
-
     return embed;
+}
 
+
+// ========================================================================
+// PAGINAÇÃO
+// ========================================================================
+
+function paginaSegura(total, pagina) {
+    const totalPaginas = Math.max(1, total);
+    const atual = Number(pagina) || 1;
+    return {
+        pagina: Math.min(Math.max(1, atual), totalPaginas),
+        totalPaginas
+    };
 }
 
 
@@ -1155,263 +555,101 @@ function criarEmbedEvento(
 // MOSTRAR EVENTO
 // ========================================================================
 
-async function mostrarEvento(
-    interaction,
-    categoria,
-    pagina
-) {
-
-    const historico =
-        carregarHistorico();
-
-
-    const registros =
-        historico[
-            categoria
-        ] || [];
-
-
-    if (
-        !CATEGORIAS[
-            categoria
-        ]
-    ) {
-
+async function mostrarEvento(interaction, categoria, pagina) {
+    if (!CATEGORIAS[categoria]) {
         return interaction.reply({
-
-            content:
-                '❌ Categoria inválida.',
-
-            flags:
-                MessageFlags.Ephemeral
-
+            content: '❌ Categoria inválida.',
+            flags: MessageFlags.Ephemeral
         });
-
     }
 
+    const historico = carregarHistorico();
+    const registrosOriginais = historico[categoria] || [];
+    const registros = normalizarRegistros(categoria, registrosOriginais);
 
-    const total =
-        registros.length;
-
-
-    const totalPaginas =
-        Math.max(
-            1,
-            total
-        );
-
-
-    const paginaSegura =
-        calcularPagina(
-            total,
-            pagina
-        );
-
-
-    const indice =
-        paginaSegura - 1;
-
-
-    const registro =
-        registros[indice];
-
-
-    if (
-        !registro
-    ) {
-
-        const embed =
-            new EmbedBuilder()
-
-                .setTitle(
-                    CATEGORIAS[categoria].titulo
-                )
-
-                .setColor(
-                    CATEGORIAS[categoria].cor
-                )
-
-                .setDescription(
-                    '📭 **Nenhum registro encontrado.**'
-                );
-
+    if (!registros.length) {
+        const embed = new EmbedBuilder()
+            .setTitle(CATEGORIAS[categoria].titulo)
+            .setColor(CATEGORIAS[categoria].cor)
+            .setDescription('📭 **Nenhum registro encontrado.**');
 
         return interaction.reply({
-
-            embeds: [
-
-                embed
-
-            ],
-
-            components: [
-
-                criarBotoes(
-                    categoria,
-                    1,
-                    1
-                )
-
-            ],
-
-            flags:
-                MessageFlags.Ephemeral
-
+            embeds: [embed],
+            components: [criarBotoes(categoria, 1, 1)],
+            flags: MessageFlags.Ephemeral
         });
-
     }
 
-
-    const embed =
-        criarEmbedEvento(
-
-            categoria,
-
-            registro,
-
-            paginaSegura,
-
-            totalPaginas
-
-        );
-
+    const pg = paginaSegura(registros.length, pagina);
+    const registro = registros[pg.pagina - 1];
+    const embed = criarEmbedEvento(
+        categoria,
+        registro,
+        pg.pagina,
+        pg.totalPaginas
+    );
 
     return interaction.reply({
-
-        content:
-            '',
-
-        embeds: [
-
-            embed
-
-        ],
-
+        content: '',
+        embeds: [embed],
         components: [
-
             criarBotoes(
-
                 categoria,
-
-                paginaSegura,
-
-                totalPaginas
-
+                pg.pagina,
+                pg.totalPaginas
             )
-
         ],
-
-        flags:
-            MessageFlags.Ephemeral
-
+        flags: MessageFlags.Ephemeral
     });
-
 }
 
 
 // ========================================================================
-// EDITAR EVENTO PRIVADO
+// ATUALIZAR EVENTO
 // ========================================================================
 
-async function atualizarEvento(
-    interaction,
-    categoria,
-    pagina
-) {
-
-    const historico =
-        carregarHistorico();
-
-
-    const registros =
-        historico[
-            categoria
-        ] || [];
-
-
-    const total =
-        registros.length;
-
-
-    const totalPaginas =
-        Math.max(
-            1,
-            total
-        );
-
-
-    const paginaSegura =
-        calcularPagina(
-            total,
-            pagina
-        );
-
-
-    const registro =
-        registros[
-            paginaSegura - 1
-        ];
-
-
-    if (
-        !registro
-    ) {
-
+async function atualizarEvento(interaction, categoria, pagina) {
+    if (!CATEGORIAS[categoria]) {
         return interaction.update({
-
-            content:
-                '📭 Nenhum registro encontrado.',
-
+            content: '❌ Categoria inválida.',
             embeds: [],
-
             components: []
-
         });
-
     }
 
+    const historico = carregarHistorico();
+    const registrosOriginais = historico[categoria] || [];
+    const registros = normalizarRegistros(categoria, registrosOriginais);
 
-    const embed =
-        criarEmbedEvento(
+    if (!registros.length) {
+        return interaction.update({
+            content: '📭 Nenhum registro encontrado.',
+            embeds: [],
+            components: []
+        });
+    }
 
-            categoria,
+    const pg = paginaSegura(registros.length, pagina);
+    const registro = registros[pg.pagina - 1];
 
-            registro,
-
-            paginaSegura,
-
-            totalPaginas
-
-        );
-
+    const embed = criarEmbedEvento(
+        categoria,
+        registro,
+        pg.pagina,
+        pg.totalPaginas
+    );
 
     return interaction.update({
-
-        content:
-            '',
-
-        embeds: [
-
-            embed
-
-        ],
-
+        content: '',
+        embeds: [embed],
         components: [
-
             criarBotoes(
-
                 categoria,
-
-                paginaSegura,
-
-                totalPaginas
-
+                pg.pagina,
+                pg.totalPaginas
             )
-
         ]
-
     });
-
 }
 
 
@@ -1419,161 +657,60 @@ async function atualizarEvento(
 // INTERAÇÃO
 // ========================================================================
 
-module.exports =
-    async (
-        interaction,
-        client
-    ) => {
+module.exports = async (interaction, client) => {
+    const id = interaction.customId;
 
-        const id =
-            interaction.customId;
+    // Abrir categoria
+    if (
+        id === 'hist_liga' ||
+        id === 'hist_imperador' ||
+        id === 'hist_eventos' ||
+        id === 'hist_records'
+    ) {
+        return mostrarEvento(
+            interaction,
+            id.replace('hist_', ''),
+            1
+        );
+    }
 
+    // Próximo
+    if (id.startsWith('hist_ephem_next_')) {
+        const partes = id.split('_');
+        const categoria = partes[3];
+        const paginaAtual = Number(partes[4]) || 1;
 
-        // ================================================================
-        // ABRIR CATEGORIA
-        // ================================================================
+        return atualizarEvento(
+            interaction,
+            categoria,
+            paginaAtual + 1
+        );
+    }
 
-        if (
+    // Anterior
+    if (id.startsWith('hist_ephem_prev_')) {
+        const partes = id.split('_');
+        const categoria = partes[3];
+        const paginaAtual = Number(partes[4]) || 1;
 
-            id === 'hist_liga' ||
+        return atualizarEvento(
+            interaction,
+            categoria,
+            paginaAtual - 1
+        );
+    }
 
-            id === 'hist_imperador' ||
+    // Indicador da página
+    if (id.startsWith('hist_ephem_page_')) {
+        return;
+    }
 
-            id === 'hist_eventos' ||
-
-            id === 'hist_records'
-
-        ) {
-
-            const categoria =
-                id.replace(
-                    'hist_',
-                    ''
-                );
-
-
-            return mostrarEvento(
-
-                interaction,
-
-                categoria,
-
-                1
-
-            );
-
-        }
-
-
-        // ================================================================
-        // PRÓXIMO EVENTO
-        // ================================================================
-
-        if (
-            id.startsWith(
-                'hist_ephem_next_'
-            )
-        ) {
-
-            const partes =
-                id.split('_');
-
-
-            const categoria =
-                partes[3];
-
-
-            const paginaAtual =
-                Number(
-                    partes[4]
-                ) || 1;
-
-
-            return atualizarEvento(
-
-                interaction,
-
-                categoria,
-
-                paginaAtual + 1
-
-            );
-
-        }
-
-
-        // ================================================================
-        // EVENTO ANTERIOR
-        // ================================================================
-
-        if (
-            id.startsWith(
-                'hist_ephem_prev_'
-            )
-        ) {
-
-            const partes =
-                id.split('_');
-
-
-            const categoria =
-                partes[3];
-
-
-            const paginaAtual =
-                Number(
-                    partes[4]
-                ) || 1;
-
-
-            return atualizarEvento(
-
-                interaction,
-
-                categoria,
-
-                paginaAtual - 1
-
-            );
-
-        }
-
-
-        // ================================================================
-        // BOTÃO PÁGINA
-        // ================================================================
-
-        if (
-            id.startsWith(
-                'hist_ephem_page_'
-            )
-        ) {
-
-            return;
-
-        }
-
-
-        // ================================================================
-        // FECHAR
-        // ================================================================
-
-        if (
-            id ===
-            'hist_ephem_fechar'
-        ) {
-
-            return interaction.update({
-
-                content:
-                    '✅ **Hall da Fama fechado.**',
-
-                embeds: [],
-
-                components: []
-
-            });
-
-        }
-
-    };
+    // Fechar
+    if (id === 'hist_ephem_fechar') {
+        return interaction.update({
+            content: '✅ **Hall da Fama fechado.**',
+            embeds: [],
+            components: []
+        });
+    }
+};

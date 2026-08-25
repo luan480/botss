@@ -1,16 +1,15 @@
 /* ========================================================================
-   FIX DE INTERAÇÕES DA LIGA
+   FIX DE INTERAÇÃO DA LIGA
 
-   O index.js possui um roteador legado que não encaminha alguns IDs da Liga
-   (como liga_guia e liga_estatisticas) para buttons.js.
+   O index.js já encaminha liga_estatisticas através de liga_estat_.
+   Portanto este patch NÃO deve tratar estatísticas, pois isso cria dois
+   fluxos para a mesma interação e pode causar DiscordAPIError 40060.
 
-   Este módulo é carregado automaticamente pelo command loader e instala um
-   pequeno roteador compatível antes dos listeners do index.js serem criados.
-   Assim não precisamos duplicar a lógica da Liga nem alterar o fluxo dos
-   outros sistemas.
+   O único ID tratado aqui é liga_guia, que ainda não é encaminhado pelo
+   roteador legado do index.js.
    ======================================================================== */
 
-const { Client } = require('discord.js');
+const { Client, MessageFlags } = require('discord.js');
 
 if (!Client.prototype.__worldwarLigaInteractionFix) {
 
@@ -26,18 +25,29 @@ if (!Client.prototype.__worldwarLigaInteractionFix) {
 
             const customId = interaction?.customId || '';
 
-            const isLigaButton =
-                interaction?.isButton?.() &&
-                (
-                    customId === 'liga_guia' ||
-                    customId === 'liga_estatisticas'
-                );
-
-            if (!isLigaButton) {
+            // Estatísticas já são tratadas diretamente pelo index.js.
+            // Não interceptar aqui evita processamento duplo e erro 40060.
+            if (
+                !interaction?.isButton?.() ||
+                customId !== 'liga_guia'
+            ) {
                 return listener(interaction);
             }
 
             try {
+
+                // O handler da guia usa editReply().
+                // Portanto a interação precisa estar em modo deferReply.
+                if (
+                    !interaction.replied &&
+                    !interaction.deferred
+                ) {
+
+                    await interaction.deferReply({
+                        flags: MessageFlags.Ephemeral
+                    });
+
+                }
 
                 const handler = require('./buttons.js');
 
@@ -46,18 +56,27 @@ if (!Client.prototype.__worldwarLigaInteractionFix) {
             } catch (erro) {
 
                 console.error(
-                    '[LIGA] Erro ao processar botão principal:',
+                    '[LIGA] Erro ao processar botão Guia:',
                     erro
                 );
 
                 try {
 
-                    if (!interaction.replied && !interaction.deferred) {
+                    const resposta = {
+                        content: '❌ Não foi possível abrir o Guia da Liga.',
+                        flags: MessageFlags.Ephemeral
+                    };
 
-                        await interaction.reply({
-                            content: '❌ Não foi possível abrir esta seção da Liga.',
-                            ephemeral: true
-                        });
+                    if (
+                        interaction.replied ||
+                        interaction.deferred
+                    ) {
+
+                        await interaction.followUp(resposta);
+
+                    } else {
+
+                        await interaction.reply(resposta);
 
                     }
 
@@ -73,6 +92,4 @@ if (!Client.prototype.__worldwarLigaInteractionFix) {
     Client.prototype.__worldwarLigaInteractionFix = true;
 }
 
-// Não é um Slash Command. O loader do index.js apenas o carrega para ativar
-// o patch acima e ignora o arquivo na coleção de comandos.
 module.exports = {};

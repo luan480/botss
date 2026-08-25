@@ -138,7 +138,12 @@ const ARQUIVOS_IGNORADOS = new Set([
 
     'testeEstatisticasV2.js',
 
-    'index.js'
+    'index.js',
+
+    // Não carregar handlers como comandos
+    'buttons.js',
+
+    'interactionPatch.js'
 
 ]);
 
@@ -1605,8 +1610,27 @@ client.on(
             // ============================================================
             // LIGA
             // ============================================================
+            //
+            // IMPORTANTE:
+            // Todos os componentes liga_* passam por UM ÚNICO handler.
+            //
+            // Isso inclui:
+            // liga_estat_*
+            // liga_guia
+            // liga_ranking
+            // liga_regras
+            // liga_status
+            // etc.
+            //
+            // Os IDs antigos da Liga que não começam com liga_
+            // continuam sendo aceitos abaixo.
+            // ============================================================
 
             if (
+
+                customId.startsWith(
+                    'liga_'
+                ) ||
 
                 [
 
@@ -1632,10 +1656,6 @@ client.on(
 
                 customId.startsWith(
                     'sel_'
-                ) ||
-
-                customId.startsWith(
-                    'liga_estat_'
                 ) ||
 
                 customId.startsWith(

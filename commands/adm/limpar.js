@@ -1,78 +1,49 @@
-/* ========================================================================
-   ARQUIVO: commands/adm/limpar.js
-   DESCRIÇÃO: Comando de limpeza profunda (suporta mensagens > 14 dias)
-   ======================================================================== */
-
-const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags } = require('discord.js');
+const { SlashCommandBuilder, MessageFlags } = require('discord.js');
+const { isStaff } = require('../utils/staffPermissions.js');
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('limpar')
         .setDescription('Limpa mensagens do canal (incluindo mensagens com mais de 14 dias).')
-        .addIntegerOption(option =>
-            option.setName('quantidade')
-                .setDescription('Número de mensagens para apagar (de 1 a 100).')
-                .setRequired(true)
-        )
-        .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
+        .addIntegerOption(option => option.setName('quantidade').setDescription('Número de mensagens para apagar (1 a 100).').setRequired(true)),
 
     async execute(interaction) {
         await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-        const quantidade = interaction.options.getInteger('quantidade');
-
-        if (quantidade < 1 || quantidade > 100) {
-            return interaction.editReply({ content: '❌ Você precisa escolher um valor entre 1 e 100 mensagens.' });
+        if (!isStaff(interaction.member)) {
+            return interaction.editReply('❌ Apenas Staff, Suporte, Mod ou ADM podem limpar mensagens.');
         }
 
-        const channel = interaction.channel;
+        const quantidade = interaction.options.getInteger('quantidade');
+        if (quantidade < 1 || quantidade > 100) {
+            return interaction.editReply('❌ Você precisa escolher um valor entre 1 e 100 mensagens.');
+        }
 
         try {
-            // Busca as mensagens no canal
-            const messages = await channel.messages.fetch({ limit: quantidade });
-            
-            const agora = Date.now();
-            const quatorzeDiasMs = 14 * 24 * 60 * 60 * 1000;
+            const messages = await interaction.channel.messages.fetch({ limit: quantidade });
+            const limite = Date.now() - (14 * 24 * 60 * 60 * 1000);
+            const recentes = [];
+            const antigas = [];
 
-            const mensagensNovas = [];
-            const mensagensAntigas = [];
+            messages.forEach(msg => (msg.createdTimestamp >= limite ? recentes : antigas).push(msg));
 
-            // Separa o que tem menos de 14 dias e o que tem mais
-            messages.forEach(msg => {
-                if (agora - msg.createdTimestamp < quatorzeDiasMs) {
-                    mensagensNovas.push(msg);
-                } else {
-                    mensagensAntigas.push(msg);
-                }
-            });
+            let total = 0;
+            if (recentes.length) total += (await interaction.channel.bulkDelete(recentes, true)).size;
 
-            let totalApagadas = 0;
-
-            // 1. Apaga as mensagens recentes em lote (bulkDelete) se houver alguma
-            if (mensagensNovas.length > 0) {
-                const deleted = await channel.bulkDelete(mensagensNovas, true);
-                totalApagadas += deleted.size;
-            }
-
-            // 2. Apaga as mensagens com mais de 14 dias uma por uma (limpeza profunda)
-            if (mensagensAntigas.length > 0) {
-                for (const msg of mensagensAntigas) {
-                    try {
-                        await msg.delete();
-                        totalApagadas++;
-                        // Pequeno atraso para evitar bloqueio de Rate Limit da API do Discord
-                        await new Promise(resolve => setTimeout(resolve, 600));
-                    } catch (err) {
-                        console.error(`Não foi possível apagar a mensagem antiga: ${err.message}`);
-                    }
+            for (const msg of antigas) {
+                try {
+                    await msg.delete();
+                    total++;
+                    await new Promise(resolve => setTimeout(resolve, 600));
+                } catch (err) {
+                    console.error(`[LIMPAR] Falha ao apagar ${msg.id}:`, err.message);
                 }
             }
 
-            await interaction.editReply({ content: `✅ Sucesso! Um total de **${totalApagadas}** mensagens foram apagadas (incluindo mensagens com mais de 14 dias).` });
-
+            await interaction.editReply(`✅ Sucesso! **${total}** mensagens foram apagadas.`);
         } catch (error) {
-            console.error('Erro ao executar o comando de limpeza:', error);
-            await interaction.editReply({ content: '❌ Ocorreu um erro ao tentar limpar as mensagens deste canal.' });
+            console.error('[LIMPAR] Erro:', error);
+            await interaction.editReply('❌ Ocorreu um erro ao tentar limpar as mensagens deste canal.');
         }
-    },
+    }
 };

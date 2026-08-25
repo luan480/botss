@@ -1,0 +1,17 @@
+{
+  "name": "worldwarbr",
+  "version": "1.0.0",
+  "description": "Bot de Ligado",
+  "main": "index.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "discord-html-transcripts": "^3.2.0",
+    "discord.js": "^14.14.0",
+    "dotenv": "^16.6.1"
+  }
+}

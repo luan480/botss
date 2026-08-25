@@ -1,0 +1,86 @@
+{
+  "destaque": "🏆 **@Mathias3002** - Campeão do 1° campeonato do servidor!",
+  "liga": [
+    "**📅 2022**",
+    "• Agosto: @Mathias3002",
+    "• Setembro: @usuário-desconhecido",
+    "• Outubro: @Miojo",
+    "• Novembro: @ʟᴜꜰɪ",
+    "• Dezembro: @Vini",
+    "",
+    "**📅 2023**",
+    "• Janeiro: @Vini",
+    "• Fevereiro: @• NT Guizinho™ 🧛 Millior",
+    "• Março: @usuário-desconhecido",
+    "• Abril: @Vini",
+    "• Maio: @Anarco10",
+    "• Agosto: @Mikael",
+    "• Setembro: @• NT Guizinho™ 🧛 Millior"
+  ],
+  "imperador": [
+    "**📅 2022**",
+    "• Abril: @Mathias3002",
+    "• Maio: @Mathias3002",
+    "• Junho: @Mikael",
+    "• Julho: @Mathias3002",
+    "• Agosto: @Mathias3002",
+    "• Setembro: @Mathias3002",
+    "• Outubro: @Miojo",
+    "• Novembro: @Vini",
+    "• Dezembro: @José Luiz",
+    "",
+    "**📅 2023**",
+    "• Janeiro: @Vini",
+    "• Fevereiro: @• NT Guizinho™ 🧛 Millior",
+    "• Março: @usuário-desconhecido",
+    "• Abril: @@thug",
+    "• Maio: @Anarco10",
+    "• Junho: @▷KING IS BAK !",
+    "• Agosto: @Vini",
+    "• Setembro: @• NT Guizinho™ 🧛 Millior"
+  ],
+  "eventos": [
+    "🌙 **Noite dos Assassinos**",
+    "1ª @kotonet",
+    "2ª @Vini",
+    "",
+    "🏟️ **Arena**",
+    "1ª @Mikael",
+    "2ª @usuário-desconhecido",
+    "",
+    "⚔️ **Warlords (Duplas)**",
+    "1ª @Freitas e @usuário-desconhecido",
+    "",
+    "📨 **Invite Kings**",
+    "• @unnamed69",
+    "• @Vini",
+    {
+      "id": "1787598998903-1349484758769471609",
+      "categoria": "eventos",
+      "tipo": "semanal",
+      "nome": "SEM MINHA DUPLINHA EU NÃO CONSIGO",
+      "vencedor": null,
+      "segundo": null,
+      "terceiro": null,
+      "valor": null,
+      "descricao": null,
+      "registradoPor": {
+        "id": "1349484758769471609",
+        "username": "z_coelho_z"
+      },
+      "data": "24/08/2026",
+      "horario": "19:16",
+      "timestamp": "2026-08-24T19:16:38.856Z"
+    }
+  ],
+  "records": [
+    "🏆 **Maior Vencedor:** @Mathias3002 (7 títulos)",
+    "💀 **Maior Matador:** @• NT Guizinho™ (44 abates)",
+    "💯 **Maior Pontuador:** @• NT Guizinho™ (2145 pontos)",
+    "🕹️ **Maior Jogador:** @• NT Guizinho™ (128 partidas)"
+  ],
+  "mural": {
+    "channelId": "1079671915431608372",
+    "messageId": "1541524364867014667"
+  }
+}

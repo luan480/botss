@@ -1,0 +1,102 @@
+{
+  "canalDePrints": "1071976981924687912",
+  "cargoRecrutaId": "879845960052789288",
+  "faccoes": {
+    "874475520333578310": {
+      "nome": "• Marinha",
+      "canalDeAnuncio": "1037496120944906240",
+      "caminho": [
+        { "nome": "• Marinheiro", "id": "874485010755899473", "custo": 2 },
+        { "nome": "• Cabo", "id": "874485011288584254", "custo": 6 },
+        { "nome": "• Terceiro Sargento", "id": "874485014178455602", "custo": 10 },
+        { "nome": "• Segundo Sargento", "id": "874485014534946896", "custo": 16 },
+        { "nome": "• Primeiro Sargento", "id": "874485088245678170", "custo": 24 },
+        { "nome": "• Guarda Marinha", "id": "874485088929341480", "custo": 32 },
+        { "nome": "• Subtenente", "id": "874485091420733511", "custo": 42 },
+        { "nome": "• Segundo Tenente", "id": "874485091550781460", "custo": 54 },
+        { "nome": "• Primeiro Tenente", "id": "874485107250049035", "custo": 66 },
+        { "nome": "• Capitão", "id": "874485108168601730", "custo": 80 },
+        { "nome": "• Capitão Tenente", "id": "874485108533510144", "custo": 96 },
+        { "nome": "• Capitão de Corveta", "id": "874485109196218448", "custo": 112 },
+        { "nome": "• Capitão de Fragata", "id": "874485111322705990", "custo": 130 },
+        { "nome": "• Capitão de Mar e Guerra", "id": "874485111427575859", "custo": 150 },
+        { "nome": "• Contra Almirante", "id": "874485111649861682", "custo": 170 },
+        { "nome": "• Vice Almirante", "id": "874485129458876477", "custo": 191 },
+        { "nome": "• Almirante de Esquadra", "id": "874485130184511498", "custo": 217 },
+        { "nome": "• Almirante", "id": "874485130964656208", "custo": 247 }
+      ]
+    },
+    "874475515166216273": {
+      "nome": "• Exército",
+      "canalDeAnuncio": "1037496479666946218",
+      "caminho": [
+        { "nome": "• Soldado", "id": "874481262520315934", "custo": 2 },
+        { "nome": "• Taifeiro de 2ª classe", "id": "874481279842799620", "custo": 6 },
+        { "nome": "• Taifeiro de 1ª Classe", "id": "874481281000427540", "custo": 10 },
+        { "nome": "• Cabo", "id": "874481283131129866", "custo": 16 },
+        { "nome": "• Taifeiro Mor", "id": "874481283437322321", "custo": 24 },
+        { "nome": "• Terceiro Sargento", "id": "874481315628593283", "custo": 32 },
+        { "nome": "• Segundo Sargento", "id": "874481333169176576", "custo": 42 },
+        { "nome": "• Primeiro Sargento", "id": "874481347526279209", "custo": 54 },
+        { "nome": "• Subtenente", "id": "874481359836549122", "custo": 66 },
+        { "nome": "• Segundo Tenente", "id": "874481363758243911", "custo": 80 },
+        { "nome": "• Primeiro Tenente", "id": "874481376848646175", "custo": 96 },
+        { "nome": "• Capitão", "id": "874481390635319306", "custo": 112 },
+        { "nome": "• Major", "id": "874481433517899796", "custo": 130 },
+        { "nome": "• Tenente Coronel", "id": "874481436651053116", "custo": 150 },
+        { "nome": "• General de Brigada", "id": "874481448420257882", "custo": 170 },
+        { "nome": "• General de Divisão", "id": "874481451716993024", "custo": 191 },
+        { "nome": "• General do Exército", "id": "874481468133498930", "custo": 217 },
+        { "nome": "• Marechal", "id": "874481469723127818", "custo": 247 }
+      ]
+    },
+    "874475517103976478": {
+      "nome": "• Aeronáutica",
+      "canalDeAnuncio": "1037496602547466250",
+      "caminho": [
+        { "nome": "• Taifeiro de 2ª Classe", "id": "874483313472053318", "custo": 2 },
+        { "nome": "• Soldado 2ª Classe", "id": "874483316621967392", "custo": 6 },
+        { "nome": "• Taifeiro de 1ª Classe", "id": "874483317297250314", "custo": 10 },
+        { "nome": "• Soldado 1ª Classe", "id": "874483361807237180", "custo": 16 },
+        { "nome": "• Taifeiro Mor", "id": "874483362226655253", "custo": 24 },
+        { "nome": "• Cabo", "id": "874483363212320779", "custo": 32 },
+        { "nome": "• Terceiro Sargento", "id": "874483363937923132", "custo": 42 },
+        { "nome": "• Segundo Sargento", "id": "874483366450331688", "custo": 54 },
+        { "nome": "• Primeiro Sargento", "id": "874483366672625705", "custo": 66 },
+        { "nome": "• Segundo Tenente", "id": "874483426273677392", "custo": 80 },
+        { "nome": "• Primeiro Tenente", "id": "874483426776993793", "custo": 96 },
+        { "nome": "• Capitão", "id": "874483427737477120", "custo": 112 },
+        { "nome": "• Major", "id": "874483430547685476", "custo": 130 },
+        { "nome": "• Tenente Coronel", "id": "874483430761590805", "custo": 150 },
+        { "nome": "• Coronel", "id": "874483488026406992", "custo": 170 },
+        { "nome": "• Brigadeiro", "id": "874483488689102899", "custo": 191 },
+        { "nome": "• Major Brigadeiro do Ar", "id": "874483489683177480", "custo": 217 },
+        { "nome": "• Marechal do Ar", "id": "874483491658682379", "custo": 247 }
+      ]
+    },
+    "1090063773630484490": {
+      "nome": "• Mercenários",
+      "canalDeAnuncio": "1090168803641540710",
+      "caminho": [
+        { "nome": "• Subalterno", "id": "1090082057373372516", "custo": 2 },
+        { "nome": "• Escudeiro", "id": "1090082022329950229", "custo": 6 },
+        { "nome": "• Aprendiz", "id": "1090081988939100240", "custo": 10 },
+        { "nome": "• Arqueiro", "id": "1090081930046865421", "custo": 16 },
+        { "nome": "• Soldado", "id": "1090081905417916487", "custo": 24 },
+        { "nome": "• Lanceiro", "id": "1090081863793660014", "custo": 32 },
+        { "nome": "• Guarda", "id": "1090081759942676480", "custo": 42 },
+        { "nome": "• Cavaleiro", "id": "1090081736211308545", "custo": 54 },
+        { "nome": "• Bárbaro", "id": "1090081626790318090", "custo": 66 },
+        { "nome": "• Assassino", "id": "1090081598952702022", "custo": 80 },
+        { "nome": "• Assassino de Elite", "id": "1090081515070820472", "custo": 96 },
+        { "nome": "• Cavaleiro Real", "id": "1090081486763470908", "custo": 112 },
+        { "nome": "• Guarda Real", "id": "1090081430895337604", "custo": 130 },
+        { "nome": "• Paladino", "id": "1090081405570138152", "custo": 150 },
+        { "nome": "• Comandante", "id": "1090081385680752713", "custo": 170 },
+        { "nome": "• Colíder de Guilda", "id": "1090081333054804058", "custo": 191 },
+        { "nome": "• Líder de Guilda", "id": "1090081294756618301", "custo": 217 },
+        { "nome": "• Rei Mercenário", "id": "1090081200124731442", "custo": 247 }
+      ]
+    }
+  }
+}

@@ -1,0 +1,1562 @@
+{
+  "servidor": {
+    "id": "849696655510863914",
+    "nome": "🌎𝐖𝐨𝐫𝐥𝐝𝐖𝐚𝐫𝐁𝐑",
+    "donoId": "1349484758769471609",
+    "totalMembros": 1841,
+    "criadoEm": "2021-06-02T17:11:09.274Z"
+  },
+  "totalCargos": 157,
+  "cargos": [
+    {
+      "id": "1429200268863738049",
+      "nome": "WorldWarBr",
+      "cor": "#2ecc71",
+      "posicao": 156
+    },
+    {
+      "id": "984224869648584805",
+      "nome": "• Manutenção",
+      "cor": "#818689",
+      "posicao": 155
+    },
+    {
+      "id": "1076558723780190248",
+      "nome": "• Conselheiro",
+      "cor": "#7752e4",
+      "posicao": 154
+    },
+    {
+      "id": "869635310529691698",
+      "nome": "• GM",
+      "cor": "#5a0f7e",
+      "posicao": 153
+    },
+    {
+      "id": "1249334093213339768",
+      "nome": "B.O.F.E DE ELITE",
+      "cor": "#ff94f0",
+      "posicao": 152
+    },
+    {
+      "id": "865915891399786518",
+      "nome": "• ADM",
+      "cor": "#d6010b",
+      "posicao": 151
+    },
+    {
+      "id": "849697636574560296",
+      "nome": "• MOD",
+      "cor": "#2c61ca",
+      "posicao": 150
+    },
+    {
+      "id": "1076553146324750366",
+      "nome": "• Suporte",
+      "cor": "#1abc9c",
+      "posicao": 149
+    },
+    {
+      "id": "1076517692380565554",
+      "nome": "• Anfitrião",
+      "cor": "#3498db",
+      "posicao": 148
+    },
+    {
+      "id": "970318757748670484",
+      "nome": "• STAFF",
+      "cor": "#1e1f22",
+      "posicao": 147
+    },
+    {
+      "id": "1541406454970589226",
+      "nome": "---cargos únicos---",
+      "cor": "#000000",
+      "posicao": 146
+    },
+    {
+      "id": "1295470785179422730",
+      "nome": "VIP",
+      "cor": "#f1c40f",
+      "posicao": 145
+    },
+    {
+      "id": "874012452856152126",
+      "nome": "• Server booster",
+      "cor": "#df00e8",
+      "posicao": 144
+    },
+    {
+      "id": "1088105642327293962",
+      "nome": "• Lenda da Liga",
+      "cor": "#503af8",
+      "posicao": 143
+    },
+    {
+      "id": "938174095470772305",
+      "nome": "• Medalha de Honra",
+      "cor": "#ae6800",
+      "posicao": 142
+    },
+    {
+      "id": "881263307636502528",
+      "nome": "• Imperador",
+      "cor": "#e4252b",
+      "posicao": 141
+    },
+    {
+      "id": "881263725674381323",
+      "nome": "• Imperatriz",
+      "cor": "#e4252b",
+      "posicao": 140
+    },
+    {
+      "id": "1147960837215092817",
+      "nome": "• Tri Campeão da Liga",
+      "cor": "#5f4afc",
+      "posicao": 139
+    },
+    {
+      "id": "1159617895995801680",
+      "nome": "• Bi Campeão da Liga",
+      "cor": "#7513dd",
+      "posicao": 138
+    },
+    {
+      "id": "1429934221216186458",
+      "nome": "• Campeão da Liga",
+      "cor": "#a152f5",
+      "posicao": 137
+    },
+    {
+      "id": "1078521212667432981",
+      "nome": "• Acadêmico",
+      "cor": "#9b59b6",
+      "posicao": 136
+    },
+    {
+      "id": "882047915093266503",
+      "nome": "• Invite King",
+      "cor": "#ffc900",
+      "posicao": 135
+    },
+    {
+      "id": "990849903129427998",
+      "nome": "• Top 1",
+      "cor": "#e4b400",
+      "posicao": 134
+    },
+    {
+      "id": "990849915146104873",
+      "nome": "• Top 2",
+      "cor": "#b9bbbe",
+      "posicao": 133
+    },
+    {
+      "id": "990849921320108083",
+      "nome": "• Top 3",
+      "cor": "#bb812a",
+      "posicao": 132
+    },
+    {
+      "id": "1541406097196187739",
+      "nome": "-------patentes------",
+      "cor": "#000000",
+      "posicao": 131
+    },
+    {
+      "id": "874481469723127818",
+      "nome": "• Marechal",
+      "cor": "#0b5705",
+      "posicao": 130
+    },
+    {
+      "id": "874481468133498930",
+      "nome": "• General do Exército",
+      "cor": "#11790a",
+      "posicao": 129
+    },
+    {
+      "id": "874481451716993024",
+      "nome": "• General de Divisão",
+      "cor": "#308d21",
+      "posicao": 128
+    },
+    {
+      "id": "874481448420257882",
+      "nome": "• General de Brigada",
+      "cor": "#27a814",
+      "posicao": 127
+    },
+    {
+      "id": "874481436651053116",
+      "nome": "• Tenente Coronel",
+      "cor": "#1db807",
+      "posicao": 126
+    },
+    {
+      "id": "874481433517899796",
+      "nome": "• Major",
+      "cor": "#1cd302",
+      "posicao": 125
+    },
+    {
+      "id": "874481390635319306",
+      "nome": "• Capitão",
+      "cor": "#79f84e",
+      "posicao": 124
+    },
+    {
+      "id": "874481376848646175",
+      "nome": "• Primeiro Tenente",
+      "cor": "#55ee69",
+      "posicao": 123
+    },
+    {
+      "id": "874481363758243911",
+      "nome": "• Segundo Tenente",
+      "cor": "#34eb4b",
+      "posicao": 122
+    },
+    {
+      "id": "874481359836549122",
+      "nome": "• Subtenente",
+      "cor": "#23f63d",
+      "posicao": 121
+    },
+    {
+      "id": "874481347526279209",
+      "nome": "• Primeiro Sargento",
+      "cor": "#05ff00",
+      "posicao": 120
+    },
+    {
+      "id": "874481333169176576",
+      "nome": "• Segundo Sargento",
+      "cor": "#08e005",
+      "posicao": 119
+    },
+    {
+      "id": "874481315628593283",
+      "nome": "• Terceiro Sargento",
+      "cor": "#0ec00b",
+      "posicao": 118
+    },
+    {
+      "id": "874481283437322321",
+      "nome": "• Taifeiro Mor",
+      "cor": "#419041",
+      "posicao": 117
+    },
+    {
+      "id": "874481283131129866",
+      "nome": "• Cabo",
+      "cor": "#437043",
+      "posicao": 116
+    },
+    {
+      "id": "874481281000427540",
+      "nome": "• Taifeiro de 1ª Classe",
+      "cor": "#2b5c2b",
+      "posicao": 115
+    },
+    {
+      "id": "874481279842799620",
+      "nome": "• Taifeiro de 2ª classe",
+      "cor": "#295229",
+      "posicao": 114
+    },
+    {
+      "id": "874481262520315934",
+      "nome": "• Soldado",
+      "cor": "#013001",
+      "posicao": 113
+    },
+    {
+      "id": "874483491658682379",
+      "nome": "• Marechal do Ar",
+      "cor": "#f3ef07",
+      "posicao": 112
+    },
+    {
+      "id": "874483489683177480",
+      "nome": "• Major Brigadeiro do Ar",
+      "cor": "#e6e225",
+      "posicao": 111
+    },
+    {
+      "id": "874483488689102899",
+      "nome": "• Brigadeiro",
+      "cor": "#ceca33",
+      "posicao": 110
+    },
+    {
+      "id": "874483488026406992",
+      "nome": "• Coronel",
+      "cor": "#e0b639",
+      "posicao": 109
+    },
+    {
+      "id": "874483430761590805",
+      "nome": "• Tenente Coronel",
+      "cor": "#d4ab37",
+      "posicao": 108
+    },
+    {
+      "id": "874483430547685476",
+      "nome": "• Major",
+      "cor": "#ec8a1f",
+      "posicao": 107
+    },
+    {
+      "id": "874483427737477120",
+      "nome": "• Capitão",
+      "cor": "#db770a",
+      "posicao": 106
+    },
+    {
+      "id": "874483426776993793",
+      "nome": "• Primeiro Tenente",
+      "cor": "#b47903",
+      "posicao": 105
+    },
+    {
+      "id": "874483426273677392",
+      "nome": "• Segundo Tenente",
+      "cor": "#ce8c08",
+      "posicao": 104
+    },
+    {
+      "id": "874483366672625705",
+      "nome": "• Primeiro Sargento",
+      "cor": "#d39816",
+      "posicao": 103
+    },
+    {
+      "id": "874483366450331688",
+      "nome": "• Segundo Sargento",
+      "cor": "#e49e05",
+      "posicao": 102
+    },
+    {
+      "id": "874483363937923132",
+      "nome": "• Terceiro Sargento",
+      "cor": "#ecbb02",
+      "posicao": 101
+    },
+    {
+      "id": "874483363212320779",
+      "nome": "• Cabo",
+      "cor": "#ddbc23",
+      "posicao": 100
+    },
+    {
+      "id": "874483362226655253",
+      "nome": "• Taifeiro Mor",
+      "cor": "#c1d813",
+      "posicao": 99
+    },
+    {
+      "id": "874483361807237180",
+      "nome": "• Soldado 1ª Classe",
+      "cor": "#b5ca1d",
+      "posicao": 98
+    },
+    {
+      "id": "874483317297250314",
+      "nome": "• Taifeiro de 1ª Classe",
+      "cor": "#c1c71a",
+      "posicao": 97
+    },
+    {
+      "id": "874483316621967392",
+      "nome": "• Soldado 2ª Classe",
+      "cor": "#b6a615",
+      "posicao": 96
+    },
+    {
+      "id": "874483313472053318",
+      "nome": "• Taifeiro de 2ª Classe",
+      "cor": "#a8a105",
+      "posicao": 95
+    },
+    {
+      "id": "874485130964656208",
+      "nome": "• Almirante",
+      "cor": "#051c61",
+      "posicao": 94
+    },
+    {
+      "id": "874485130184511498",
+      "nome": "• Almirante de Esquadra",
+      "cor": "#132c7d",
+      "posicao": 93
+    },
+    {
+      "id": "874485129458876477",
+      "nome": "• Vice Almirante",
+      "cor": "#284193",
+      "posicao": 92
+    },
+    {
+      "id": "874485111649861682",
+      "nome": "• Contra Almirante",
+      "cor": "#253c86",
+      "posicao": 91
+    },
+    {
+      "id": "874485111427575859",
+      "nome": "• Capitão de Mar e Guerra",
+      "cor": "#3f386b",
+      "posicao": 90
+    },
+    {
+      "id": "874485111322705990",
+      "nome": "• Capitão de Fragata",
+      "cor": "#224479",
+      "posicao": 89
+    },
+    {
+      "id": "874485109196218448",
+      "nome": "• Capitão de Corveta",
+      "cor": "#094aad",
+      "posicao": 88
+    },
+    {
+      "id": "874485108533510144",
+      "nome": "• Capitão Tenente",
+      "cor": "#145dc8",
+      "posicao": 87
+    },
+    {
+      "id": "874485108168601730",
+      "nome": "• Capitão",
+      "cor": "#2b68c5",
+      "posicao": 86
+    },
+    {
+      "id": "874485107250049035",
+      "nome": "• Primeiro Tenente",
+      "cor": "#427ad0",
+      "posicao": 85
+    },
+    {
+      "id": "874485091550781460",
+      "nome": "• Segundo Tenente",
+      "cor": "#687ef6",
+      "posicao": 84
+    },
+    {
+      "id": "874485091420733511",
+      "nome": "• Subtenente",
+      "cor": "#b6d1fb",
+      "posicao": 83
+    },
+    {
+      "id": "874485088929341480",
+      "nome": "• Guarda Marinha",
+      "cor": "#9eaae6",
+      "posicao": 82
+    },
+    {
+      "id": "874485088245678170",
+      "nome": "• Primeiro Sargento",
+      "cor": "#828fd9",
+      "posicao": 81
+    },
+    {
+      "id": "874485014534946896",
+      "nome": "• Segundo Sargento",
+      "cor": "#636ea6",
+      "posicao": 80
+    },
+    {
+      "id": "874485014178455602",
+      "nome": "• Terceiro Sargento",
+      "cor": "#43519a",
+      "posicao": 79
+    },
+    {
+      "id": "874485011288584254",
+      "nome": "• Cabo",
+      "cor": "#414c86",
+      "posicao": 78
+    },
+    {
+      "id": "874485010755899473",
+      "nome": "• Marinheiro",
+      "cor": "#4c4d7a",
+      "posicao": 77
+    },
+    {
+      "id": "1090081200124731442",
+      "nome": "• Rei Mercenário",
+      "cor": "#ff0000",
+      "posicao": 76
+    },
+    {
+      "id": "1090081294756618301",
+      "nome": "• Líder de Guilda",
+      "cor": "#c20000",
+      "posicao": 75
+    },
+    {
+      "id": "1090081333054804058",
+      "nome": "• Colíder de Guilda",
+      "cor": "#a10202",
+      "posicao": 74
+    },
+    {
+      "id": "1090081385680752713",
+      "nome": "• Comandante",
+      "cor": "#800101",
+      "posicao": 73
+    },
+    {
+      "id": "1090081405570138152",
+      "nome": "• Paladino",
+      "cor": "#740000",
+      "posicao": 72
+    },
+    {
+      "id": "1090081430895337604",
+      "nome": "• Guarda Real",
+      "cor": "#5a0000",
+      "posicao": 71
+    },
+    {
+      "id": "1090081486763470908",
+      "nome": "• Cavaleiro Real",
+      "cor": "#420404",
+      "posicao": 70
+    },
+    {
+      "id": "1090081515070820472",
+      "nome": "• Assassino de Elite",
+      "cor": "#501010",
+      "posicao": 69
+    },
+    {
+      "id": "1090081598952702022",
+      "nome": "• Assassino",
+      "cor": "#661a1a",
+      "posicao": 68
+    },
+    {
+      "id": "1090081626790318090",
+      "nome": "• Bárbaro",
+      "cor": "#802020",
+      "posicao": 67
+    },
+    {
+      "id": "1090081736211308545",
+      "nome": "• Cavaleiro",
+      "cor": "#973030",
+      "posicao": 66
+    },
+    {
+      "id": "1090081759942676480",
+      "nome": "• Guarda",
+      "cor": "#b34141",
+      "posicao": 65
+    },
+    {
+      "id": "1090081863793660014",
+      "nome": "• Lanceiro",
+      "cor": "#d15757",
+      "posicao": 64
+    },
+    {
+      "id": "1090081905417916487",
+      "nome": "• Soldado",
+      "cor": "#e76d6d",
+      "posicao": 63
+    },
+    {
+      "id": "1090081930046865421",
+      "nome": "• Arqueiro",
+      "cor": "#aa5555",
+      "posicao": 62
+    },
+    {
+      "id": "1090081988939100240",
+      "nome": "• Aprendiz",
+      "cor": "#864a4a",
+      "posicao": 61
+    },
+    {
+      "id": "1090082022329950229",
+      "nome": "• Escudeiro",
+      "cor": "#6e3b3b",
+      "posicao": 60
+    },
+    {
+      "id": "1090082057373372516",
+      "nome": "• Subalterno",
+      "cor": "#532b2b",
+      "posicao": 59
+    },
+    {
+      "id": "938174084188110928",
+      "nome": "• Master",
+      "cor": "#ac0a00",
+      "posicao": 58
+    },
+    {
+      "id": "1071759983596797993",
+      "nome": "• Diamond",
+      "cor": "#60aafd",
+      "posicao": 57
+    },
+    {
+      "id": "1071759811135414302",
+      "nome": "• Ruby",
+      "cor": "#f85d91",
+      "posicao": 56
+    },
+    {
+      "id": "1090042376057258125",
+      "nome": "• Saphire",
+      "cor": "#0e76f1",
+      "posicao": 55
+    },
+    {
+      "id": "1071758405779329034",
+      "nome": "• Emerald",
+      "cor": "#14fa6b",
+      "posicao": 54
+    },
+    {
+      "id": "1090042953654861936",
+      "nome": "• Amethyst",
+      "cor": "#9642f3",
+      "posicao": 53
+    },
+    {
+      "id": "1071759621762592768",
+      "nome": "• Platinum",
+      "cor": "#747474",
+      "posicao": 52
+    },
+    {
+      "id": "1071759375607287818",
+      "nome": "• Gold",
+      "cor": "#f1c40f",
+      "posicao": 51
+    },
+    {
+      "id": "1071759210108436481",
+      "nome": "• Silver",
+      "cor": "#aca9a9",
+      "posicao": 50
+    },
+    {
+      "id": "1071758740224749601",
+      "nome": "• Copper",
+      "cor": "#e67e22",
+      "posicao": 49
+    },
+    {
+      "id": "1071701191785975890",
+      "nome": "• Bronze",
+      "cor": "#8b5757",
+      "posicao": 48
+    },
+    {
+      "id": "1090744580619632681",
+      "nome": "• Conquistadores",
+      "cor": "#8127be",
+      "posicao": 47
+    },
+    {
+      "id": "874475515166216273",
+      "nome": "• Exército",
+      "cor": "#027a2a",
+      "posicao": 46
+    },
+    {
+      "id": "874475520333578310",
+      "nome": "• Marinha",
+      "cor": "#5eadf5",
+      "posicao": 45
+    },
+    {
+      "id": "874475517103976478",
+      "nome": "• Aeronáutica",
+      "cor": "#d6fa28",
+      "posicao": 44
+    },
+    {
+      "id": "1090063773630484490",
+      "nome": "• Mercenários",
+      "cor": "#fa3838",
+      "posicao": 43
+    },
+    {
+      "id": "879845960052789288",
+      "nome": "• Recruta",
+      "cor": "#fbedaf",
+      "posicao": 42
+    },
+    {
+      "id": "864830866052218892",
+      "nome": "• Criador de Conteúdo",
+      "cor": "#ff7300",
+      "posicao": 41
+    },
+    {
+      "id": "878786787865161739",
+      "nome": "• BOTS",
+      "cor": "#f8f8f9",
+      "posicao": 40
+    },
+    {
+      "id": "998456717115396167",
+      "nome": "• Traidor",
+      "cor": "#1b9844",
+      "posicao": 39
+    },
+    {
+      "id": "1000879872752750702",
+      "nome": "• 1º Campeão",
+      "cor": "#e52014",
+      "posicao": 38
+    },
+    {
+      "id": "1070563963391193108",
+      "nome": "• Competidor",
+      "cor": "#3498db",
+      "posicao": 37
+    },
+    {
+      "id": "1082769040163999835",
+      "nome": "• Jogos",
+      "cor": "#50155d",
+      "posicao": 36
+    },
+    {
+      "id": "1108152603109494945",
+      "nome": "• Mudae",
+      "cor": "#9b59b6",
+      "posicao": 35
+    },
+    {
+      "id": "1118737458331390022",
+      "nome": "• DreamTeam",
+      "cor": "#11806a",
+      "posicao": 34
+    },
+    {
+      "id": "1118737944556077211",
+      "nome": "• Myuu",
+      "cor": "#f1c40f",
+      "posicao": 33
+    },
+    {
+      "id": "981723654188589069",
+      "nome": "🤖 • General Probot",
+      "cor": "#000000",
+      "posicao": 32
+    },
+    {
+      "id": "878702656749731853",
+      "nome": "🤖 • Almirante Koya",
+      "cor": "#000000",
+      "posicao": 31
+    },
+    {
+      "id": "876914024846098504",
+      "nome": "DISBOARD.org",
+      "cor": "#000000",
+      "posicao": 30
+    },
+    {
+      "id": "1078840401416421481",
+      "nome": "🤖 • Dyno",
+      "cor": "#000000",
+      "posicao": 29
+    },
+    {
+      "id": "881560718258880524",
+      "nome": "🤖 • Sargento Tracker",
+      "cor": "#000000",
+      "posicao": 28
+    },
+    {
+      "id": "882329586975789098",
+      "nome": "🤖 • Taifeira Loritta",
+      "cor": "#000000",
+      "posicao": 27
+    },
+    {
+      "id": "990873228455063564",
+      "nome": "🤖 • Guarda Carl",
+      "cor": "#000000",
+      "posicao": 26
+    },
+    {
+      "id": "1077299960304898131",
+      "nome": "Rio Bot",
+      "cor": "#000000",
+      "posicao": 25
+    },
+    {
+      "id": "1008082363680555180",
+      "nome": "🤖 • Cabo Top",
+      "cor": "#000000",
+      "posicao": 24
+    },
+    {
+      "id": "1085031922918506578",
+      "nome": "DreamTeam",
+      "cor": "#000000",
+      "posicao": 23
+    },
+    {
+      "id": "1021983250429792337",
+      "nome": "• Aviso",
+      "cor": "#d3f242",
+      "posicao": 22
+    },
+    {
+      "id": "1073042000770764800",
+      "nome": "• Campeão da Arena",
+      "cor": "#f1c40f",
+      "posicao": 21
+    },
+    {
+      "id": "1074877890396692592",
+      "nome": "• Campeão Assassino",
+      "cor": "#ff0000",
+      "posicao": 20
+    },
+    {
+      "id": "1078874847385489408",
+      "nome": "• Campeões Duo",
+      "cor": "#f1c40f",
+      "posicao": 19
+    },
+    {
+      "id": "1270759164498415646",
+      "nome": "Assassino de Mula",
+      "cor": "#b31010",
+      "posicao": 18
+    },
+    {
+      "id": "1087868417345859755",
+      "nome": "GarticMod",
+      "cor": "#3498db",
+      "posicao": 17
+    },
+    {
+      "id": "1096085595085869160",
+      "nome": "Needle",
+      "cor": "#000000",
+      "posicao": 16
+    },
+    {
+      "id": "1096096428671119514",
+      "nome": "Thread-Watcher",
+      "cor": "#000000",
+      "posicao": 15
+    },
+    {
+      "id": "1096104005693878286",
+      "nome": "Sapphire",
+      "cor": "#000000",
+      "posicao": 14
+    },
+    {
+      "id": "1206351747648331796",
+      "nome": "Muted",
+      "cor": "#979c9f",
+      "posicao": 13
+    },
+    {
+      "id": "1228049171991363615",
+      "nome": "Embed Generator",
+      "cor": "#000000",
+      "posicao": 12
+    },
+    {
+      "id": "1229809724317499456",
+      "nome": "Discord Me",
+      "cor": "#000000",
+      "posicao": 11
+    },
+    {
+      "id": "1235632919473684541",
+      "nome": "peach",
+      "cor": "#e74c3c",
+      "posicao": 10
+    },
+    {
+      "id": "1236766841117081675",
+      "nome": "Jockie Music",
+      "cor": "#000000",
+      "posicao": 9
+    },
+    {
+      "id": "1237739899285672049",
+      "nome": "Mudae",
+      "cor": "#000000",
+      "posicao": 8
+    },
+    {
+      "id": "1429199867762184215",
+      "nome": "wargrow",
+      "cor": "#000000",
+      "posicao": 7
+    },
+    {
+      "id": "1536753214005846016",
+      "nome": "🔇 WARN 1",
+      "cor": "#ce5a5a",
+      "posicao": 6
+    },
+    {
+      "id": "1536753377931698257",
+      "nome": "🔇 WARN 2",
+      "cor": "#c12c2c",
+      "posicao": 5
+    },
+    {
+      "id": "1536753460350029914",
+      "nome": "🔇 WARN 3",
+      "cor": "#620000",
+      "posicao": 4
+    },
+    {
+      "id": "1538930349629771787",
+      "nome": "tico e teco",
+      "cor": "#e67e22",
+      "posicao": 3
+    },
+    {
+      "id": "1540388967008960514",
+      "nome": "Orator",
+      "cor": "#000000",
+      "posicao": 2
+    },
+    {
+      "id": "1540809945199677460",
+      "nome": "Fundador das Ligas",
+      "cor": "#000000",
+      "posicao": 1
+    },
+    {
+      "id": "849696655510863914",
+      "nome": "@everyone",
+      "cor": "#000000",
+      "posicao": 0
+    }
+  ],
+  "totalCanais": 90,
+  "canais": [
+    {
+      "id": "866812121769050142",
+      "nome": "🚨・Reunião",
+      "tipo": "GuildVoice",
+      "posicao": 0,
+      "categoriaId": "854361525530394634"
+    },
+    {
+      "id": "1228032377830248492",
+      "nome": "🚧・administração",
+      "tipo": "GuildText",
+      "posicao": 0,
+      "categoriaId": "854361525530394634"
+    },
+    {
+      "id": "854361525530394634",
+      "nome": "🗃 • Administração",
+      "tipo": "GuildCategory",
+      "posicao": 0,
+      "categoriaId": null
+    },
+    {
+      "id": "875796191852511383",
+      "nome": "🌎 • Servidor",
+      "tipo": "GuildCategory",
+      "posicao": 1,
+      "categoriaId": null
+    },
+    {
+      "id": "874795217121849394",
+      "nome": "🔧・comandos-staff",
+      "tipo": "GuildText",
+      "posicao": 1,
+      "categoriaId": "854361525530394634"
+    },
+    {
+      "id": "1228039399741325413",
+      "nome": "🔉・Call Staff",
+      "tipo": "GuildVoice",
+      "posicao": 1,
+      "categoriaId": "854361525530394634"
+    },
+    {
+      "id": "1428493952746524784",
+      "nome": "📞・atendimento",
+      "tipo": "GuildVoice",
+      "posicao": 2,
+      "categoriaId": "875794734789050408"
+    },
+    {
+      "id": "1540035587820753016",
+      "nome": "🔄・atualização-liga",
+      "tipo": "GuildText",
+      "posicao": 2,
+      "categoriaId": "854361525530394634"
+    },
+    {
+      "id": "875794734789050408",
+      "nome": "☎ • Suporte",
+      "tipo": "GuildCategory",
+      "posicao": 2,
+      "categoriaId": null
+    },
+    {
+      "id": "1228049854022947007",
+      "nome": "📝・anotações",
+      "tipo": "GuildText",
+      "posicao": 3,
+      "categoriaId": "854361525530394634"
+    },
+    {
+      "id": "854357404506783766",
+      "nome": "🌍 • war¹",
+      "tipo": "GuildVoice",
+      "posicao": 3,
+      "categoriaId": "849698902634004510"
+    },
+    {
+      "id": "1539916012990759022",
+      "nome": "🌍 • war²",
+      "tipo": "GuildVoice",
+      "posicao": 4,
+      "categoriaId": "849698902634004510"
+    },
+    {
+      "id": "849698902634004510",
+      "nome": "🌍 • WAR",
+      "tipo": "GuildCategory",
+      "posicao": 4,
+      "categoriaId": null
+    },
+    {
+      "id": "1541431077162193007",
+      "nome": "📝・anotações",
+      "tipo": "GuildText",
+      "posicao": 4,
+      "categoriaId": "854361525530394634"
+    },
+    {
+      "id": "1539916123171066031",
+      "nome": "🌍 • war³",
+      "tipo": "GuildVoice",
+      "posicao": 5,
+      "categoriaId": "849698902634004510"
+    },
+    {
+      "id": "1082774011676729365",
+      "nome": "🖼・imagens",
+      "tipo": "GuildText",
+      "posicao": 5,
+      "categoriaId": "854361525530394634"
+    },
+    {
+      "id": "999362487780647112",
+      "nome": "🏅 • Disputas",
+      "tipo": "GuildCategory",
+      "posicao": 5,
+      "categoriaId": null
+    },
+    {
+      "id": "882041791669473290",
+      "nome": "📨・convites",
+      "tipo": "GuildText",
+      "posicao": 6,
+      "categoriaId": "854361525530394634"
+    },
+    {
+      "id": "1539916367346532453",
+      "nome": "🌍 • war⁴",
+      "tipo": "GuildVoice",
+      "posicao": 6,
+      "categoriaId": "849698902634004510"
+    },
+    {
+      "id": "1229777065532985466",
+      "nome": "🎮・diversos",
+      "tipo": "GuildCategory",
+      "posicao": 7,
+      "categoriaId": null
+    },
+    {
+      "id": "1531349460674809866",
+      "nome": "🌍 • war dark",
+      "tipo": "GuildVoice",
+      "posicao": 7,
+      "categoriaId": "849698902634004510"
+    },
+    {
+      "id": "1079629700885913650",
+      "nome": "📋・log",
+      "tipo": "GuildText",
+      "posicao": 7,
+      "categoriaId": "854361525530394634"
+    },
+    {
+      "id": "1539916486645383210",
+      "nome": "🌍 • war dark²",
+      "tipo": "GuildVoice",
+      "posicao": 8,
+      "categoriaId": "849698902634004510"
+    },
+    {
+      "id": "1529523610321162300",
+      "nome": "📋・log",
+      "tipo": "GuildText",
+      "posicao": 8,
+      "categoriaId": "854361525530394634"
+    },
+    {
+      "id": "1089974425119641713",
+      "nome": "🤖・bots",
+      "tipo": "GuildCategory",
+      "posicao": 8,
+      "categoriaId": null
+    },
+    {
+      "id": "1535993240811999363",
+      "nome": "📝・anotações-bot",
+      "tipo": "GuildText",
+      "posicao": 9,
+      "categoriaId": "854361525530394634"
+    },
+    {
+      "id": "1238469475402252368",
+      "nome": "AFK",
+      "tipo": "GuildCategory",
+      "posicao": 9,
+      "categoriaId": null
+    },
+    {
+      "id": "1539916636742483968",
+      "nome": "👥 • war em dupla",
+      "tipo": "GuildVoice",
+      "posicao": 9,
+      "categoriaId": "849698902634004510"
+    },
+    {
+      "id": "1228294929546219530",
+      "nome": "🔔・avisos",
+      "tipo": "GuildNews",
+      "posicao": 10,
+      "categoriaId": "875796191852511383"
+    },
+    {
+      "id": "1539916741079990322",
+      "nome": "👥 • war em dupla",
+      "tipo": "GuildVoice",
+      "posicao": 10,
+      "categoriaId": "849698902634004510"
+    },
+    {
+      "id": "854365038911160420",
+      "nome": "📋・código-de-conduta",
+      "tipo": "GuildText",
+      "posicao": 11,
+      "categoriaId": "875796191852511383"
+    },
+    {
+      "id": "1532414401624412162",
+      "nome": "☕・cafeteria",
+      "tipo": "GuildVoice",
+      "posicao": 11,
+      "categoriaId": "1229777065532985466"
+    },
+    {
+      "id": "1324278999169368095",
+      "nome": "👥・recrutas",
+      "tipo": "GuildText",
+      "posicao": 12,
+      "categoriaId": "875796191852511383"
+    },
+    {
+      "id": "1228828648782434424",
+      "nome": "🎬・cinema",
+      "tipo": "GuildVoice",
+      "posicao": 12,
+      "categoriaId": "1229777065532985466"
+    },
+    {
+      "id": "1067947219216515186",
+      "nome": "📖・guia",
+      "tipo": "GuildText",
+      "posicao": 13,
+      "categoriaId": "875796191852511383"
+    },
+    {
+      "id": "1531985903612858510",
+      "nome": "⛏・Minecraft",
+      "tipo": "GuildVoice",
+      "posicao": 13,
+      "categoriaId": "1229777065532985466"
+    },
+    {
+      "id": "1428495263223250964",
+      "nome": "🎲 ・BusinessTour",
+      "tipo": "GuildVoice",
+      "posicao": 14,
+      "categoriaId": "1229777065532985466"
+    },
+    {
+      "id": "1228279699231477812",
+      "nome": "📊・enquetes",
+      "tipo": "GuildText",
+      "posicao": 14,
+      "categoriaId": "875796191852511383"
+    },
+    {
+      "id": "1429123191451684945",
+      "nome": "💡・pedidos",
+      "tipo": "GuildText",
+      "posicao": 15,
+      "categoriaId": "875796191852511383"
+    },
+    {
+      "id": "1428495328671432754",
+      "nome": "🎴 ・Plato",
+      "tipo": "GuildVoice",
+      "posicao": 15,
+      "categoriaId": "1229777065532985466"
+    },
+    {
+      "id": "1428495343972126720",
+      "nome": "🕵 ・Codenames",
+      "tipo": "GuildVoice",
+      "posicao": 16,
+      "categoriaId": "1229777065532985466"
+    },
+    {
+      "id": "1257739995255537674",
+      "nome": "📥・download-war",
+      "tipo": "GuildText",
+      "posicao": 16,
+      "categoriaId": "875796191852511383"
+    },
+    {
+      "id": "1428488591918628934",
+      "nome": "🔪 ・AmongUs",
+      "tipo": "GuildVoice",
+      "posicao": 17,
+      "categoriaId": "1229777065532985466"
+    },
+    {
+      "id": "1068044448128307230",
+      "nome": "💻・fórum",
+      "tipo": "GuildForum",
+      "posicao": 17,
+      "categoriaId": "875796191852511383"
+    },
+    {
+      "id": "1071102469372911666",
+      "nome": "🐴 • estábulo",
+      "tipo": "GuildVoice",
+      "posicao": 18,
+      "categoriaId": "1238469475402252368"
+    },
+    {
+      "id": "874794069073739816",
+      "nome": "📩・abrir-ticket",
+      "tipo": "GuildText",
+      "posicao": 18,
+      "categoriaId": "875794734789050408"
+    },
+    {
+      "id": "1541557958633070653",
+      "nome": "👥 • war em dupla",
+      "tipo": "GuildVoice",
+      "posicao": 19,
+      "categoriaId": "849698902634004510"
+    },
+    {
+      "id": "1428490308387082370",
+      "nome": "👮・corregedoria",
+      "tipo": "GuildText",
+      "posicao": 19,
+      "categoriaId": "875794734789050408"
+    },
+    {
+      "id": "1428490457478070364",
+      "nome": "🔔・sentenças",
+      "tipo": "GuildText",
+      "posicao": 20,
+      "categoriaId": "875794734789050408"
+    },
+    {
+      "id": "1083224204306038815",
+      "nome": "🎓・estratégias",
+      "tipo": "GuildText",
+      "posicao": 21,
+      "categoriaId": "849698902634004510"
+    },
+    {
+      "id": "881960444070350919",
+      "nome": "🚫・regras-liga",
+      "tipo": "GuildText",
+      "posicao": 22,
+      "categoriaId": "849698902634004510"
+    },
+    {
+      "id": "1538372588240244818",
+      "nome": "🌙・dark-war",
+      "tipo": "GuildText",
+      "posicao": 23,
+      "categoriaId": "849698902634004510"
+    },
+    {
+      "id": "849696656730357762",
+      "nome": "💬・chat-de-guerra",
+      "tipo": "GuildText",
+      "posicao": 24,
+      "categoriaId": "849698902634004510"
+    },
+    {
+      "id": "871900273545723914",
+      "nome": "📻・ultima-chamada",
+      "tipo": "GuildText",
+      "posicao": 25,
+      "categoriaId": "849698902634004510"
+    },
+    {
+      "id": "1429504377395351854",
+      "nome": "🏆・campeonatos",
+      "tipo": "GuildText",
+      "posicao": 26,
+      "categoriaId": "999362487780647112"
+    },
+    {
+      "id": "1079671915431608372",
+      "nome": "🎀・hall-da-fama",
+      "tipo": "GuildText",
+      "posicao": 27,
+      "categoriaId": "999362487780647112"
+    },
+    {
+      "id": "1090178120910389349",
+      "nome": "🔰・patentes",
+      "tipo": "GuildText",
+      "posicao": 28,
+      "categoriaId": "999362487780647112"
+    },
+    {
+      "id": "1071976981924687912",
+      "nome": "📸・prints",
+      "tipo": "GuildText",
+      "posicao": 29,
+      "categoriaId": "999362487780647112"
+    },
+    {
+      "id": "1538373861505237002",
+      "nome": "📲・prints-dark-war",
+      "tipo": "GuildText",
+      "posicao": 30,
+      "categoriaId": "999362487780647112"
+    },
+    {
+      "id": "1531990722889256961",
+      "nome": "💬・chat",
+      "tipo": "GuildText",
+      "posicao": 31,
+      "categoriaId": "1229777065532985466"
+    },
+    {
+      "id": "981732721678241792",
+      "nome": "🌆・galeria",
+      "tipo": "GuildText",
+      "posicao": 32,
+      "categoriaId": "1229777065532985466"
+    },
+    {
+      "id": "1441499321810813001",
+      "nome": "💰・mercado",
+      "tipo": "GuildText",
+      "posicao": 33,
+      "categoriaId": "1229777065532985466"
+    },
+    {
+      "id": "1229777454332117073",
+      "nome": "🔧・comandos",
+      "tipo": "GuildText",
+      "posicao": 34,
+      "categoriaId": "1089974425119641713"
+    },
+    {
+      "id": "1107442508058857532",
+      "nome": "🎭・mudae",
+      "tipo": "GuildText",
+      "posicao": 35,
+      "categoriaId": "1089974425119641713"
+    },
+    {
+      "id": "1119609429025898516",
+      "nome": "⚽・dreamteam",
+      "tipo": "GuildText",
+      "posicao": 36,
+      "categoriaId": "1089974425119641713"
+    },
+    {
+      "id": "1540784509421756497",
+      "nome": "Meu Top 10 de habilidade no servidor",
+      "tipo": "GuildPublicThread",
+      "categoriaId": "1068044448128307230"
+    },
+    {
+      "id": "1540891764443971696",
+      "nome": "TOP'S 10  DO SERVIDOR ( Opnião de todos)",
+      "tipo": "GuildPublicThread",
+      "categoriaId": "1068044448128307230"
+    },
+    {
+      "id": "1108291181684723742",
+      "nome": "📋・comandos",
+      "tipo": "GuildPublicThread",
+      "categoriaId": "1107442508058857532"
+    },
+    {
+      "id": "1108291456722014219",
+      "nome": "💍・rolagens",
+      "tipo": "GuildPublicThread",
+      "categoriaId": "1107442508058857532"
+    },
+    {
+      "id": "1538205653535826023",
+      "nome": "liberaram kamikaze?",
+      "tipo": "GuildPublicThread",
+      "categoriaId": "1428490308387082370"
+    },
+    {
+      "id": "1538668535872495696",
+      "nome": "Só olhar o território da França. Espero",
+      "tipo": "GuildPublicThread",
+      "categoriaId": "1428490308387082370"
+    },
+    {
+      "id": "1535677980192280607",
+      "nome": "registro-marcoalmeida00-1738",
+      "tipo": "GuildPublicThread",
+      "categoriaId": "1429504377395351854"
+    },
+    {
+      "id": "1536180228580450436",
+      "nome": "registro-bruno_mardegan-7128",
+      "tipo": "GuildPrivateThread",
+      "categoriaId": "1429504377395351854"
+    },
+    {
+      "id": "1537563101090545814",
+      "nome": "registro-maikolyu-9579",
+      "tipo": "GuildPrivateThread",
+      "categoriaId": "1429504377395351854"
+    },
+    {
+      "id": "1537563143012884560",
+      "nome": "registro-maikolyu-9615",
+      "tipo": "GuildPrivateThread",
+      "categoriaId": "1429504377395351854"
+    },
+    {
+      "id": "1537563186495098920",
+      "nome": "registro-maikolyu-9975",
+      "tipo": "GuildPrivateThread",
+      "categoriaId": "1429504377395351854"
+    },
+    {
+      "id": "1537563486446551141",
+      "nome": "registro-maikolyu-1522",
+      "tipo": "GuildPrivateThread",
+      "categoriaId": "1429504377395351854"
+    },
+    {
+      "id": "1539723620794896525",
+      "nome": "registro-xxx.xx.1-7666",
+      "tipo": "GuildPrivateThread",
+      "categoriaId": "1429504377395351854"
+    },
+    {
+      "id": "1539725684258377810",
+      "nome": "registro-mraoba-9614",
+      "tipo": "GuildPrivateThread",
+      "categoriaId": "1429504377395351854"
+    },
+    {
+      "id": "1539725697818431628",
+      "nome": "registro-mraoba-2908",
+      "tipo": "GuildPrivateThread",
+      "categoriaId": "1429504377395351854"
+    },
+    {
+      "id": "1539732828944597016",
+      "nome": "registro-xxx.xx.1-3121",
+      "tipo": "GuildPrivateThread",
+      "categoriaId": "1429504377395351854"
+    },
+    {
+      "id": "1539732871038902333",
+      "nome": "registro-dh_521-3027",
+      "tipo": "GuildPrivateThread",
+      "categoriaId": "1429504377395351854"
+    },
+    {
+      "id": "1539732888784994304",
+      "nome": "registro-dh_521-7381",
+      "tipo": "GuildPrivateThread",
+      "categoriaId": "1429504377395351854"
+    },
+    {
+      "id": "1539926933909938277",
+      "nome": "🌐・Liga das Nações",
+      "tipo": "GuildPublicThread",
+      "categoriaId": "1429504377395351854"
+    },
+    {
+      "id": "1539927161820024854",
+      "nome": "👑・Imperador do Mês",
+      "tipo": "GuildPublicThread",
+      "categoriaId": "1429504377395351854"
+    },
+    {
+      "id": "1539927343005433908",
+      "nome": "💣・Guerra Civil",
+      "tipo": "GuildPublicThread",
+      "categoriaId": "1429504377395351854"
+    },
+    {
+      "id": "1540835919547080777",
+      "nome": "New Thread",
+      "tipo": "GuildPublicThread",
+      "categoriaId": "1429504377395351854"
+    },
+    {
+      "id": "1540869291228926004",
+      "nome": "🌙・Dark War",
+      "tipo": "GuildPublicThread",
+      "categoriaId": "1429504377395351854"
+    },
+    {
+      "id": "1541503423848124423",
+      "nome": "New Thread",
+      "tipo": "GuildPublicThread",
+      "categoriaId": "1429504377395351854"
+    },
+    {
+      "id": "1541646230864793691",
+      "nome": "registro-tarcosbelmonts-3680",
+      "tipo": "GuildPrivateThread",
+      "categoriaId": "1429504377395351854"
+    }
+  ]
+}

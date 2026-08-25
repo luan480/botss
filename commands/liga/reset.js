@@ -1,0 +1,83 @@
+/* ========================================================================
+   ARQUIVO: commands/liga/reset.js (COM BACKUP AUTOMÁTICO NO HISTÓRICO)
+   ======================================================================== */
+
+const { SlashCommandBuilder, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const path = require('path');
+const { safeReadJson, safeWriteJson } = require('./utils/helpers.js');
+
+module.exports = {
+    data: new SlashCommandBuilder()
+        .setName('reset')
+        .setDescription('Encerra a temporada da liga, salva o Top 3 no Histórico e zera os pontos.')
+        .addStringOption(opt => 
+            opt.setName('nome_temporada')
+               .setDescription('Dê um nome para o backup. Ex: Temporada 1, Agosto 2026, etc.')
+               .setRequired(true)
+        )
+        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+    
+    async execute(interaction) {
+        const nomeTemporada = interaction.options.getString('nome_temporada');
+
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId('confirmar_reset')
+                .setLabel('Sim, encerrar temporada e resetar')
+                .setStyle(ButtonStyle.Danger),
+            new ButtonBuilder()
+                .setCustomId('cancelar_reset')
+                .setLabel('Cancelar')
+                .setStyle(ButtonStyle.Secondary)
+        );
+
+        const msg = await interaction.reply({
+            content: `⚠️ **Atenção Comandante!** Você está prestes a encerrar a **${nomeTemporada}**.\nIsso vai salvar o Top 3 no Hall da Fama e zerar **TODA** a pontuação da liga atual. Confirma?`,
+            components: [row],
+            ephemeral: true
+        });
+
+        const filter = (i) => i.user.id === interaction.user.id;
+        try {
+            const confirmation = await msg.awaitMessageComponent({ filter, time: 15000 });
+
+            if (confirmation.customId === 'confirmar_reset') {
+                const pontosPath = path.join(__dirname, 'pontuacao.json');
+                const historicoPath = path.join(__dirname, '..', 'promocao', 'historico.json');
+
+                // 1. LÊ OS PONTOS ATUAIS E O HISTÓRICO
+                const pontuacao = safeReadJson(pontosPath);
+                const historico = safeReadJson(historicoPath);
+
+                // 2. TRANSFORMA E ORDENA O RANKING (Do maior para o menor)
+                const rankingArray = Object.entries(pontuacao).sort((a, b) => b[1] - a[1]);
+                
+                let backupTexto = `\n**📅 ${nomeTemporada}**\n`;
+
+                if (rankingArray.length > 0) {
+                    const top1 = rankingArray[0] ? `🥇 1º <@${rankingArray[0][0]}> (${rankingArray[0][1]} pts)` : '';
+                    const top2 = rankingArray[1] ? `🥈 2º <@${rankingArray[1][0]}> (${rankingArray[1][1]} pts)` : '';
+                    const top3 = rankingArray[2] ? `🥉 3º <@${rankingArray[2][0]}> (${rankingArray[2][1]} pts)` : '';
+                    
+                    backupTexto += `${top1}\n${top2}\n${top3}\n`;
+                } else {
+                    backupTexto += `*Nenhum competidor pontuou nesta temporada.*\n`;
+                }
+
+                // 3. SALVA NO HISTORICO.JSON
+                if (!Array.isArray(historico.liga)) historico.liga = [];
+                historico.liga.push(backupTexto);
+                safeWriteJson(historicoPath, historico);
+
+                // 4. ZERA O RANKING ATUAL
+                safeWriteJson(pontosPath, {});
+                
+                await confirmation.update({ content: `✅ **Temporada Encerrada!**\nOs dados da **${nomeTemporada}** foram eternizados no Hall da Fama e as pontuações atuais foram zeradas.`, components: [] });
+            } else if (confirmation.customId === 'cancelar_reset') {
+                await confirmation.update({ content: '❌ Ação cancelada pelo comando.', components: [] });
+            }
+        } catch (e) {
+            await interaction.editReply({ content: '⌛ Confirmação não recebida em 15 segundos. Ação cancelada.', components: [] });
+        }
+    }
+};

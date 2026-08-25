@@ -1,0 +1,279 @@
+{
+  "bom dia": [
+    "Bom dia, soldado! ☀️ Apresentar-se para a batalha!",
+    "Dia! Já verificou seus territórios hoje?",
+    "Bom dia! Café na mão e estratégia na mente.",
+    "Sentido! Bom dia a todos do batalhão.",
+    "O sol nasceu e a guerra continua. Bom dia!",
+    "Acorda, recruta! O dia está lindo para conquistar a Ásia."
+  ],
+  "boa tarde": [
+    "Boa tarde! O fronte de batalha está calmo... por enquanto.",
+    "Tarde! Hora de conquistar a Ásia?",
+    "Boa tarde, combatente! 🌤️",
+    "Já almoçou? Soldado de barriga vazia não para em pé.",
+    "Boa tarde! O servidor está movimentado hoje."
+  ],
+  "boa noite": [
+    "Boa noite! Descanse, amanhã a guerra continua. 🌙",
+    "Dispensado, soldado. Boa noite!",
+    "Boa noite! Cuidado com os ataques noturnos...",
+    "Cambio desligo. Boa noite. 💤",
+    "Durma com um olho aberto... seus territórios estão em perigo.",
+    "Até amanhã! Sonhe com a dominação mundial."
+  ],
+  "oi bot": [
+    "Olá! Estou pronto para servir o WorldWarBR. 🫡",
+    "E aí! Precisa de ajuda ou só quer conversar?",
+    "Positivo e operante! Olá.",
+    "Sou uma máquina de guerra e de conversa. Diga!",
+    "Ao seu dispor, comandante."
+  ],
+  "recruta": [
+    "Atenção com os novatos! Todos já foram recrutas um dia.",
+    "Recruta, verifique o canal <#1067947219216515186> para não fazer besteira!",
+    "Pagando 10 flexões agora, recruta!",
+    "Respeite a hierarquia! 🫡",
+    "Seja bem-vindo, recruta! Leia as regras ou vai para a solitária."
+  ],
+  "staff": [
+    "Precisa da Staff? Não marque à toa! Se for urgente, vá em <#874794069073739816>.",
+    "A Staff está de olho em tudo. 👀",
+    "Assuntos administrativos? Use o ticket em <#874794069073739816>.",
+    "Os Generais e Marechais estão observando...",
+    "Respeite a autoridade da Staff."
+  ],
+  "admin": [
+    "O comando está reunido. Precisa de algo? Abra um ticket: <#874794069073739816>.",
+    "Chamando o alto comando... 📡",
+    "Respeite os Oficiais e o General!"
+  ],
+  "denuncia": [
+    "Viu algo errado? Não fale aqui! Vá direto para a <#1428490308387082370>.",
+    "Denúncias devem ser feitas com provas na Corregedoria: <#1428490308387082370>.",
+    "Mantenha a ordem. Reporte infrações no canal correto.",
+    "X9? Não, aqui chamamos de Cidadão Consciente. Vá para a corregedoria."
+  ],
+  "zullu": [
+    "Assuntos sérios devem ser tratados via Ticket ou na Corregedoria.",
+    "Evite polêmicas no chat geral, soldado.",
+    "Se tiver algo a reportar, use os canais oficiais."
+  ],
+  "download": [
+    "Quer baixar o War? Acesse agora: <#1257739995255537674>.",
+    "O link oficial está na sala <#1257739995255537674>.",
+    "Prepare seu PC e baixe o jogo aqui: <#1257739995255537674>."
+  ],
+  "regras": [
+    "A guerra tem leis! Leia tudo em <#854365038911160420>.",
+    "Para evitar punições, consulte: <#854365038911160420>.",
+    "Não seja banido por bobeira. Leia as regras da Liga em <#881960444070350919>.",
+    "Regra é regra. Sem choro."
+  ],
+  "ticket": [
+    "Precisa de ajuda? Abra um ticket aqui: <#874794069073739816>.",
+    "Suporte, denúncias ou dúvidas? <#874794069073739816>.",
+    "A porta do quartel para reclamações é aqui: <#874794069073739816>."
+  ],
+  "patente": [
+    "Quer subir de patente? Confira os requisitos em <#1090178120910389349>.",
+    "A glória vem com o tempo. Veja as patentes em <#1090178120910389349>.",
+    "Trabalhe duro e será promovido! Detalhes: <#875795648614662216>.",
+    "Um dia você chega a General, soldado. Tenha fé."
+  ],
+  "aliança": [
+    "Alianças são temporárias... a traição é eterna. 🔪",
+    "Cuidado com quem você confia no tabuleiro.",
+    "Aliança só dura até o objetivo bater.",
+    "Vai confiar nele? Sei não hein...",
+    "Trato feito, trato desfeito. É a guerra."
+  ],
+  "dado": [
+    "🎲 Dado viciado ou falta de sorte?",
+    "A culpa é do algoritmo!",
+    "Se tirar 6 no dado de defesa é milagre.",
+    "Rola esse dado direito!",
+    "3x1 e perdeu? Acontece nas melhores famílias."
+  ],
+  "ataque": [
+    "A melhor defesa é o ataque!",
+    "Vai com tudo! ⚔️",
+    "Quantos exércitos você tem pra gastar?",
+    "Kamikaze neles!",
+    "Atacar com 1 exército é pedir pra morrer."
+  ],
+  "defesa": [
+    "Segura as pontas aí!",
+    "Defesa vermelha não falha (mentira, falha sim).",
+    "Reagrupa e defende!",
+    "🛡️ Muro de Berlim ativado.",
+    "Quem defende ganha jogo."
+  ],
+  "objetivo": [
+    "Não revele seu objetivo pra ninguém!",
+    "Meu objetivo é ver o caos.",
+    "Conquistar a Europa e a Oceania... ops, falei demais.",
+    "Foca no objetivo e esquece a vingança!",
+    "Se seu objetivo for destruir o azul, boa sorte."
+  ],
+  "war": [
+    "War é jogo de paciência e traição.",
+    "Bora uma partida? Entre nas calls de <#849698902634004510>.",
+    "World War BR: O melhor lugar pra destruir amizades. 🌍",
+    "War não é só sorte, é psicologia."
+  ],
+  "liga": [
+    "A Liga é só para os fortes. Veja o ranking: <#1429504377395351854>.",
+    "Quer competir? Acompanhe a <#1429581196173770852>.",
+    "Respeita quem tem troféu na Liga! 🏆",
+    "Os melhores generais estão na Liga."
+  ],
+  "vip": [
+    "Respeita o VIP! 😎",
+    "Quer ser VIP também? Apoie o servidor.",
+    "Área VIP é outro nível.",
+    "VIP tem regalias, e merece!"
+  ],
+  "lag": [
+    "É sua internet ou o servidor?",
+    "Reinicia o modem que volta.",
+    "Ping de 1000ms? Tá jogando da Lua?",
+    "Deve ser a operadora..."
+  ],
+  "f": [
+    "F",
+    "Soldado abatido. F.",
+    "Foi de base. F",
+    "Honras militares. F",
+    "Descanse em paz, guerreiro."
+  ],
+  "gg": [
+    "GG! Bom jogo.",
+    "GG IZI (brincadeira)",
+    "Foi uma honra batalhar com os senhores.",
+    "Vitória merecida! GG",
+    "Good Game!"
+  ],
+  "traidor": [
+    "Aqui a traição é punida com... mais dados!",
+    "🔪 Cuidado com as costas.",
+    "Todo mundo é traidor até provar o contrário.",
+    "Traição no War é estratégia, na vida é falha de caráter."
+  ],
+  "general": [
+    "Sentido! O General está na área.",
+    "Respeite a autoridade máxima.",
+    "Sim, senhor General! 🫡",
+    "General falou, tá falado."
+  ],
+  "evento": [
+    "Fique ligado em <#1228294929546219530> para os avisos de eventos!",
+    "Evento valendo VIP? Quero!",
+    "Participem dos eventos para ganhar medalhas!",
+    "Bora pro evento galera!"
+  ],
+  "call": [
+    "Entra na call aí: <#849698902634004510>",
+    "Bora call?",
+    "Onde tá a galera? Provavelmente em <#1228772042179084370>.",
+    "Sem call, sem estratégia."
+  ],
+  "asia": [
+    "Quem segura a Ásia ganha o jogo, dizem as lendas.",
+    "7 exércitos por turno... vale o risco?",
+    "Ásia é cemitério de exércitos."
+  ],
+  "oceania": [
+    "A famosa toca na Oceania.",
+    "Vai ficar só na Oceania acumulando exército?",
+    "Oceania: pequena mas perigosa."
+  ],
+  "europa": [
+    "Europa é o barril de pólvora do mapa.",
+    "Quem tem a Europa tem problemas.",
+    "5 exércitos, mas fronteira com todo mundo!"
+  ],
+  "america do sul": [
+    "O quintal do Brasil!",
+    "América do Sul é estratégica pra invadir o Norte.",
+    "Ninguém tira minha América do Sul!"
+  ],
+  "africa": [
+    "África é a porta de entrada para o caos.",
+    "Quem domina a África incomoda todo mundo.",
+    "3 exércitos fáceis, mas difícil de segurar."
+  ],
+  "mudae": [
+    "Vai rolar waifu ou husbando?",
+    "Minha waifu, tira o olho!",
+    "A sorte está lançada no <#1107442508058857532>.",
+    "Mudaeeee!"
+  ],
+  "gartic": [
+    "Isso é um desenho ou um garrancho?",
+    "Gartic time! Bora desenhar em <#1429792622765279450>.",
+    "Eu sabia essa, estava na ponta da língua!"
+  ],
+  "musica": [
+    "DJ, solta o som!",
+    "Quer música? Cola no canal de voz e chama o bot.",
+    "🎶 Aumenta o volume!",
+    "Nada melhor que um som pra relaxar depois da guerra."
+  ],
+  "ban": [
+    "O martelo do ban está coçando...",
+    "Cuidado, o ban vem a cavalo!",
+    "Quem pediu ban?",
+    "Respeita as regras pra não levar ban."
+  ],
+  "kkk": [
+    "Rindo de nervoso?",
+    "😂😂😂",
+    "Essa foi boa!",
+    "Risada de quem vai perder o jogo."
+  ],
+  "triste": [
+    "Fica triste não, na próxima você ganha.",
+    "Soldado ferido, mas não morto. Levanta a cabeça!",
+    "War é assim mesmo, um dia da caça, outro do caçador.",
+    "😢"
+  ],
+  "parabens": [
+    "Parabéns! 🎉",
+    "Aí sim! Mandou bem.",
+    "Merecido! 👏👏",
+    "Essa conquista merece uma medalha."
+  ],
+  "sextou": [
+    "Sextou com S de Sorte nos dados!",
+    "Hoje é dia de virar a noite no War.",
+    "Sextou! Cerveja (ou refri) e War.",
+    "Fim de semana chegou, preparem os tabuleiros."
+  ],
+  "booster": [
+    "Obrigado pelo boost! 🚀",
+    "Nossos boosters são a elite!",
+    "Quer ajudar o serve? Dê um boost e ganhe moral."
+  ],
+  "cor": [
+    "Quer mudar a cor do nick? Veja se seu cargo permite.",
+    "Cores vibrantes para soldados de elite.",
+    "Essa cor impõe respeito."
+  ],
+  "café": [
+    "Pausa para o cafézinho em <#1228827294521360404>.",
+    "Café: o combustível do general.",
+    "Aceito um gole ☕"
+  ],
+  "among us": [
+    "Tem um impostor entre nós...",
+    "Suspeito...",
+    "Vi ele entrando no duto!",
+    "Bora de Among na sala <#1428488591918628934>?"
+  ],
+  "codenames": [
+    "Cuidado com a palavra assassina!",
+    "Bora jogar Codenames em <#1428495343972126720>.",
+    "Conexão mental ativada."
+  ]
+}

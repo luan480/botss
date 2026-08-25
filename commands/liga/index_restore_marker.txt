@@ -1,0 +1,1 @@
+O index.js foi restaurado ao blob original eb499b85482dce91537a3f430a504144444eb5fa antes de qualquer correção mínima adicional.

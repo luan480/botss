@@ -1,17 +1,17 @@
 /* ========================================================================
    ARQUIVO: commands/promocao/historicoHandler.js
 
-   HALL DA FAMA — UM EVENTO REAL POR PÁGINA
+   WORLDWARBR — HALL DA FAMA PREMIUM
 
-   CORREÇÕES:
-   - Agrupa registros antigos que estavam salvos como linhas soltas.
-   - Liga/Imperador: 1 ano = 1 evento.
-   - Eventos: título + resultados = 1 evento.
-   - Records: todos os records históricos = 1 evento.
-   - Ignora linhas vazias como páginas.
-   - Paginação usa a quantidade de eventos reais.
-   - Mantém compatibilidade com registros novos em objeto.
-   - Hall privado/efêmero preservado.
+   RECURSOS:
+   - 1 evento real por página
+   - Agrupamento correto do histórico legado
+   - Liga/Imperador: 1 ano = 1 evento
+   - Eventos: título + resultados = 1 evento
+   - Records: conjunto histórico = 1 evento
+   - Compatível com registros novos em objeto
+   - Navegação premium com primeiro/anterior/página/próximo/fechar
+   - Resposta privada (ephemeral)
    ======================================================================== */
 
 const {
@@ -23,50 +23,36 @@ const {
 } = require('discord.js');
 
 const path = require('path');
-
 const { safeReadJson } = require('../liga/utils/helpers.js');
 
-
-// ========================================================================
-// CAMINHO
-// ========================================================================
-
-const HISTORICO_PATH = path.join(
-    __dirname,
-    'historico.json'
-);
-
-
-// ========================================================================
-// CATEGORIAS
-// ========================================================================
+const HISTORICO_PATH = path.join(__dirname, 'historico.json');
 
 const CATEGORIAS = {
     liga: {
-        titulo: '🏆 HALL DA FAMA — LIGA',
+        titulo: 'HALL DA FAMA — LIGA',
         cor: '#3498DB',
-        emoji: '🏆'
+        emoji: '🏆',
+        subtitulo: 'Campeões e destaques da Liga'
     },
-
     imperador: {
-        titulo: '👑 HALL DA FAMA — IMPERADORES',
+        titulo: 'HALL DA FAMA — IMPERADORES',
         cor: '#F1C40F',
-        emoji: '👑'
+        emoji: '👑',
+        subtitulo: 'Histórico dos Imperadores'
     },
-
     eventos: {
-        titulo: '⚔️ HALL DA FAMA — EVENTOS',
+        titulo: 'HALL DA FAMA — EVENTOS',
         cor: '#95A5A6',
-        emoji: '⚔️'
+        emoji: '⚔️',
+        subtitulo: 'Eventos e competições históricas'
     },
-
     records: {
-        titulo: '📊 HALL DA FAMA — RECORDS',
+        titulo: 'HALL DA FAMA — RECORDS',
         cor: '#E74C3C',
-        emoji: '📊'
+        emoji: '📊',
+        subtitulo: 'Grandes marcas do servidor'
     }
 };
-
 
 const NOMES_TIPOS = {
     semanal: '📅 Evento semanal',
@@ -75,11 +61,6 @@ const NOMES_TIPOS = {
     recorde: '📊 Recorde',
     destaque: '🌟 Destaque especial'
 };
-
-
-// ========================================================================
-// CARREGAR HISTÓRICO
-// ========================================================================
 
 function carregarHistorico() {
     const dados = safeReadJson(HISTORICO_PATH);
@@ -103,22 +84,13 @@ function carregarHistorico() {
     };
 }
 
-
-// ========================================================================
-// HELPERS DE TEXTO
-// ========================================================================
-
 function limparMarkdown(texto) {
-    return String(texto || '')
-        .replace(/\*\*/g, '')
-        .trim();
+    return String(texto || '').replace(/\*\*/g, '').trim();
 }
 
-function limitarCampo(valor) {
-    const texto = String(valor || '');
-    return texto.length <= 1024
-        ? texto
-        : `${texto.slice(0, 1021)}...`;
+function limitarTexto(texto, limite = 1024) {
+    const valor = String(texto || '');
+    return valor.length <= limite ? valor : `${valor.slice(0, limite - 3)}...`;
 }
 
 function ehCabecalhoAno(linha) {
@@ -126,41 +98,24 @@ function ehCabecalhoAno(linha) {
 }
 
 function extrairAno(linha) {
-    const match = String(linha || '').match(/(\d{4})/u);
-    return match ? match[1] : 'Ano histórico';
+    const encontrado = String(linha || '').match(/\d{4}/u);
+    return encontrado ? encontrado[0] : 'Histórico';
 }
 
 function ehTituloEventoAntigo(linha) {
     return /^[^\s]+\s+\*\*.+\*\*$/u.test(String(linha || '').trim());
 }
 
-
-// ========================================================================
-// NORMALIZAÇÃO DOS REGISTROS ANTIGOS
-// ========================================================================
-
 function normalizarRegistros(categoria, registros) {
     const eventos = [];
-
-    // ---------------------------------------------------------------
-    // LIGA / IMPERADOR
-    // O JSON antigo guarda:
-    //  **📅 2022**
-    //  • Janeiro: @alguem
-    //  • Fevereiro: @alguem
-    //  ...
-    // Cada ano deve virar uma única página.
-    // ---------------------------------------------------------------
 
     if (categoria === 'liga' || categoria === 'imperador') {
         let atual = null;
 
         for (const item of registros) {
-            if (typeof item === 'object' && item !== null) {
-                if (atual) {
-                    eventos.push(atual);
-                    atual = null;
-                }
+            if (item && typeof item === 'object') {
+                if (atual) eventos.push(atual);
+                atual = null;
                 eventos.push(item);
                 continue;
             }
@@ -173,7 +128,7 @@ function normalizarRegistros(categoria, registros) {
 
                 const ano = extrairAno(linha);
                 atual = {
-                    __historicoNormalizado: true,
+                    __normalizado: true,
                     tipo: 'ano',
                     ano,
                     nome: ano,
@@ -184,7 +139,7 @@ function normalizarRegistros(categoria, registros) {
 
             if (!atual) {
                 atual = {
-                    __historicoNormalizado: true,
+                    __normalizado: true,
                     tipo: 'legado',
                     nome: 'Histórico',
                     linhas: []
@@ -198,20 +153,13 @@ function normalizarRegistros(categoria, registros) {
         return eventos;
     }
 
-    // ---------------------------------------------------------------
-    // EVENTOS
-    // Título + resultados até o próximo título = 1 página.
-    // ---------------------------------------------------------------
-
     if (categoria === 'eventos') {
         let atual = null;
 
         for (const item of registros) {
-            if (typeof item === 'object' && item !== null) {
-                if (atual) {
-                    eventos.push(atual);
-                    atual = null;
-                }
+            if (item && typeof item === 'object') {
+                if (atual) eventos.push(atual);
+                atual = null;
                 eventos.push(item);
                 continue;
             }
@@ -223,11 +171,9 @@ function normalizarRegistros(categoria, registros) {
                 if (atual) eventos.push(atual);
 
                 atual = {
-                    __historicoNormalizado: true,
+                    __normalizado: true,
                     tipo: 'evento_antigo',
-                    nome: limparMarkdown(
-                        linha.replace(/^\S+\s+/u, '')
-                    ),
+                    nome: limparMarkdown(linha.replace(/^\S+\s+/u, '')),
                     emoji: linha.match(/^[^\s]+/u)?.[0] || '⚔️',
                     linhas: []
                 };
@@ -236,7 +182,7 @@ function normalizarRegistros(categoria, registros) {
 
             if (!atual) {
                 atual = {
-                    __historicoNormalizado: true,
+                    __normalizado: true,
                     tipo: 'evento_antigo',
                     nome: 'Evento histórico',
                     emoji: '⚔️',
@@ -251,24 +197,17 @@ function normalizarRegistros(categoria, registros) {
         return eventos;
     }
 
-    // ---------------------------------------------------------------
-    // RECORDS
-    // Todos os records antigos pertencem ao mesmo painel.
-    // ---------------------------------------------------------------
-
     if (categoria === 'records') {
         const linhas = registros
             .filter(item => typeof item === 'string')
             .map(limparMarkdown)
             .filter(Boolean);
 
-        const objetos = registros.filter(
-            item => typeof item === 'object' && item !== null
-        );
+        const objetos = registros.filter(item => item && typeof item === 'object');
 
         if (linhas.length) {
             eventos.push({
-                __historicoNormalizado: true,
+                __normalizado: true,
                 tipo: 'records_antigos',
                 nome: 'Records históricos',
                 linhas
@@ -279,205 +218,165 @@ function normalizarRegistros(categoria, registros) {
         return eventos;
     }
 
-    // Fallback
     return registros.filter(item => item !== null && item !== undefined && item !== '');
 }
 
-
-// ========================================================================
-// FORMATAR REGISTRO NOVO
-// ========================================================================
-
-function formatarRegistroNovo(registro) {
+function criarCamposRegistroNovo(registro) {
     const campos = [];
 
     if (registro.tipo) {
         campos.push({
             name: '🏷️ TIPO',
-            value: NOMES_TIPOS[registro.tipo] || registro.tipo,
+            value: NOMES_TIPOS[registro.tipo] || String(registro.tipo),
             inline: true
-        });
-    }
-
-    if (registro.participantes) {
-        campos.push({
-            name: '👥 PARTICIPANTES',
-            value: registro.participantes,
-            inline: false
-        });
-    }
-
-    if (registro.vencedor) {
-        campos.push({
-            name: '🥇 VENCEDOR',
-            value: registro.vencedor,
-            inline: true
-        });
-    }
-
-    if (registro.segundo) {
-        campos.push({
-            name: '🥈 2º LUGAR',
-            value: registro.segundo,
-            inline: true
-        });
-    }
-
-    if (registro.terceiro) {
-        campos.push({
-            name: '🥉 3º LUGAR',
-            value: registro.terceiro,
-            inline: true
-        });
-    }
-
-    if (registro.premio) {
-        campos.push({
-            name: '🎁 PRÊMIO',
-            value: registro.premio,
-            inline: true
-        });
-    }
-
-    if (registro.valor !== null && registro.valor !== undefined) {
-        campos.push({
-            name: '📊 VALOR',
-            value: String(registro.valor),
-            inline: true
-        });
-    }
-
-    if (registro.descricao) {
-        campos.push({
-            name: '📝 DESCRIÇÃO',
-            value: registro.descricao,
-            inline: false
-        });
-    }
-
-    if (registro.observacoes) {
-        campos.push({
-            name: '📌 OBSERVAÇÕES',
-            value: registro.observacoes,
-            inline: false
         });
     }
 
     if (registro.data) {
         campos.push({
             name: '📅 DATA',
-            value: registro.horario
-                ? `${registro.data} às ${registro.horario}`
-                : registro.data,
+            value: registro.horario ? `${registro.data} às ${registro.horario}` : String(registro.data),
             inline: true
         });
     }
 
-    return {
-        titulo: registro.nome || 'Evento histórico',
-        campos
-    };
+    if (registro.vencedor) {
+        campos.push({ name: '🥇 VENCEDOR', value: String(registro.vencedor), inline: true });
+    }
+
+    if (registro.segundo) {
+        campos.push({ name: '🥈 2º LUGAR', value: String(registro.segundo), inline: true });
+    }
+
+    if (registro.terceiro) {
+        campos.push({ name: '🥉 3º LUGAR', value: String(registro.terceiro), inline: true });
+    }
+
+    if (registro.premio) {
+        campos.push({ name: '🎁 PRÊMIO', value: String(registro.premio), inline: true });
+    }
+
+    if (registro.valor !== null && registro.valor !== undefined) {
+        campos.push({ name: '📊 VALOR', value: String(registro.valor), inline: true });
+    }
+
+    if (registro.participantes) {
+        campos.push({ name: '👥 PARTICIPANTES', value: String(registro.participantes), inline: false });
+    }
+
+    if (registro.descricao) {
+        campos.push({ name: '📝 DESCRIÇÃO', value: String(registro.descricao), inline: false });
+    }
+
+    if (registro.observacoes) {
+        campos.push({ name: '📌 OBSERVAÇÕES', value: String(registro.observacoes), inline: false });
+    }
+
+    if (registro.registradoPor?.username) {
+        campos.push({
+            name: '🖊️ REGISTRADO POR',
+            value: `@${registro.registradoPor.username}`,
+            inline: true
+        });
+    }
+
+    return campos;
 }
-
-
-// ========================================================================
-// FORMATAR REGISTRO NORMALIZADO
-// ========================================================================
-
-function formatarRegistroNormalizado(registro) {
-    if (registro.tipo === 'ano') {
-        return {
-            titulo: registro.ano,
-            campos: [
-                {
-                    name: '📅 HISTÓRICO DO ANO',
-                    value: registro.linhas.join('\n'),
-                    inline: false
-                }
-            ]
-        };
-    }
-
-    if (registro.tipo === 'evento_antigo') {
-        return {
-            titulo: registro.nome || 'Evento histórico',
-            campos: [
-                {
-                    name: '🏆 RESULTADO',
-                    value: registro.linhas.length
-                        ? registro.linhas.join('\n')
-                        : '*Sem informações adicionais.*',
-                    inline: false
-                }
-            ]
-        };
-    }
-
-    if (registro.tipo === 'records_antigos') {
-        return {
-            titulo: 'Records históricos',
-            campos: [
-                {
-                    name: '📊 RECORDS',
-                    value: registro.linhas.join('\n'),
-                    inline: false
-                }
-            ]
-        };
-    }
-
-    return formatarRegistroNovo(registro);
-}
-
-
-// ========================================================================
-// FORMATAR REGISTRO
-// ========================================================================
 
 function formatarRegistro(registro) {
-    if (
-        registro &&
-        typeof registro === 'object'
-    ) {
-        return formatarRegistroNormalizado(registro);
+    if (registro && typeof registro === 'object' && registro.__normalizado) {
+        if (registro.tipo === 'ano') {
+            return {
+                titulo: registro.ano,
+                descricao: `📜 **Histórico de ${registro.ano}**`,
+                campos: [
+                    {
+                        name: '🗓️ CAMPEÕES DO ANO',
+                        value: registro.linhas.join('\n') || '*Nenhum registro disponível.*',
+                        inline: false
+                    }
+                ]
+            };
+        }
+
+        if (registro.tipo === 'evento_antigo') {
+            return {
+                titulo: registro.nome || 'Evento histórico',
+                descricao: '🏅 **Registro histórico do evento**',
+                campos: [
+                    {
+                        name: '🏆 RESULTADO',
+                        value: registro.linhas.join('\n') || '*Nenhum resultado registrado.*',
+                        inline: false
+                    }
+                ]
+            };
+        }
+
+        if (registro.tipo === 'records_antigos') {
+            return {
+                titulo: 'Records históricos',
+                descricao: '📈 **Marcas históricas do WorldWarBR**',
+                campos: [
+                    {
+                        name: '🏅 RECORDS',
+                        value: registro.linhas.join('\n') || '*Nenhum recorde registrado.*',
+                        inline: false
+                    }
+                ]
+            };
+        }
+    }
+
+    if (registro && typeof registro === 'object') {
+        return {
+            titulo: registro.nome || 'Evento histórico',
+            descricao: registro.descricao || '📜 **Registro oficial do Hall da Fama**',
+            campos: criarCamposRegistroNovo(registro),
+            imagem: registro.imagem || null
+        };
     }
 
     return {
         titulo: 'Evento histórico',
+        descricao: '📜 **Registro histórico**',
         campos: [
             {
-                name: '📜 REGISTRO',
-                value: limitarCampo(limparMarkdown(registro) || 'Registro vazio.'),
+                name: '📝 INFORMAÇÕES',
+                value: limitarTexto(limparMarkdown(registro) || 'Registro vazio.'),
                 inline: false
             }
         ]
     };
 }
 
-
-// ========================================================================
-// BOTÕES
-// ========================================================================
-
 function criarBotoes(categoria, pagina, totalPaginas) {
     return new ActionRowBuilder().addComponents(
         new ButtonBuilder()
+            .setCustomId(`hist_ephem_first_${categoria}_${pagina}`)
+            .setLabel('Primeiro')
+            .setEmoji('⏮️')
+            .setStyle(ButtonStyle.Secondary)
+            .setDisabled(pagina <= 1),
+
+        new ButtonBuilder()
             .setCustomId(`hist_ephem_prev_${categoria}_${pagina}`)
             .setLabel('Anterior')
-            .setEmoji('⬅️')
+            .setEmoji('◀️')
             .setStyle(ButtonStyle.Secondary)
             .setDisabled(pagina <= 1),
 
         new ButtonBuilder()
             .setCustomId(`hist_ephem_page_${categoria}_${pagina}`)
             .setLabel(`${pagina}/${totalPaginas}`)
-            .setStyle(ButtonStyle.Secondary)
+            .setEmoji('📄')
+            .setStyle(ButtonStyle.Primary)
             .setDisabled(true),
 
         new ButtonBuilder()
             .setCustomId(`hist_ephem_next_${categoria}_${pagina}`)
             .setLabel('Próximo')
-            .setEmoji('➡️')
+            .setEmoji('▶️')
             .setStyle(ButtonStyle.Secondary)
             .setDisabled(pagina >= totalPaginas),
 
@@ -489,57 +388,52 @@ function criarBotoes(categoria, pagina, totalPaginas) {
     );
 }
 
-
-// ========================================================================
-// EMBED
-// ========================================================================
-
 function criarEmbedEvento(categoria, registro, pagina, totalPaginas) {
     const config = CATEGORIAS[categoria];
-    if (!config) return null;
-
     const formatado = formatarRegistro(registro);
 
     const embed = new EmbedBuilder()
-        .setTitle(`${config.emoji} ${formatado.titulo}`)
         .setColor(config.cor)
+        .setAuthor({
+            name: `${config.emoji} ${config.titulo}`
+        })
+        .setTitle(formatado.titulo)
         .setDescription(
-            `📄 **Evento ${pagina} de ${totalPaginas}**\n\n` +
-            '━━━━━━━━━━━━━━━━━━━━'
+            `${config.subtitulo}\n\n` +
+            '┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n' +
+            `┃  ${formatado.descricao}\n` +
+            '┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛'
         );
 
     for (const campo of formatado.campos) {
         embed.addFields({
-            name: limitarCampo(campo.name),
-            value: limitarCampo(campo.value),
+            name: limitarTexto(campo.name),
+            value: limitarTexto(campo.value),
             inline: Boolean(campo.inline)
         });
     }
 
-    if (
-        registro &&
-        typeof registro === 'object' &&
-        registro.imagem
-    ) {
+    if (formatado.imagem) {
         try {
-            const url = new URL(registro.imagem);
-            if (url.protocol === 'http:' || url.protocol === 'https:') {
-                embed.setImage(registro.imagem);
+            const url = new URL(formatado.imagem);
+            if (url.protocol === 'https:' || url.protocol === 'http:') {
+                embed.setImage(formatado.imagem);
             }
         } catch {}
     }
 
+    embed.addFields({
+        name: '━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+        value: `📖 **${pagina} / ${totalPaginas}**  •  ${config.emoji} Histórico oficial`,
+        inline: false
+    });
+
     embed.setFooter({
-        text: `WorldWarBR • Hall da Fama • Página ${pagina}/${totalPaginas}`
+        text: `WorldWarBR • Hall da Fama • ${config.titulo}`
     });
 
     return embed;
 }
-
-
-// ========================================================================
-// PAGINAÇÃO
-// ========================================================================
 
 function paginaSegura(total, pagina) {
     const totalPaginas = Math.max(1, total);
@@ -550,11 +444,6 @@ function paginaSegura(total, pagina) {
     };
 }
 
-
-// ========================================================================
-// MOSTRAR EVENTO
-// ========================================================================
-
 async function mostrarEvento(interaction, categoria, pagina) {
     if (!CATEGORIAS[categoria]) {
         return interaction.reply({
@@ -564,14 +453,15 @@ async function mostrarEvento(interaction, categoria, pagina) {
     }
 
     const historico = carregarHistorico();
-    const registrosOriginais = historico[categoria] || [];
-    const registros = normalizarRegistros(categoria, registrosOriginais);
+    const registros = normalizarRegistros(categoria, historico[categoria] || []);
 
     if (!registros.length) {
+        const config = CATEGORIAS[categoria];
         const embed = new EmbedBuilder()
-            .setTitle(CATEGORIAS[categoria].titulo)
-            .setColor(CATEGORIAS[categoria].cor)
-            .setDescription('📭 **Nenhum registro encontrado.**');
+            .setColor(config.cor)
+            .setAuthor({ name: `${config.emoji} ${config.titulo}` })
+            .setTitle('Nenhum registro')
+            .setDescription('📭 Nenhum evento histórico foi encontrado nesta categoria.');
 
         return interaction.reply({
             embeds: [embed],
@@ -581,32 +471,19 @@ async function mostrarEvento(interaction, categoria, pagina) {
     }
 
     const pg = paginaSegura(registros.length, pagina);
-    const registro = registros[pg.pagina - 1];
     const embed = criarEmbedEvento(
         categoria,
-        registro,
+        registros[pg.pagina - 1],
         pg.pagina,
         pg.totalPaginas
     );
 
     return interaction.reply({
-        content: '',
         embeds: [embed],
-        components: [
-            criarBotoes(
-                categoria,
-                pg.pagina,
-                pg.totalPaginas
-            )
-        ],
+        components: [criarBotoes(categoria, pg.pagina, pg.totalPaginas)],
         flags: MessageFlags.Ephemeral
     });
 }
-
-
-// ========================================================================
-// ATUALIZAR EVENTO
-// ========================================================================
 
 async function atualizarEvento(interaction, categoria, pagina) {
     if (!CATEGORIAS[categoria]) {
@@ -618,8 +495,7 @@ async function atualizarEvento(interaction, categoria, pagina) {
     }
 
     const historico = carregarHistorico();
-    const registrosOriginais = historico[categoria] || [];
-    const registros = normalizarRegistros(categoria, registrosOriginais);
+    const registros = normalizarRegistros(categoria, historico[categoria] || []);
 
     if (!registros.length) {
         return interaction.update({
@@ -630,11 +506,9 @@ async function atualizarEvento(interaction, categoria, pagina) {
     }
 
     const pg = paginaSegura(registros.length, pagina);
-    const registro = registros[pg.pagina - 1];
-
     const embed = criarEmbedEvento(
         categoria,
-        registro,
+        registros[pg.pagina - 1],
         pg.pagina,
         pg.totalPaginas
     );
@@ -642,70 +516,43 @@ async function atualizarEvento(interaction, categoria, pagina) {
     return interaction.update({
         content: '',
         embeds: [embed],
-        components: [
-            criarBotoes(
-                categoria,
-                pg.pagina,
-                pg.totalPaginas
-            )
-        ]
+        components: [criarBotoes(categoria, pg.pagina, pg.totalPaginas)]
     });
 }
 
-
-// ========================================================================
-// INTERAÇÃO
-// ========================================================================
-
 module.exports = async (interaction, client) => {
-    const id = interaction.customId;
+    const id = interaction.customId || '';
 
-    // Abrir categoria
     if (
         id === 'hist_liga' ||
         id === 'hist_imperador' ||
         id === 'hist_eventos' ||
         id === 'hist_records'
     ) {
-        return mostrarEvento(
-            interaction,
-            id.replace('hist_', ''),
-            1
-        );
+        return mostrarEvento(interaction, id.replace('hist_', ''), 1);
     }
 
-    // Próximo
-    if (id.startsWith('hist_ephem_next_')) {
+    if (id.startsWith('hist_ephem_first_')) {
         const partes = id.split('_');
-        const categoria = partes[3];
-        const paginaAtual = Number(partes[4]) || 1;
-
-        return atualizarEvento(
-            interaction,
-            categoria,
-            paginaAtual + 1
-        );
+        return atualizarEvento(interaction, partes[3], 1);
     }
 
-    // Anterior
     if (id.startsWith('hist_ephem_prev_')) {
         const partes = id.split('_');
-        const categoria = partes[3];
         const paginaAtual = Number(partes[4]) || 1;
-
-        return atualizarEvento(
-            interaction,
-            categoria,
-            paginaAtual - 1
-        );
+        return atualizarEvento(interaction, partes[3], paginaAtual - 1);
     }
 
-    // Indicador da página
+    if (id.startsWith('hist_ephem_next_')) {
+        const partes = id.split('_');
+        const paginaAtual = Number(partes[4]) || 1;
+        return atualizarEvento(interaction, partes[3], paginaAtual + 1);
+    }
+
     if (id.startsWith('hist_ephem_page_')) {
         return;
     }
 
-    // Fechar
     if (id === 'hist_ephem_fechar') {
         return interaction.update({
             content: '✅ **Hall da Fama fechado.**',

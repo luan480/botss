@@ -1,5 +1,6 @@
 /* ========================================================================
-   SCRIPT DE LIMPEZA DE COMANDOS DE SERVIDOR (GUILD)
+   SCRIPT DE LIMPEZA DE COMANDOS DA GUILD
+   Uso manual: node clear-commands.js
    ======================================================================== */
 
 const { REST, Routes } = require('discord.js');
@@ -16,16 +17,13 @@ const rest = new REST({ version: '10' }).setToken(token);
 
 (async () => {
     try {
-        console.log(`[INFO] Limpando comandos vinculados ao servidor (Guild ID: ${guildId})...`);
-        
-        await rest.put(
-            Routes.applicationGuildCommands(clientId, guildId),
-            { body: [] },
-        );
-
-        console.log('✅ SUCESSO! Os comandos fantasmas do servidor foram apagados.');
-        console.log('Reinicie o seu Discord (Ctrl + R) para sumirem da barra de digitação.');
+        console.log(`[INFO] Limpando comandos da guilda ${guildId}...`);
+        await rest.put(Routes.applicationGuildCommands(clientId, guildId), { body: [] });
+        await rest.put(Routes.applicationCommands(clientId), { body: [] });
+        console.log('✅ Comandos da guilda e comandos globais antigos foram removidos.');
+        console.log('ℹ️ Agora reinicie o bot para o index.js registrar os comandos atuais.');
     } catch (error) {
-        console.error('❌ ERRO AO LIMPAR COMANDOS DO SERVIDOR:', error);
+        console.error('❌ ERRO AO LIMPAR COMANDOS:', error);
+        process.exitCode = 1;
     }
 })();

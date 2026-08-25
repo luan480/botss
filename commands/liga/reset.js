@@ -5,15 +5,17 @@
 
    FLUXO:
    1. Confirma o encerramento.
-   2. Lê a pontuação atual.
-   3. Monta o resultado completo da temporada.
-   4. Salva o resultado no Hall da Fama.
-   5. Só depois zera a Liga.
+   2. Lê a pontuação e o período atual.
+   3. Congela todas as estatísticas da temporada.
+   4. Salva a temporada completa no Hall da Fama.
+   5. Só depois zera a pontuação.
+   6. Inicia o próximo período.
 
    IMPORTANTE:
-   - O historico.json nunca é zerado pelo reset.
-   - Evita registrar a mesma temporada duas vezes.
-   - Mantém os dados completos da temporada encerrada.
+   - historico.json nunca é zerado.
+   - estatísticas históricas ficam congeladas no registro.
+   - evita duplicar a mesma temporada.
+   - partidas.json continua preservado para a Caixa Preta.
    ======================================================================== */
 
 const {
@@ -31,426 +33,210 @@ const {
     safeWriteJson
 } = require('./utils/helpers.js');
 
+const { calcular: calcularEstatisticasTemporada } =
+    require('./utils/temporadaStats.js');
 
-const pontosPath =
-    path.join(
-        __dirname,
-        'pontuacao.json'
-    );
-
-const historicoPath =
-    path.join(
-        __dirname,
-        '..',
-        'promocao',
-        'historico.json'
-    );
-
+const pontosPath = path.join(__dirname, 'pontuacao.json');
+const historicoPath = path.join(__dirname, '..', 'promocao', 'historico.json');
+const temporadaPath = path.join(__dirname, 'temporada.json');
 
 function numero(valor) {
     const n = Number(valor);
     return Number.isFinite(n) ? n : 0;
 }
 
-
 function formatarData() {
     const agora = new Date();
-
     return {
-        data:
-            agora.toLocaleDateString('pt-BR', {
-                timeZone: 'America/Fortaleza'
-            }),
-
-        horario:
-            agora.toLocaleTimeString('pt-BR', {
-                timeZone: 'America/Fortaleza',
-                hour: '2-digit',
-                minute: '2-digit'
-            })
+        data: agora.toLocaleDateString('pt-BR', { timeZone: 'America/Fortaleza' }),
+        horario: agora.toLocaleTimeString('pt-BR', {
+            timeZone: 'America/Fortaleza',
+            hour: '2-digit',
+            minute: '2-digit'
+        })
     };
 }
 
-
 function normalizarNome(nome) {
-    return String(nome || '')
-        .trim()
-        .replace(/\s+/g, ' ')
-        .toLowerCase();
+    return String(nome || '').trim().replace(/\s+/g, ' ').toLowerCase();
 }
 
-
-function criarRankingCompleto(pontuacao) {
-    return Object.entries(
-        pontuacao || {}
-    )
-        .map(
-            ([id, valor]) => ({
-                id,
-                pontos: numero(valor)
-            })
-        )
-        .filter(
-            jogador => jogador.pontos !== 0 || jogador.id
-        )
-        .sort(
-            (a, b) => {
-                if (b.pontos !== a.pontos) {
-                    return b.pontos - a.pontos;
-                }
-
-                return a.id.localeCompare(b.id);
-            }
-        );
+function ordenarRanking(estatisticas) {
+    return Object.values(estatisticas || {})
+        .map(jogador => ({
+            ...jogador,
+            pontos: numero(jogador.pontos)
+        }))
+        .sort((a, b) => {
+            if (b.pontos !== a.pontos) return b.pontos - a.pontos;
+            if (b.vitorias !== a.vitorias) return b.vitorias - a.vitorias;
+            if (b.kills !== a.kills) return b.kills - a.kills;
+            return String(a.id).localeCompare(String(b.id));
+        });
 }
-
 
 function montarDescricao(ranking) {
-    if (!ranking.length) {
-        return 'Nenhum competidor pontuou nesta temporada.';
-    }
-
-    const linhas = ranking.map(
-        (jogador, index) =>
-            `${index + 1}º <@${jogador.id}> — **${jogador.pontos} pts**`
-    );
+    if (!ranking.length) return 'Nenhum competidor participou desta temporada.';
 
     return [
         `🏆 **Classificação final — ${ranking.length} competidor(es)**`,
         '',
-        ...linhas
+        ...ranking.slice(0, 10).map((jogador, index) =>
+            `${index + 1}º <@${jogador.id}> — **${jogador.pontos} pts**`
+        )
     ].join('\n');
 }
-
 
 module.exports = {
 
     data:
         new SlashCommandBuilder()
             .setName('reset')
-            .setDescription(
-                'Encerra a temporada, salva todos os resultados no Hall da Fama e zera a Liga.'
+            .setDescription('Encerra a temporada, salva tudo no Hall da Fama e zera a Liga.')
+            .addStringOption(opt =>
+                opt
+                    .setName('nome_temporada')
+                    .setDescription('Ex: Temporada 1, Agosto 2026, Temporada 2026/01.')
+                    .setRequired(true)
             )
-            .addStringOption(
-                opt =>
-                    opt
-                        .setName('nome_temporada')
-                        .setDescription(
-                            'Ex: Temporada 1, Agosto 2026, Temporada 2026/01.'
-                        )
-                        .setRequired(true)
-            )
-            .setDefaultMemberPermissions(
-                PermissionFlagsBits.Administrator
-            ),
-
+            .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
     async execute(interaction) {
 
-        const nomeTemporada =
-            interaction.options.getString(
-                'nome_temporada'
-            )
-            .trim();
+        const nomeTemporada = interaction.options.getString('nome_temporada').trim();
 
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId('confirmar_reset')
+                .setLabel('Sim, encerrar temporada e resetar')
+                .setStyle(ButtonStyle.Danger)
+                .setEmoji('🏆'),
+            new ButtonBuilder()
+                .setCustomId('cancelar_reset')
+                .setLabel('Cancelar')
+                .setStyle(ButtonStyle.Secondary)
+                .setEmoji('✖️')
+        );
 
-        const row =
-            new ActionRowBuilder()
-                .addComponents(
+        const msg = await interaction.reply({
+            content:
+                `⚠️ **ENCERRAMENTO DA LIGA**\n\n` +
+                `Você está prestes a encerrar **${nomeTemporada}**.\n\n` +
+                `🏆 O ranking completo será salvo no **Hall da Fama**.\n` +
+                `📊 Cada jogador terá suas estatísticas da temporada congeladas.\n` +
+                `🔄 Depois disso, a pontuação atual será zerada.\n\n` +
+                `**Essa ação não apaga o histórico.**`,
+            components: [row],
+            flags: 64
+        });
 
-                    new ButtonBuilder()
-                        .setCustomId(
-                            'confirmar_reset'
-                        )
-                        .setLabel(
-                            'Sim, encerrar temporada e resetar'
-                        )
-                        .setStyle(
-                            ButtonStyle.Danger
-                        )
-                        .setEmoji('🏆'),
-
-                    new ButtonBuilder()
-                        .setCustomId(
-                            'cancelar_reset'
-                        )
-                        .setLabel(
-                            'Cancelar'
-                        )
-                        .setStyle(
-                            ButtonStyle.Secondary
-                        )
-                        .setEmoji('✖️')
-
-                );
-
-
-        const msg =
-            await interaction.reply({
-
-                content:
-                    `⚠️ **ENCERRAMENTO DA LIGA**\n\n` +
-                    `Você está prestes a encerrar **${nomeTemporada}**.\n\n` +
-                    `🏆 O ranking completo será salvo no **Hall da Fama**.\n` +
-                    `📊 Os resultados desta temporada ficarão preservados.\n` +
-                    `🔄 Depois disso, a pontuação atual será zerada.\n\n` +
-                    `**Essa ação não apaga o histórico.**`,
-
-                components: [
-                    row
-                ],
-
-                flags: 64
-
-            });
-
-
-        const filter =
-            i =>
-                i.user.id ===
-                interaction.user.id;
-
+        const filter = i => i.user.id === interaction.user.id;
 
         try {
+            const confirmation = await msg.awaitMessageComponent({ filter, time: 15000 });
 
-            const confirmation =
-                await msg.awaitMessageComponent({
-                    filter,
-                    time: 15000
-                });
-
-
-            if (
-                confirmation.customId ===
-                'cancelar_reset'
-            ) {
-
+            if (confirmation.customId === 'cancelar_reset') {
                 return confirmation.update({
-
-                    content:
-                        '❌ **Encerramento cancelado.**\nNenhum dado da Liga foi alterado.',
-
+                    content: '❌ **Encerramento cancelado.**\nNenhum dado da Liga foi alterado.',
                     components: []
-
                 });
-
             }
 
+            if (confirmation.customId !== 'confirmar_reset') return;
 
-            if (
-                confirmation.customId !==
-                'confirmar_reset'
-            ) {
+            const pontuacao = safeReadJson(pontosPath) || {};
+            const historico = safeReadJson(historicoPath) || {};
+            const controleTemporada = safeReadJson(temporadaPath) || {};
 
-                return;
+            if (!Array.isArray(historico.liga)) historico.liga = [];
 
-            }
+            const inicioTemporada =
+                controleTemporada.inicio ||
+                new Date().toISOString();
 
+            const estatisticas = calcularEstatisticasTemporada(
+                inicioTemporada,
+                pontuacao
+            );
 
-            // ============================================================
-            // LEITURA
-            // ============================================================
+            const ranking = ordenarRanking(estatisticas);
+            const top1 = ranking[0] || null;
+            const top2 = ranking[1] || null;
+            const top3 = ranking[2] || null;
+            const horario = formatarData();
 
-            const pontuacao =
-                safeReadJson(
-                    pontosPath
-                ) || {};
+            const nomeNormalizado = normalizarNome(nomeTemporada);
+            const duplicado = historico.liga.some(
+                registro =>
+                    registro &&
+                    typeof registro === 'object' &&
+                    normalizarNome(registro.nome) === nomeNormalizado
+            );
 
-            const historico =
-                safeReadJson(
-                    historicoPath
-                ) || {};
-
-
-            if (
-                !Array.isArray(
-                    historico.liga
-                )
-            ) {
-
-                historico.liga = [];
-
-            }
-
-
-            // ============================================================
-            // RANKING COMPLETO
-            // ============================================================
-
-            const ranking =
-                criarRankingCompleto(
-                    pontuacao
-                );
-
-            const top1 =
-                ranking[0] || null;
-
-            const top2 =
-                ranking[1] || null;
-
-            const top3 =
-                ranking[2] || null;
-
-
-            // ============================================================
-            // PROTEGER CONTRA DUPLICAÇÃO
-            // ============================================================
-
-            const nomeNormalizado =
-                normalizarNome(
-                    nomeTemporada
-                );
-
-            const duplicado =
-                historico.liga.some(
-                    registro =>
-                        registro &&
-                        typeof registro === 'object' &&
-                        normalizarNome(
-                            registro.nome
-                        ) === nomeNormalizado
-                );
-
-
-            if (
-                duplicado
-            ) {
-
+            if (duplicado) {
                 return confirmation.update({
-
                     content:
                         `❌ A temporada **${nomeTemporada}** já existe no Hall da Fama.\nO reset foi cancelado para evitar duplicação.`,
-
                     components: []
-
                 });
-
             }
 
-
-            const horario =
-                formatarData();
-
-
             const registroHistorico = {
-
-                id:
-                    `liga_${Date.now()}_${interaction.user.id}`,
-
-                categoria:
-                    'liga',
-
-                tipo:
-                    'campeonato',
-
-                nome:
-                    nomeTemporada,
-
-                vencedor:
-                    top1
-                        ? `<@${top1.id}>`
-                        : null,
-
-                segundo:
-                    top2
-                        ? `<@${top2.id}>`
-                        : null,
-
-                terceiro:
-                    top3
-                        ? `<@${top3.id}>`
-                        : null,
-
-                data:
-                    horario.data,
-
-                horario:
-                    horario.horario,
-
-                totalCompetidores:
-                    ranking.length,
-
-                rankingCompleto:
-                    ranking,
-
-                descricao:
-                    montarDescricao(
-                        ranking
-                    ),
-
+                id: `liga_${Date.now()}_${interaction.user.id}`,
+                categoria: 'liga',
+                tipo: 'campeonato',
+                nome: nomeTemporada,
+                vencedor: top1 ? `<@${top1.id}>` : null,
+                segundo: top2 ? `<@${top2.id}>` : null,
+                terceiro: top3 ? `<@${top3.id}>` : null,
+                data: horario.data,
+                horario: horario.horario,
+                inicioTemporada,
+                fimTemporada: new Date().toISOString(),
+                totalCompetidores: ranking.length,
+                top10: ranking.slice(0, 10),
+                rankingCompleto: ranking,
+                estatisticas: ranking,
+                descricao: montarDescricao(ranking),
                 registradoPor: {
-                    id:
-                        interaction.user.id,
-                    username:
-                        interaction.user.username
+                    id: interaction.user.id,
+                    username: interaction.user.username
                 }
-
             };
 
+            // O histórico é salvo ANTES do reset.
+            historico.liga.push(registroHistorico);
+            safeWriteJson(historicoPath, historico);
 
-            // ============================================================
-            // SALVAR HISTÓRICO PRIMEIRO
-            // ============================================================
+            // Atualiza o início da próxima temporada.
+            safeWriteJson(temporadaPath, {
+                inicio: registroHistorico.fimTemporada,
+                numero: numero(controleTemporada.numero) + 1
+            });
 
-            historico.liga.push(
-                registroHistorico
-            );
-
-            safeWriteJson(
-                historicoPath,
-                historico
-            );
-
-
-            // ============================================================
-            // SÓ DEPOIS ZERAR A LIGA
-            // ============================================================
-
-            safeWriteJson(
-                pontosPath,
-                {}
-            );
-
+            // Só agora zera a pontuação da nova temporada.
+            safeWriteJson(pontosPath, {});
 
             await confirmation.update({
-
                 content:
                     `✅ **${nomeTemporada} encerrada com sucesso!**\n\n` +
                     `🏆 Campeão: ${registroHistorico.vencedor || 'Nenhum'}\n` +
                     `🥈 2º lugar: ${registroHistorico.segundo || 'Nenhum'}\n` +
                     `🥉 3º lugar: ${registroHistorico.terceiro || 'Nenhum'}\n` +
-                    `👥 Competidores registrados: **${ranking.length}**\n\n` +
-                    `📜 O resultado completo foi salvo no **Hall da Fama**.\n` +
-                    `🔄 A nova temporada já está zerada e pronta para começar.`,
-
+                    `👥 Competidores: **${ranking.length}**\n\n` +
+                    `📊 **Top 10 e estatísticas completas foram congelados no Hall da Fama.**\n` +
+                    `🔄 A próxima temporada já está pronta.`,
                 components: []
-
             });
 
-
         } catch (erro) {
+            console.error('[LIGA RESET] Erro ao encerrar temporada:', erro);
 
-            console.error(
-                '[LIGA RESET] Erro ao encerrar temporada:',
-                erro
-            );
-
-
-            await interaction
-                .editReply({
-
-                    content:
-                        '⌛ **Confirmação não recebida em 15 segundos.**\nAção cancelada e nenhum dado foi alterado.',
-
-                    components: []
-
-                })
-                .catch(
-                    () => {}
-                );
-
+            await interaction.editReply({
+                content:
+                    '⌛ **Confirmação não recebida em 15 segundos.**\nAção cancelada e nenhum dado foi alterado.',
+                components: []
+            }).catch(() => {});
         }
-
     }
-
 };

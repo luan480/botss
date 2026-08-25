@@ -1,10 +1,16 @@
 /* ========================================================================
-   ARQUIVO: commands/liga/utils/helpers.js (VERSÃO BLINDADA E INTELIGENTE)
-   DESCRIÇÃO: Funções Globais, Gestão de JSONs e Buscas Dinâmicas
+   ARQUIVO: commands/liga/utils/helpers.js
+   DESCRIÇÃO: Funções globais, gestão de JSONs e validação central de Staff.
    ======================================================================== */
 
 const fs = require('fs');
-const { PermissionFlagsBits } = require('discord.js');
+
+const ROLE_IDS = Object.freeze({
+    STAFF: '970318757748670484',
+    SUPORTE: '1076553146324750366',
+    MOD: '849697636574560296',
+    ADM: '865915891399786518'
+});
 
 const safeReadJson = (filePath) => {
     if (!fs.existsSync(filePath)) {
@@ -13,7 +19,7 @@ const safeReadJson = (filePath) => {
         } catch (e) {
             console.error(`[ERRO] Falha ao criar arquivo JSON em ${filePath}:`, e.message);
         }
-        return {}; 
+        return {};
     }
     try {
         const data = fs.readFileSync(filePath, 'utf8');
@@ -34,40 +40,36 @@ const safeReadJson = (filePath) => {
 
 const safeWriteJson = (filePath, data) => {
     try {
-        if (fs.existsSync(filePath)) {
-            fs.copyFileSync(filePath, `${filePath}.bkp`);
-        }
+        if (fs.existsSync(filePath)) fs.copyFileSync(filePath, `${filePath}.bkp`);
         fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
     } catch (e) {
         console.error(`[ERRO] Falha ao gravar dados em ${filePath}:`, e.message);
     }
 };
 
-// 🛡️ VALIDADOR GLOBAL DE STAFF (MOD, ADM, GM)
+function hasRole(member, roleId) {
+    return Boolean(member?.roles?.cache?.has(roleId));
+}
+
+// Validação oficial da equipe por ID. Não depende do nome do cargo nem de Administrator.
 const isStaff = (member) => {
     if (!member) return false;
-    if (member.permissions.has(PermissionFlagsBits.Administrator)) return true;
-
-    return member.roles.cache.some(role => {
-        const n = role.name.toLowerCase();
-        return n.includes('mod') || 
-               n.includes('adm') || 
-               n.includes('gm') || 
-               n.includes('moderador') || 
-               n.includes('game master');
-    });
+    return [ROLE_IDS.STAFF, ROLE_IDS.SUPORTE, ROLE_IDS.MOD, ROLE_IDS.ADM]
+        .some(roleId => hasRole(member, roleId));
 };
 
-// 🔍 BUSCA INTELIGENTE DE CANAL (Evita erros se o ID mudar ou o canal for recriado)
+const isMod = (member) => {
+    if (!member) return false;
+    return [ROLE_IDS.MOD, ROLE_IDS.ADM].some(roleId => hasRole(member, roleId));
+};
+
+const isAdm = (member) => hasRole(member, ROLE_IDS.ADM);
+
 const buscarCanal = (guild, identificador) => {
     if (!guild || !identificador) return null;
     let canal = guild.channels.cache.get(identificador);
     if (canal) return canal;
-
-    // Procura por nome caso o ID estático falhe
-    canal = guild.channels.cache.find(c => 
-        c.name.toLowerCase().includes(identificador.toLowerCase())
-    );
+    canal = guild.channels.cache.find(c => c.name.toLowerCase().includes(identificador.toLowerCase()));
     return canal || null;
 };
 
@@ -76,10 +78,14 @@ const capitalize = (s) => {
     return s.charAt(0).toUpperCase() + s.slice(1);
 };
 
-module.exports = { 
-    safeReadJson, 
-    safeWriteJson, 
-    isStaff, 
-    buscarCanal, 
-    capitalize 
+module.exports = {
+    ROLE_IDS,
+    safeReadJson,
+    safeWriteJson,
+    hasRole,
+    isStaff,
+    isMod,
+    isAdm,
+    buscarCanal,
+    capitalize
 };

@@ -1,6 +1,6 @@
 /* ========================================================================
    ARQUIVO: commands/liga/utils/helpers.js
-   DESCRIÇÃO: Funções globais, gestão de JSONs e validação central de Staff.
+   DESCRIÇÃO: Funções globais, gestão segura de JSONs e validação central de Staff.
    ======================================================================== */
 
 const fs = require('fs');
@@ -13,69 +13,57 @@ const ROLE_IDS = Object.freeze({
     ADM: '865915891399786518'
 });
 
-const PARTIDAS_PATH_PADRAO = path.join(
-    __dirname,
-    '..',
-    'partidas.json'
-);
+const PARTIDAS_PATH_PADRAO = path.join(__dirname, '..', 'partidas.json');
 
 function resolverJsonPath(filePath) {
-    // O fluxo antigo da Liga chama safeReadJson/safeWriteJson com
-    // partidasPath indefinido. Nesse caso, usamos a Caixa Preta oficial.
-    if (filePath === undefined || filePath === null || filePath === '') {
-        return PARTIDAS_PATH_PADRAO;
-    }
-
+    if (filePath === undefined || filePath === null || filePath === '') return PARTIDAS_PATH_PADRAO;
     return filePath;
+}
+
+function parseJsonArquivo(caminho) {
+    const data = fs.readFileSync(caminho, 'utf8');
+    return JSON.parse(data.trim() === '' ? '{}' : data);
 }
 
 const safeReadJson = (filePath) => {
     const caminho = resolverJsonPath(filePath);
-
     if (!fs.existsSync(caminho)) {
         try {
-            fs.writeFileSync(caminho, JSON.stringify({}, null, 2));
+            fs.mkdirSync(path.dirname(caminho), { recursive: true });
+            fs.writeFileSync(caminho, '{}\n', 'utf8');
         } catch (e) {
             console.error(`[ERRO] Falha ao criar arquivo JSON em ${caminho}:`, e.message);
         }
         return {};
     }
-
     try {
-        const data = fs.readFileSync(caminho, 'utf8');
-        return JSON.parse(data.trim() === '' ? '{}' : data);
+        return parseJsonArquivo(caminho);
     } catch (e) {
         console.error(`[ERRO] Falha ao ler JSON em ${caminho}, tentando carregar o backup...`, e.message);
-
-        if (fs.existsSync(`${caminho}.bkp`)) {
-            try {
-                const backupData = fs.readFileSync(`${caminho}.bkp`, 'utf8');
-                return JSON.parse(backupData.trim() === '' ? '{}' : backupData);
-            } catch (errBkp) {
-                console.error(
-                    `[ERRO CRÍTICO] O arquivo de backup de ${caminho} também está corrompido.`
-                );
-            }
+        const backup = `${caminho}.bkp`;
+        if (fs.existsSync(backup)) {
+            try { return parseJsonArquivo(backup); }
+            catch (errBkp) { console.error(`[ERRO CRÍTICO] O backup de ${caminho} também está corrompido:`, errBkp.message); }
         }
-
         return {};
     }
 };
 
 const safeWriteJson = (filePath, data) => {
     const caminho = resolverJsonPath(filePath);
-
+    const temporario = `${caminho}.tmp`;
+    const backup = `${caminho}.bkp`;
     try {
-        if (fs.existsSync(caminho)) {
-            fs.copyFileSync(caminho, `${caminho}.bkp`);
-        }
-
-        fs.writeFileSync(
-            caminho,
-            JSON.stringify(data, null, 2)
-        );
+        const conteudo = `${JSON.stringify(data, null, 2)}\n`;
+        fs.mkdirSync(path.dirname(caminho), { recursive: true });
+        fs.writeFileSync(temporario, conteudo, 'utf8');
+        if (fs.existsSync(caminho)) fs.copyFileSync(caminho, backup);
+        fs.renameSync(temporario, caminho);
+        return true;
     } catch (e) {
+        try { if (fs.existsSync(temporario)) fs.unlinkSync(temporario); } catch (_) {}
         console.error(`[ERRO] Falha ao gravar dados em ${caminho}:`, e.message);
+        return false;
     }
 };
 
@@ -83,53 +71,18 @@ function hasRole(member, roleId) {
     return Boolean(member?.roles?.cache?.has(roleId));
 }
 
-const isStaff = (member) => {
-    if (!member) return false;
-
-    return [
-        ROLE_IDS.STAFF,
-        ROLE_IDS.SUPORTE,
-        ROLE_IDS.MOD,
-        ROLE_IDS.ADM
-    ].some(roleId => hasRole(member, roleId));
-};
-
-const isMod = (member) => {
-    if (!member) return false;
-    return [ROLE_IDS.MOD, ROLE_IDS.ADM].some(roleId => hasRole(member, roleId));
-};
-
+const isStaff = (member) => !!member && [ROLE_IDS.STAFF, ROLE_IDS.SUPORTE, ROLE_IDS.MOD, ROLE_IDS.ADM].some(id => hasRole(member, id));
+const isMod = (member) => !!member && [ROLE_IDS.MOD, ROLE_IDS.ADM].some(id => hasRole(member, id));
 const isAdm = (member) => hasRole(member, ROLE_IDS.ADM);
 
 const buscarCanal = (guild, identificador) => {
     if (!guild || !identificador) return null;
-
     let canal = guild.channels.cache.get(identificador);
     if (canal) return canal;
-
-    canal = guild.channels.cache.find(c =>
-        c.name.toLowerCase().includes(
-            identificador.toLowerCase()
-        )
-    );
-
-    return canal || null;
+    const termo = String(identificador).toLowerCase();
+    return guild.channels.cache.find(c => String(c.name || '').toLowerCase().includes(termo)) || null;
 };
 
-const capitalize = (s) => {
-    if (typeof s !== 'string' || s.length === 0) return '';
-    return s.charAt(0).toUpperCase() + s.slice(1);
-};
+const capitalize = (s) => typeof s === 'string' && s.length ? s.charAt(0).toUpperCase() + s.slice(1) : '';
 
-module.exports = {
-    ROLE_IDS,
-    PARTIDAS_PATH_PADRAO,
-    safeReadJson,
-    safeWriteJson,
-    hasRole,
-    isStaff,
-    isMod,
-    isAdm,
-    buscarCanal,
-    capitalize
-};
+module.exports = { ROLE_IDS, PARTIDAS_PATH_PADRAO, safeReadJson, safeWriteJson, hasRole, isStaff, isMod, isAdm, buscarCanal, capitalize };

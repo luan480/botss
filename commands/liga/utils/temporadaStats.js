@@ -1,9 +1,7 @@
-const fs = require('fs');
 const path = require('path');
 const { safeReadJson } = require('./helpers.js');
 
 const PARTIDAS_PATH = path.join(__dirname, '..', 'partidas.json');
-
 const DISCORD_EPOCH = 1420070400000n;
 
 function numero(valor) {
@@ -29,6 +27,26 @@ function timestampSnowflake(id) {
     } catch {
         return null;
     }
+}
+
+function timestampDaPartida(partida, fallbackId) {
+    const candidatos = [
+        partida?.id,
+        partida?.messageId,
+        partida?.mensagemId,
+        partida?.registroId,
+        partida?.createdAt,
+        partida?.criadoEm,
+        partida?.data,
+        fallbackId
+    ];
+    for (const valor of candidatos) {
+        const snowflake = timestampSnowflake(valor);
+        if (snowflake !== null) return snowflake;
+        const data = new Date(valor || '').getTime();
+        if (Number.isFinite(data) && data > 0) return data;
+    }
+    return null;
 }
 
 function criarPerfil(id) {
@@ -97,9 +115,7 @@ function obterSegundo(partida) {
 function processar(porId, partida) {
     if (!partida || partida.anulada === true || partida.anulado === true || partida.cancelada === true || partida.cancelado === true) return;
 
-    for (const id of jogadoresDaPartida(partida)) {
-        garantir(porId, id).partidas++;
-    }
+    for (const id of jogadoresDaPartida(partida)) garantir(porId, id).partidas++;
 
     const vencedor = obterVencedor(partida);
     if (vencedor) {
@@ -109,10 +125,7 @@ function processar(porId, partida) {
     }
 
     const segundo = obterSegundo(partida);
-    if (segundo && segundo !== '0') {
-        const jogador = garantir(porId, segundo);
-        jogador.segundoLugar++;
-    }
+    if (segundo && segundo !== '0') garantir(porId, segundo).segundoLugar++;
 
     for (const kill of (partida?.respostas?.abates || partida?.respostas?.kills || partida?.respostas?.eliminacoes || [])) {
         const matador = idDe(kill?.matador || kill?.killer || kill?.atacante || kill?.quemMatou);
@@ -139,17 +152,14 @@ function processar(porId, partida) {
         const id = idDe(idOriginal);
         if (!id) continue;
         const jogador = garantir(porId, id);
+        const pontos = dados && typeof dados === 'object' && !Array.isArray(dados)
+            ? numero(dados.ptsLiga ?? dados.pontos ?? dados.pontuacao)
+            : numero(dados);
+        jogador.pontos += pontos;
+        if (pontos >= 0) jogador.pontosGanhos += pontos;
+        else jogador.pontosPerdidos += Math.abs(pontos);
         if (dados && typeof dados === 'object' && !Array.isArray(dados)) {
-            const pontos = numero(dados.ptsLiga ?? dados.pontos ?? dados.pontuacao);
-            jogador.pontos += pontos;
-            if (pontos >= 0) jogador.pontosGanhos += pontos;
-            else jogador.pontosPerdidos += Math.abs(pontos);
             jogador.warCoins += numero(dados.wcRecebido ?? dados.warCoins ?? dados.wc);
-        } else {
-            const pontos = numero(dados);
-            jogador.pontos += pontos;
-            if (pontos >= 0) jogador.pontosGanhos += pontos;
-            else jogador.pontosPerdidos += Math.abs(pontos);
         }
     }
 }
@@ -160,19 +170,20 @@ function calcular(inicioIso, pontuacaoAtual = null) {
 
     for (const registro of carregarPartidas()) {
         const partida = registro?.partida;
-        const id = registro?.id || partida?.id;
-        const ts = timestampSnowflake(id);
+        const ts = timestampDaPartida(partida, registro?.id);
         if (inicioMs && ts !== null && ts < inicioMs) continue;
         processar(jogadores, partida);
     }
 
-    // Em registros legados sem pontos por partida, preserva o saldo atual.
     if (pontuacaoAtual && typeof pontuacaoAtual === 'object') {
-        for (const [idOriginal, pontos] of Object.entries(pontuacaoAtual)) {
+        for (const [idOriginal, dados] of Object.entries(pontuacaoAtual)) {
             const id = idDe(idOriginal);
             if (!id) continue;
             const jogador = garantir(jogadores, id);
-            if (jogador.pontos === 0 && numero(pontos) !== 0) jogador.pontos = numero(pontos);
+            const pontos = dados && typeof dados === 'object' && !Array.isArray(dados)
+                ? numero(dados.ptsLiga ?? dados.pontos ?? dados.pontuacao ?? dados.pontosLiga)
+                : numero(dados);
+            if (jogador.pontos === 0 && pontos !== 0) jogador.pontos = pontos;
         }
     }
 

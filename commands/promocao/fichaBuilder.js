@@ -1,8 +1,8 @@
 /* ========================================================================
-   ARQUIVO: commands/promocao/fichaBuilder.js
    FICHA MILITAR — CARREIRA PERMANENTE + CICLO ATUAL
+   A carreira geral inclui o histórico consolidado + o ciclo em andamento.
+   O reset só zera o ciclo; o histórico permanece.
    ======================================================================== */
-
 const { EmbedBuilder } = require('discord.js');
 const careerHistory = require('./careerHistory.js');
 
@@ -10,25 +10,27 @@ function numero(valor) {
     const n = Number(valor);
     return Number.isFinite(n) ? Math.max(0, n) : 0;
 }
-
-function formatarNumero(valor) {
-    return numero(valor).toLocaleString('pt-BR');
-}
+function formatarNumero(valor) { return numero(valor).toLocaleString('pt-BR'); }
 
 function obterDadosCarreira({ progressao, carreiras, userId, member }) {
     const dados = progressao?.[userId];
     if (!dados) return null;
-
     const faccao = carreiras?.faccoes?.[dados.factionId];
     if (!faccao || !Array.isArray(faccao.caminho) || !faccao.caminho.length) return null;
 
     const historico = careerHistory.obter(userId) || {};
+
+    // HISTÓRICO + CICLO ATUAL = CARREIRA REAL DO JOGADOR.
+    // Isso mantém a ficha acumulativa mesmo antes do próximo reset.
+    const cicloVitorias = numero(dados.totalWins);
     const carreira = {
-        vitorias: numero(historico.totalWins),
-        kills: numero(historico.totalKills),
-        mortes: numero(historico.totalDeaths),
-        partidas: numero(historico.totalMatches),
-        continentes: numero(historico.totalContinents),
+        vitorias: Math.max(numero(historico.totalWins), cicloVitorias),
+        kills: numero(historico.totalKills) + numero(dados.killsSemanais),
+        mortes: numero(historico.totalDeaths) + numero(dados.mortesSemanais),
+        partidas: numero(historico.totalMatches) + numero(dados.partidasSemanais),
+        continentes: numero(historico.totalContinents) +
+            numero(dados.asiaSemanal) + numero(dados.europaSemanal) + numero(dados.oceaniaSemanal) +
+            numero(dados.amsulSemanal) + numero(dados.amnorteSemanal) + numero(dados.africaSemanal),
         pontos: numero(historico.totalPoints),
         temporadas: Array.isArray(historico.temporadas) ? historico.temporadas : [],
         ligas: Array.isArray(historico.ligas) ? historico.ligas : [],
@@ -36,36 +38,8 @@ function obterDadosCarreira({ progressao, carreiras, userId, member }) {
         recordes: historico.recordes && typeof historico.recordes === 'object' ? historico.recordes : {}
     };
 
-    // Migração segura: vitórias antigas já existentes continuam aparecendo na carreira.
-    carreira.vitorias = Math.max(carreira.vitorias, numero(dados.totalWins));
-
-    const totalWins = numero(dados.totalWins);
-    let rankAtual = faccao.caminho[0];
-    let indiceAtual = 0;
-    for (let i = 0; i < faccao.caminho.length; i++) {
-        if (totalWins >= numero(faccao.caminho[i]?.custo)) {
-            rankAtual = faccao.caminho[i];
-            indiceAtual = i;
-        }
-    }
-
-    const proximaPatente = faccao.caminho[indiceAtual + 1] || null;
-    const custoAtual = numero(rankAtual?.custo);
-    const custoProxima = proximaPatente ? numero(proximaPatente.custo) : custoAtual;
-    const faltam = proximaPatente ? Math.max(0, custoProxima - totalWins) : 0;
-    const percentual = proximaPatente ? Math.min(100, Math.round((Math.max(0, totalWins - custoAtual) / Math.max(1, custoProxima - custoAtual)) * 100)) : 100;
-    const barras = 12;
-    const preenchidas = Math.max(0, Math.min(barras, Math.round(percentual / 100 * barras)));
-    const barra = '▰'.repeat(preenchidas) + '▱'.repeat(barras - preenchidas);
-
-    const ranking = Object.entries(progressao || {})
-        .map(([id, valor]) => ({ id, wins: numero(valor?.totalWins) }))
-        .filter(item => item.wins > 0)
-        .sort((a, b) => b.wins - a.wins || a.id.localeCompare(b.id));
-    const posicaoIndex = ranking.findIndex(item => item.id === userId);
-
     const ciclo = {
-        vitorias: totalWins,
+        vitorias: cicloVitorias,
         kills: numero(dados.killsSemanais),
         mortes: numero(dados.mortesSemanais),
         partidas: numero(dados.partidasSemanais),
@@ -78,12 +52,37 @@ function obterDadosCarreira({ progressao, carreiras, userId, member }) {
     };
     ciclo.totalContinentes = Object.values(ciclo.continentes).reduce((s, v) => s + v, 0);
     ciclo.kd = ciclo.mortes > 0 ? (ciclo.kills / ciclo.mortes).toFixed(2) : (ciclo.kills > 0 ? ciclo.kills.toFixed(2) : '0.00');
+    carreira.kd = carreira.mortes > 0 ? (carreira.kills / carreira.mortes).toFixed(2) : (carreira.kills > 0 ? carreira.kills.toFixed(2) : '0.00');
+
+    let rankAtual = faccao.caminho[0];
+    let indiceAtual = 0;
+    for (let i = 0; i < faccao.caminho.length; i++) {
+        if (cicloVitorias >= numero(faccao.caminho[i]?.custo)) {
+            rankAtual = faccao.caminho[i];
+            indiceAtual = i;
+        }
+    }
+    const proximaPatente = faccao.caminho[indiceAtual + 1] || null;
+    const custoAtual = numero(rankAtual?.custo);
+    const custoProxima = proximaPatente ? numero(proximaPatente.custo) : custoAtual;
+    const faltam = proximaPatente ? Math.max(0, custoProxima - cicloVitorias) : 0;
+    const percentual = proximaPatente ? Math.min(100, Math.round((Math.max(0, cicloVitorias - custoAtual) / Math.max(1, custoProxima - custoAtual)) * 100)) : 100;
+    const barras = 12;
+    const preenchidas = Math.max(0, Math.min(barras, Math.round(percentual / 100 * barras)));
+    const barra = '▰'.repeat(preenchidas) + '▱'.repeat(barras - preenchidas);
+
+    const ranking = Object.entries(progressao || {})
+        .map(([id, valor]) => ({ id, wins: numero(valor?.totalWins) }))
+        .filter(item => item.wins > 0)
+        .sort((a, b) => b.wins - a.wins || a.id.localeCompare(b.id));
+    const posicaoIndex = ranking.findIndex(item => item.id === userId);
 
     return {
-        dados, historico, carreira, ciclo, faccao, totalWins,
+        dados, historico, carreira, ciclo, faccao, totalWins: cicloVitorias,
         rankAtual, proximaPatente, faltam, percentual, barra,
         posicao: posicaoIndex >= 0 ? posicaoIndex + 1 : null,
-        totalRankeados: ranking.length, printsProcessados: Array.isArray(dados.printsProcessados) ? dados.printsProcessados.length : 0,
+        totalRankeados: ranking.length,
+        printsProcessados: Array.isArray(dados.printsProcessados) ? dados.printsProcessados.length : 0,
         member
     };
 }
@@ -99,7 +98,6 @@ function obterSaldo(economy, userId) {
 function criarFicha({ progressao, carreiras, economy, userId, member, modo = 'carreira' }) {
     const info = obterDadosCarreira({ progressao, carreiras, userId, member });
     if (!info) return null;
-
     const saldo = obterSaldo(economy, userId);
     const nome = member?.displayName || member?.user?.username || info.dados.nome || `Usuário ${userId}`;
     const avatar = member?.user?.displayAvatarURL?.({ size: 256, extension: 'png' });
@@ -110,23 +108,9 @@ function criarFicha({ progressao, carreiras, economy, userId, member, modo = 'ca
         ? `${info.barra} **${info.percentual}%**\n**${formatarNumero(info.totalWins)} / ${formatarNumero(info.proximaPatente.custo)}** vitórias no ciclo\nFaltam **${formatarNumero(info.faltam)}** para **${info.proximaPatente.nome}**`
         : `${info.barra} **100%**\n🏆 **PATENTE MÁXIMA ALCANÇADA**`;
 
-    const combateCarreira = [
-        `⚔️ Kills: **${formatarNumero(info.carreira.kills)}**`,
-        `💀 Mortes: **${formatarNumero(info.carreira.mortes)}**`,
-        `📊 K/D: **${info.carreira.mortes > 0 ? (info.carreira.kills / info.carreira.mortes).toFixed(2) : '0.00'}**`,
-        `🎮 Partidas: **${formatarNumero(info.carreira.partidas)}**`
-    ].join('\n');
-
-    const combateCiclo = [
-        `⚔️ Kills: **${formatarNumero(info.ciclo.kills)}**`, `💀 Mortes: **${formatarNumero(info.ciclo.mortes)}**`,
-        `📊 K/D: **${info.ciclo.kd}**`, `🎮 Partidas: **${formatarNumero(info.ciclo.partidas)}**`
-    ].join('\n');
-
-    const continentesCiclo = [
-        `🌏 Ásia: **${formatarNumero(info.ciclo.continentes.asia)}**`, `🇪🇺 Europa: **${formatarNumero(info.ciclo.continentes.europa)}**`,
-        `🌊 Oceania: **${formatarNumero(info.ciclo.continentes.oceania)}**`, `🇧🇷 América do Sul: **${formatarNumero(info.ciclo.continentes.americaSul)}**`,
-        `🇺🇸 América do Norte: **${formatarNumero(info.ciclo.continentes.americaNorte)}**`, `🌍 África: **${formatarNumero(info.ciclo.continentes.africa)}**`
-    ].join('\n');
+    const combateCarreira = `⚔️ Kills: **${formatarNumero(info.carreira.kills)}**\n💀 Mortes: **${formatarNumero(info.carreira.mortes)}**\n📊 K/D: **${info.carreira.kd}**\n🎮 Partidas: **${formatarNumero(info.carreira.partidas)}**`;
+    const combateCiclo = `⚔️ Kills: **${formatarNumero(info.ciclo.kills)}**\n💀 Mortes: **${formatarNumero(info.ciclo.mortes)}**\n📊 K/D: **${info.ciclo.kd}**\n🎮 Partidas: **${formatarNumero(info.ciclo.partidas)}**`;
+    const continentesCiclo = `🌏 Ásia: **${formatarNumero(info.ciclo.continentes.asia)}**\n🇪🇺 Europa: **${formatarNumero(info.ciclo.continentes.europa)}**\n🌊 Oceania: **${formatarNumero(info.ciclo.continentes.oceania)}**\n🇧🇷 América do Sul: **${formatarNumero(info.ciclo.continentes.americaSul)}**\n🇺🇸 América do Norte: **${formatarNumero(info.ciclo.continentes.americaNorte)}**\n🌍 África: **${formatarNumero(info.ciclo.continentes.africa)}**`;
 
     const temporadas = info.carreira.temporadas.length ? info.carreira.temporadas.slice(-8).join(', ') : 'Nenhuma temporada consolidada ainda';
     const ligas = info.carreira.ligas.length ? info.carreira.ligas.slice(-8).join(', ') : 'Nenhuma Liga consolidada ainda';
@@ -136,16 +120,13 @@ function criarFicha({ progressao, carreiras, economy, userId, member, modo = 'ca
         .setColor('#F1C40F')
         .setAuthor({ name: 'WORLDWARBR • FICHA MILITAR', ...(guildIcon ? { iconURL: guildIcon } : {}) })
         .setTitle(`📋 ${nome}`)
-        .setDescription(`🏴 **${info.faccao.nome}**  •  🎖️ **${info.rankAtual.nome}**\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📌 **${tituloModo}**\nA ficha separa **carreira permanente**, **temporadas/Ligas** e **ciclo atual**.`)
+        .setDescription(`🏴 **${info.faccao.nome}**  •  🎖️ **${info.rankAtual.nome}**\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📌 **${tituloModo}**\nCarreira permanente, temporadas/Ligas e ciclo atual ficam separados.`)
         .addFields(
             { name: '📚 CARREIRA • VITÓRIAS', value: `**${formatarNumero(info.carreira.vitorias)}**`, inline: true },
+            { name: '🏆 CARREIRA • PONTOS', value: `**${formatarNumero(info.carreira.pontos)}**`, inline: true },
+            { name: '💰 WARCOINS', value: `**${formatarNumero(saldo)}**`, inline: true },
             { name: '⚔️ CARREIRA • COMBATE', value: combateCarreira, inline: true },
             { name: '🌍 CARREIRA • CONTINENTES', value: `**${formatarNumero(info.carreira.continentes)}**`, inline: true },
-            { name: '🏅 PONTOS DE CARREIRA', value: `**${formatarNumero(info.carreira.pontos)}**`, inline: true },
-            { name: '🏆 TÍTULOS', value: titulos, inline: true },
-            { name: '🏛️ TEMPORADAS', value: `**${formatarNumero(info.carreira.temporadas.length)}**`, inline: true },
-            { name: '🏆 LIGAS', value: `**${formatarNumero(info.carreira.ligas.length)}**`, inline: true },
-            { name: '💰 WARCOINS', value: `**${formatarNumero(saldo)}**`, inline: true },
             { name: '🏅 RANKING DO CICLO', value: info.posicao ? `**#${info.posicao}** de **${formatarNumero(info.totalRankeados)}**` : 'Sem posição', inline: true },
             { name: '🔄 CICLO ATUAL • VITÓRIAS', value: `**${formatarNumero(info.ciclo.vitorias)}**\nSemanal: **${formatarNumero(info.ciclo.semanal)}**\nMensal: **${formatarNumero(info.ciclo.mensal)}**`, inline: true },
             { name: '🎖️ PATENTE ATUAL', value: `**${info.rankAtual.nome}**\nMeta: **${formatarNumero(info.rankAtual.custo)}** vitórias`, inline: true },
@@ -154,6 +135,7 @@ function criarFicha({ progressao, carreiras, economy, userId, member, modo = 'ca
             { name: '🌍 CONTINENTES • CICLO ATUAL', value: `${continentesCiclo}\n\n🌐 Total: **${formatarNumero(info.ciclo.totalContinentes)}**`, inline: true },
             { name: '📖 TEMPORADAS REGISTRADAS', value: temporadas, inline: false },
             { name: '🏆 LIGAS REGISTRADAS', value: ligas, inline: false },
+            { name: '🏅 TÍTULOS', value: titulos, inline: false },
             { name: '📜 REGISTROS', value: `🖼️ Prints processados: **${formatarNumero(info.printsProcessados)}**\n🆔 ID: **${userId}**`, inline: false }
         )
         .setFooter({ text: `WorldWarBR • ${tituloModo} • Histórico permanente não é apagado pelo reset` })

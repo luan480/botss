@@ -26,12 +26,22 @@ function calcular(inicioIso, pontuacaoAtual = null) {
     const jogadores = {};
     for (const registro of carregarPartidas()) {
         const ts = timestampDaPartida(registro.partida, registro.id);
-        // Com uma temporada explícita, registros sem data confiável não podem
-        // contaminar o novo ciclo. Registros atuais usam IDs de mensagem Discord.
         if (inicioMs && (ts === null || ts < inicioMs)) continue;
         processar(jogadores, registro.partida);
     }
-    if (pontuacaoAtual && typeof pontuacaoAtual === 'object') for (const [idOriginal, dados] of Object.entries(pontuacaoAtual)) { const id = idDe(idOriginal); if (!id) continue; const j = garantir(jogadores, id); const pontos = dados && typeof dados === 'object' && !Array.isArray(dados) ? numero(dados.ptsLiga ?? dados.pontos ?? dados.pontuacao ?? dados.pontosLiga) : numero(dados); if (j.pontos === 0 && pontos !== 0) j.pontos = pontos; }
+    if (pontuacaoAtual && typeof pontuacaoAtual === 'object') {
+        for (const [idOriginal, dados] of Object.entries(pontuacaoAtual)) {
+            const id = idDe(idOriginal); if (!id) continue;
+            const j = garantir(jogadores, id);
+            const pontos = dados && typeof dados === 'object' && !Array.isArray(dados) ? numero(dados.ptsLiga ?? dados.pontos ?? dados.pontuacao ?? dados.pontosLiga) : numero(dados);
+            // pontuacao.json é a fonte de verdade do saldo atual da Liga.
+            // Isso preserva punições e ajustes administrativos, inclusive valores negativos.
+            j.pontos = pontos;
+            if (dados && typeof dados === 'object' && !Array.isArray(dados)) {
+                if (dados.warCoins !== undefined || dados.wc !== undefined || dados.wcAtual !== undefined) j.warCoins = numero(dados.warCoins ?? dados.wcAtual ?? dados.wc);
+            }
+        }
+    }
     for (const j of Object.values(jogadores)) { j.derrotas = Math.max(0, j.partidas - j.vitorias); j.winrate = j.partidas > 0 ? Number(((j.vitorias / j.partidas) * 100).toFixed(2)) : 0; }
     return jogadores;
 }

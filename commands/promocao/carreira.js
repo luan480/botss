@@ -1,6 +1,6 @@
 /* ========================================================================
    COMANDO: /carreira status
-   DESCRIÇÃO: Status público usando a mesma Ficha Militar do sistema de prints.
+   STATUS PÚBLICO DA CARREIRA
    ======================================================================== */
 
 const { SlashCommandBuilder } = require('discord.js');
@@ -16,16 +16,14 @@ module.exports = {
     data: new SlashCommandBuilder()
         .setName('carreira')
         .setDescription('Comandos do sistema de progressão de carreira.')
-        .addSubcommand(subcommand =>
-            subcommand
-                .setName('status')
-                .setDescription('Mostra a ficha completa de carreira de um membro.')
-                .addUserOption(option =>
-                    option
-                        .setName('membro')
-                        .setDescription('Escolha o membro ou deixe vazio para ver o seu.')
-                        .setRequired(false)
-                )
+        .addSubcommand(subcommand => subcommand
+            .setName('status')
+            .setDescription('Mostra a ficha completa de carreira de um membro.')
+            .addUserOption(option => option
+                .setName('membro')
+                .setDescription('Escolha o membro ou deixe vazio para ver o seu.')
+                .setRequired(false)
+            )
         ),
 
     async execute(interaction) {
@@ -34,14 +32,10 @@ module.exports = {
         const targetMember = interaction.options.getMember('membro') || interaction.member;
         const userId = targetMember.id;
 
-        const carreiras = safeReadJson(carreirasPath);
-        const progressao = safeReadJson(progressaoPath);
-        const economy = safeReadJson(economyPath);
-
         const ficha = criarFicha({
-            progressao,
-            carreiras,
-            economy,
+            progressao: safeReadJson(progressaoPath) || {},
+            carreiras: safeReadJson(carreirasPath) || {},
+            economy: safeReadJson(economyPath) || {},
             userId,
             member: targetMember,
             modo: 'carreira'
@@ -50,7 +44,7 @@ module.exports = {
         if (!ficha) {
             return interaction.reply({
                 content: `❌ ${targetMember} ainda não possui registro de carreira no sistema.`,
-                ephemeral: true
+                flags: 64
             });
         }
 

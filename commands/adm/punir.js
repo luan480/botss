@@ -57,7 +57,7 @@ module.exports = {
         if (!membro) return interaction.editReply('❌ Soldado não encontrado neste servidor.');
         if (membro.id === interaction.member.id) return interaction.editReply('❌ Você não pode aplicar uma sanção em si mesmo.');
         if (membro.id === interaction.guild.ownerId) return interaction.editReply('❌ O dono do servidor não pode ser punido por este comando.');
-        if (membro.roles.highest.position >= interaction.member.roles.highest.position && membro.id !== interaction.member.id) {
+        if (membro.roles.highest.position >= interaction.member.roles.highest.position) {
             return interaction.editReply('❌ Você não pode punir alguém com cargo igual ou superior ao seu.');
         }
         if (membro.roles.highest.position >= interaction.guild.members.me.roles.highest.position) {
@@ -78,7 +78,7 @@ module.exports = {
         let duracaoTexto = 'N/A';
         let pontosPerdidos = 0;
         let cargoAtribuidoTexto = 'Nenhum';
-        const pontuacao = safeReadJson(pontuacaoPath);
+        const pontuacao = safeReadJson(pontuacaoPath) || {};
         const removerCargosWarn = async () => {
             await membro.roles.remove([ID_CARGO_WARN_1, ID_CARGO_WARN_2, ID_CARGO_WARN_3]);
         };
@@ -93,19 +93,12 @@ module.exports = {
                 punicoes[alvo.id].ultimaPunicao = Date.now();
                 corEmbed = '#F1C40F';
                 tituloSentenca = '🔇 TRIBUNAL MILITAR • SENTENÇA DE SILENCIAMENTO';
-
                 await membro.timeout(ms, `Silenciado: ${justificativa}`);
                 await removerCargosWarn();
-
                 let cargo = ID_CARGO_WARN_1;
                 cargoAtribuidoTexto = `<@&${ID_CARGO_WARN_1}>`;
-                if (punicoes[alvo.id].mutes >= 3) {
-                    cargo = ID_CARGO_WARN_3;
-                    cargoAtribuidoTexto = `<@&${ID_CARGO_WARN_3}> (Nível Crítico)`;
-                } else if (punicoes[alvo.id].mutes === 2) {
-                    cargo = ID_CARGO_WARN_2;
-                    cargoAtribuidoTexto = `<@&${ID_CARGO_WARN_2}>`;
-                }
+                if (punicoes[alvo.id].mutes >= 3) { cargo = ID_CARGO_WARN_3; cargoAtribuidoTexto = `<@&${ID_CARGO_WARN_3}> (Nível Crítico)`; }
+                else if (punicoes[alvo.id].mutes === 2) { cargo = ID_CARGO_WARN_2; cargoAtribuidoTexto = `<@&${ID_CARGO_WARN_2}>`; }
                 await membro.roles.add(cargo);
                 descricaoPena = `⚠️ **Sanção Aplicada (Silenciamento).**\n• Duração: **${duracaoTexto}** (Infração #${punicoes[alvo.id].mutes})\n• Penalidade: Perda de **${pontosPerdidos} pontos** na Liga.\n• Condecoração/Warn: ${cargoAtribuidoTexto}`;
             } else if (tipo === 'castigo') {
@@ -117,16 +110,11 @@ module.exports = {
                 punicoes[alvo.id].ultimaPunicao = Date.now();
                 corEmbed = '#E67E22';
                 tituloSentenca = '⏳ TRIBUNAL MILITAR • SENTENÇA DE CASTIGO';
-
                 await membro.timeout(ms, `Castigo: ${justificativa}`);
                 await removerCargosWarn();
-
                 let cargo = ID_CARGO_WARN_2;
                 cargoAtribuidoTexto = `<@&${ID_CARGO_WARN_2}>`;
-                if (punicoes[alvo.id].castigos >= 2 || i >= 2) {
-                    cargo = ID_CARGO_WARN_3;
-                    cargoAtribuidoTexto = `<@&${ID_CARGO_WARN_3}> (⚠️ Alerta Máximo para Exílio)`;
-                }
+                if (punicoes[alvo.id].castigos >= 2 || i >= 2) { cargo = ID_CARGO_WARN_3; cargoAtribuidoTexto = `<@&${ID_CARGO_WARN_3}> (⚠️ Alerta Máximo para Exílio)`; }
                 await membro.roles.add(cargo);
                 descricaoPena = `⏳ **Sanção Aplicada (Castigo).**\n• Duração: **${duracaoTexto}** (Castigo #${punicoes[alvo.id].castigos})\n• Penalidade: Perda de **${pontosPerdidos} pontos** na Liga.\n• Condecoração/Warn: ${cargoAtribuidoTexto}`;
             } else if (tipo === 'ban') {
@@ -136,57 +124,39 @@ module.exports = {
                 pontosPerdidos = 160;
                 await membro.ban({ reason: justificativa });
                 descricaoPena = '💀 **Exílio Executado.** O soldado foi desonrado e banido permanentemente do quartel por quebra grave da lei militar.';
-            } else {
-                return interaction.editReply('❌ Tipo de punição inválido.');
-            }
+            } else return interaction.editReply('❌ Tipo de punição inválido.');
 
             if (pontosPerdidos > 0) {
-                const atuais = pontuacao[alvo.id] || 0;
-                pontuacao[alvo.id] = Math.max(0, atuais - pontosPerdidos);
-                safeWriteJson(pontuacaoPath, pontuacao);
+                const atuais = Number(pontuacao[alvo.id]) || 0;
+                // Penalidade pode deixar o jogador negativo: o ranking deve refletir a punição.
+                pontuacao[alvo.id] = atuais - pontosPerdidos;
+                if (!safeWriteJson(pontuacaoPath, pontuacao)) throw new Error('Não foi possível salvar a pontuação da Liga.');
             }
-            safeWriteJson(punicoesPath, punicoes);
+            if (!safeWriteJson(punicoesPath, punicoes)) throw new Error('Não foi possível salvar o registro da punição.');
         } catch (error) {
             console.error('[PUNIR] Falha ao aplicar sanção:', error);
             return interaction.editReply(`❌ Não foi possível concluir a punição. Verifique as permissões do bot e a hierarquia dos cargos.\n\`${error.message?.slice(0, 300) || 'erro desconhecido'}\``);
         }
 
         const embed = new EmbedBuilder()
-            .setTitle(tituloSentenca)
-            .setColor(corEmbed)
-            .setThumbnail(alvo.displayAvatarURL())
+            .setTitle(tituloSentenca).setColor(corEmbed).setThumbnail(alvo.displayAvatarURL())
             .addFields(
                 { name: '🛡️ Réu (Soldado)', value: `${alvo} (\`${alvo.username}\`)`, inline: true },
                 { name: '👮 Relator (Staff)', value: `${interaction.user}`, inline: true },
                 { name: '⌛ Prazo / Duração', value: `\`${duracaoTexto}\``, inline: true },
                 { name: '📋 Justificativa Oficial', value: `> ${justificativa}`, inline: false },
                 { name: '⚖️ Veredito Corregedoria', value: descricaoPena, inline: false }
-            )
-            .setFooter({ text: 'WorldWarBR • Corregedoria Geral (Warns Automáticos)' })
-            .setTimestamp();
+            ).setFooter({ text: 'WorldWarBR • Corregedoria Geral (Warns Automáticos)' }).setTimestamp();
 
         try {
-            const dm = new EmbedBuilder()
-                .setTitle(tituloSentenca)
-                .setColor(corEmbed)
+            const dm = new EmbedBuilder().setTitle(tituloSentenca).setColor(corEmbed)
                 .setDescription(`Você recebeu uma sanção oficial no servidor **${interaction.guild.name}**.\n\n**Detalhes:**`)
-                .addFields(
-                    { name: '📋 Justificativa', value: `> ${justificativa}`, inline: false },
-                    { name: '⚖️ Veredito', value: descricaoPena, inline: false }
-                )
-                .setTimestamp();
+                .addFields({ name: '📋 Justificativa', value: `> ${justificativa}`, inline: false }, { name: '⚖️ Veredito', value: descricaoPena, inline: false }).setTimestamp();
             await alvo.send({ embeds: [dm] });
         } catch {}
 
         const canal = await interaction.guild.channels.fetch(ID_CANAL_SENTENCAS).catch(() => null);
-        if (!canal) return interaction.editReply('⚠️ Punição aplicada, mas o Canal de Sentenças não foi encontrado para publicar o boletim.');
-
-        try {
-            await canal.send({ embeds: [embed] });
-        } catch (error) {
-            console.error('[PUNIR] Falha ao publicar boletim:', error);
-        }
-
-        await interaction.editReply(`✅ Punição aplicada, pontos descontados e cargos de warn atualizados.`);
+        if (canal) await canal.send({ embeds: [embed] }).catch(error => console.error('[PUNIR] Falha ao publicar boletim:', error));
+        await interaction.editReply(`✅ Punição aplicada, **${pontosPerdidos} pontos** descontados e cargos de warn atualizados.`);
     }
 };

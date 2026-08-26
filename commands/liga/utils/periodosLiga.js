@@ -22,17 +22,69 @@ function lerTemporada() {
     }
 }
 
-function dataDaPartida(registro) {
-    if (!registro || !registro.id) return null;
-    const id = String(registro.id);
-    if (!/^\d+$/.test(id)) return null;
+function dataValida(valor) {
+    if (valor instanceof Date) return Number.isFinite(valor.getTime()) ? valor : null;
+    if (valor === null || valor === undefined || valor === '') return null;
+    const data = new Date(valor);
+    return Number.isFinite(data.getTime()) ? data : null;
+}
+
+function idDiscordParaData(valor) {
+    if (valor === null || valor === undefined) return null;
+    const id = String(valor).replace(/^<@!?(\d+)>$/, '$1');
+    if (!/^\d{17,20}$/.test(id)) return null;
     try {
-        const timestamp = Number(BigInt(id) >> 22n) + DISCORD_EPOCH;
+        const timestamp = Number((BigInt(id) >> 22n) + BigInt(DISCORD_EPOCH));
         const data = new Date(timestamp);
         return Number.isNaN(data.getTime()) ? null : data;
     } catch {
         return null;
     }
+}
+
+function dataDaPartida(registro) {
+    if (!registro) return null;
+
+    // Primeiro tenta os campos explícitos de data/hora do registro.
+    const candidatos = [
+        registro.data,
+        registro.dataPartida,
+        registro.createdAt,
+        registro.timestamp,
+        registro.date,
+        registro.created_at,
+        registro.partida?.data,
+        registro.partida?.dataPartida,
+        registro.partida?.createdAt,
+        registro.partida?.timestamp,
+        registro.partida?.date,
+        registro.partida?.created_at
+    ];
+
+    for (const candidato of candidatos) {
+        const data = dataValida(candidato);
+        if (data) return data;
+    }
+
+    // Depois tenta IDs Discord reais. Nunca usa o índice do array.
+    const ids = [
+        registro.id,
+        registro.messageId,
+        registro.messageID,
+        registro.partidaId,
+        registro.idPartida,
+        registro.partida?.id,
+        registro.partida?.messageId,
+        registro.partida?.partidaId,
+        registro.partida?.idPartida
+    ];
+
+    for (const candidato of ids) {
+        const data = idDiscordParaData(candidato);
+        if (data) return data;
+    }
+
+    return null;
 }
 
 function estaNoPeriodo(data, inicio, fim) {
@@ -68,8 +120,8 @@ function fimDoMes(data = new Date()) {
 function inicioDaTemporada(data = new Date()) {
     const temporada = lerTemporada();
     if (temporada.inicio) {
-        const inicio = new Date(temporada.inicio);
-        if (Number.isFinite(inicio.getTime())) return inicio;
+        const inicio = dataValida(temporada.inicio);
+        if (inicio) return inicio;
     }
     return inicioDoMes(data);
 }
@@ -165,7 +217,8 @@ function processarPartida(jogadores, registro) {
 }
 
 function filtrarRegistros(inicio, fim) {
-    return carregarPartidas().map(registro => ({ registro, data: dataDaPartida(registro) }))
+    return carregarPartidas()
+        .map(registro => ({ registro, data: dataDaPartida(registro) }))
         .filter(item => estaNoPeriodo(item.data, inicio, fim))
         .sort((a, b) => a.data.getTime() - b.data.getTime());
 }

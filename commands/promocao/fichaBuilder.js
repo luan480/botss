@@ -21,8 +21,8 @@ function obterDadosCarreira({ progressao, carreiras, userId, member }) {
     const historico = careerHistory.obter(userId) || {};
 
     // HISTÓRICO + CICLO ATUAL = CARREIRA REAL DO JOGADOR.
-    // O histórico só recebe temporadas encerradas; por isso o ciclo atual
-    // deve ser somado ao acumulado, nunca usado com Math.max().
+    // O histórico contém apenas ciclos/Ligas já consolidados; por isso o ciclo
+    // atual deve ser SOMADO, e não comparado com totalWins.
     const cicloVitorias = numero(dados.totalWins);
     const carreira = {
         vitorias: numero(historico.totalWins) + cicloVitorias,
@@ -133,7 +133,7 @@ function criarFicha({ progressao, carreiras, economy, userId, member, modo = 'ca
             { name: '🎖️ PATENTE ATUAL', value: `**${info.rankAtual.nome}**\nMeta: **${formatarNumero(info.rankAtual.custo)}** vitórias`, inline: true },
             { name: '📈 PROGRESSÃO DA LIGA', value: progresso, inline: false },
             { name: '⚔️ COMBATE • CICLO ATUAL', value: combateCiclo, inline: true },
-            { name: '🌍 CONTINENTES • CICLO ATUAL', value: `${continentesCiclo}\n\n🌐 Total: **${formatarNumero(info.ciclo.totalContinentes)}**`, inline: true },
+            { name: '🌍 CONTINENTES • CICLO ATUAL', value: `${continentesCiclo}\n\n🌐 Total: **${formatarNumero(info.ciclo.totalContinents)}**`, inline: true },
             { name: '📖 TEMPORADAS REGISTRADAS', value: temporadas, inline: false },
             { name: '🏆 LIGAS REGISTRADAS', value: ligas, inline: false },
             { name: '🏅 TÍTULOS', value: titulos, inline: false },

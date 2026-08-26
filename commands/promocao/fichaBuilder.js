@@ -21,10 +21,11 @@ function obterDadosCarreira({ progressao, carreiras, userId, member }) {
     const historico = careerHistory.obter(userId) || {};
 
     // HISTÓRICO + CICLO ATUAL = CARREIRA REAL DO JOGADOR.
-    // Isso mantém a ficha acumulativa mesmo antes do próximo reset.
+    // O histórico só recebe temporadas encerradas; por isso o ciclo atual
+    // deve ser somado ao acumulado, nunca usado com Math.max().
     const cicloVitorias = numero(dados.totalWins);
     const carreira = {
-        vitorias: Math.max(numero(historico.totalWins), cicloVitorias),
+        vitorias: numero(historico.totalWins) + cicloVitorias,
         kills: numero(historico.totalKills) + numero(dados.killsSemanais),
         mortes: numero(historico.totalDeaths) + numero(dados.mortesSemanais),
         partidas: numero(historico.totalMatches) + numero(dados.partidasSemanais),

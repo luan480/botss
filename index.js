@@ -1,41 +1,24 @@
 /* ========================================================================
    WORLDWARBR — MASTER
    ======================================================================== */
-
 require('dotenv').config();
-
 const { Client, GatewayIntentBits, Collection, Events, MessageFlags, ActivityType } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
-
-// O token deve ficar no ambiente (.env/Discloud), nunca em config.json versionado.
 const TOKEN = process.env.DISCORD_TOKEN || process.env.BOT_TOKEN || process.env.TOKEN;
 const ID_SERVIDOR_AUTORIZADO = '849696655510863914';
-
 const handleReverter = require('./commands/liga/handlers/handleReverter.js');
 const pontuacaoPath = path.join(__dirname, 'commands', 'liga', 'pontuacao.json');
 const partidasPath = path.join(__dirname, 'commands', 'liga', 'partidas.json');
-
-const client = new Client({ intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
-    GatewayIntentBits.GuildMembers,
-    GatewayIntentBits.GuildMessageReactions,
-    GatewayIntentBits.GuildModeration,
-    GatewayIntentBits.GuildVoiceStates
-] });
-
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildMessageReactions, GatewayIntentBits.GuildModeration, GatewayIntentBits.GuildVoiceStates] });
 client.commands = new Collection();
 const commandsPath = path.join(__dirname, 'commands');
 const ARQUIVOS_IGNORADOS = new Set(['testePeriodosLiga.js', 'testeEstatisticasLiga.js', 'testeEstatisticasV2.js', 'index.js', 'buttons.js', 'interactionPatch.js']);
-
 function readCommands(dir) {
     if (!fs.existsSync(dir)) return;
     for (const file of fs.readdirSync(dir)) {
         const filePath = path.join(dir, file);
-        let stat;
-        try { stat = fs.statSync(filePath); } catch { continue; }
+        let stat; try { stat = fs.statSync(filePath); } catch { continue; }
         if (stat.isDirectory()) { readCommands(filePath); continue; }
         if (!file.endsWith('.js') || ARQUIVOS_IGNORADOS.has(file)) continue;
         try {
@@ -45,93 +28,53 @@ function readCommands(dir) {
             const nome = command.data.name;
             if (!nome || client.commands.has(nome)) continue;
             client.commands.set(nome, command);
-        } catch (erro) {
-            console.error(`[CMD] Erro ao carregar ${filePath}:`, erro);
-        }
+            console.log(`[CMD] Carregado: ${nome}`);
+        } catch (erro) { console.error(`[CMD] Erro ao carregar ${filePath}:`, erro); }
     }
 }
 readCommands(commandsPath);
-
 client.once(Events.ClientReady, async c => {
     console.log(`🤖 ${c.user.tag} está online!`);
     try { c.user.setPresence({ activities: [{ name: 'WAR', type: ActivityType.Playing, state: 'WorldWarBR' }], status: 'online' }); } catch {}
-
     try {
         const guilds = await c.guilds.fetch();
-        for (const [, guildData] of guilds) {
-            if (guildData.id !== ID_SERVIDOR_AUTORIZADO) {
-                const guild = c.guilds.cache.get(guildData.id);
-                if (guild) await guild.leave().catch(() => {});
-            }
-        }
+        for (const [, guildData] of guilds) if (guildData.id !== ID_SERVIDOR_AUTORIZADO) { const guild = c.guilds.cache.get(guildData.id); if (guild) await guild.leave().catch(() => {}); }
     } catch (erro) { console.error('❌ Erro ao validar servidores:', erro); }
-
     try {
         const guild = c.guilds.cache.get(ID_SERVIDOR_AUTORIZADO);
-        if (!guild) console.error('❌ Guilda autorizada não encontrada.');
-        else {
-            await c.application.commands.set([]);
-            await guild.commands.set(client.commands.map(command => command.data.toJSON()));
-            console.log(`✅ ${client.commands.size} comandos sincronizados na guilda autorizada.`);
-        }
+        if (guild) { await c.application.commands.set([]); await guild.commands.set(client.commands.map(command => command.data.toJSON())); console.log(`✅ ${client.commands.size} comandos sincronizados.`); }
     } catch (erro) { console.error('❌ Erro ao sincronizar comandos:', erro); }
-
+    try {
+        const promotion = require('./commands/promocao/promotionHandler.js');
+        if (typeof promotion === 'function') promotion(c);
+    } catch (erro) { console.error('❌ Falha no PromotionHandler:', erro); }
+    try {
+        const syncEngine = require('./commands/promocao/syncEngine.js');
+        if (typeof syncEngine.executarVarreduraCanal === 'function') await syncEngine.executarVarreduraCanal(c);
+    } catch (erro) { console.error('❌ Falha no Auto-Aprovação:', erro); }
     const handlers = [
-        ['./commands/promocao/promotionHandler.js', 'PromotionHandler'],
-        ['./commands/promocao/reactionAddHandler.js', 'Reaction Handler'],
-        ['./commands/adm/adminLogHandler.js', 'Admin Log'],
-        ['./commands/voz/voiceControlHandler.js', 'Voice Control'],
-        ['./commands/adm/temporaryVoiceHandler.js', 'Temporary Voice'],
-        ['./commands/adm/weeklyReportHandler.js', 'Relatórios'],
-        ['./commands/economy/economyTextHandler.js', 'Economy'],
-        ['./commands/adm/autoResponseHandler.js', 'Auto Response'],
-        ['./commands/adm/antiNukeHandler.js', 'Anti-Nuke'],
+        ['./commands/promocao/reactionAddHandler.js', 'Reaction Handler'], ['./commands/adm/adminLogHandler.js', 'Admin Log'],
+        ['./commands/voz/voiceControlHandler.js', 'Voice Control'], ['./commands/adm/temporaryVoiceHandler.js', 'Temporary Voice'],
+        ['./commands/adm/weeklyReportHandler.js', 'Relatórios'], ['./commands/economy/economyTextHandler.js', 'Economy'],
+        ['./commands/adm/autoResponseHandler.js', 'Auto Response'], ['./commands/adm/antiNukeHandler.js', 'Anti-Nuke'],
         ['./commands/adm/onboardingSyncHandler.js', 'Onboarding']
     ];
-    for (const [arquivo, nome] of handlers) {
-        try {
-            const handler = require(arquivo);
-            if (typeof handler === 'function') await handler(c);
-        } catch (erro) { console.error(`❌ Falha no ${nome}:`, erro); }
-    }
+    for (const [arquivo, nome] of handlers) { try { const handler = require(arquivo); if (typeof handler === 'function') handler(c); } catch (erro) { console.error(`❌ Falha no ${nome}:`, erro); } }
 });
-
-client.on(Events.GuildCreate, async guild => {
-    if (guild.id !== ID_SERVIDOR_AUTORIZADO) await guild.leave().catch(() => {});
-});
-
+client.on(Events.GuildCreate, async guild => { if (guild.id !== ID_SERVIDOR_AUTORIZADO) await guild.leave().catch(() => {}); });
 client.on(Events.InteractionCreate, async interaction => {
     if (interaction.guildId !== ID_SERVIDOR_AUTORIZADO) {
-        if (interaction.isRepliable()) {
-            const resposta = { content: '❌ Este bot é de uso exclusivo e restrito.', flags: MessageFlags.Ephemeral };
-            if (interaction.replied || interaction.deferred) return interaction.followUp(resposta).catch(() => {});
-            return interaction.reply(resposta).catch(() => {});
-        }
+        if (interaction.isRepliable()) { const r = { content: '❌ Este bot é de uso exclusivo e restrito.', flags: MessageFlags.Ephemeral }; if (interaction.replied || interaction.deferred) return interaction.followUp(r).catch(() => {}); return interaction.reply(r).catch(() => {}); }
         return;
     }
-
     const customId = interaction.customId || '';
     if (interaction.isChatInputCommand()) {
-        const command = client.commands.get(interaction.commandName);
-        if (!command) return;
-        try { await command.execute(interaction); }
-        catch (erro) {
-            console.error(`[CMD] Erro em /${interaction.commandName}:`, erro);
-            const resposta = { content: '❌ Erro ao executar o comando.', flags: MessageFlags.Ephemeral };
-            if (interaction.replied || interaction.deferred) await interaction.followUp(resposta).catch(() => {});
-            else await interaction.reply(resposta).catch(() => {});
-        }
+        const command = client.commands.get(interaction.commandName); if (!command) return;
+        try { await command.execute(interaction); } catch (erro) { console.error(`[CMD] Erro em /${interaction.commandName}:`, erro); const r = { content: '❌ Erro ao executar o comando.', flags: MessageFlags.Ephemeral }; if (interaction.replied || interaction.deferred) await interaction.followUp(r).catch(() => {}); else await interaction.reply(r).catch(() => {}); }
         return;
     }
-
-    if (interaction.isModalSubmit() && customId.startsWith('hall_modal_')) {
-        try { await require('./commands/promocao/historicoHandler.js')(interaction, client); }
-        catch (erro) { console.error('[HALL] Erro no modal:', erro); }
-        return;
-    }
-
+    if (interaction.isModalSubmit() && customId.startsWith('hall_modal_')) { try { await require('./commands/promocao/historicoHandler.js')(interaction, client); } catch (erro) { console.error('[HALL] Erro no modal:', erro); } return; }
     if (!(interaction.isButton() || interaction.isStringSelectMenu() || interaction.isUserSelectMenu() || interaction.isRoleSelectMenu() || interaction.isChannelSelectMenu() || interaction.isMentionableSelectMenu())) return;
-
     try {
         if (customId.startsWith('hist_') || customId.startsWith('hall_')) return await require('./commands/promocao/historicoHandler.js')(interaction, client);
         if (customId.startsWith('edit_match_')) return await handleReverter(client, interaction, pontuacaoPath, partidasPath);
@@ -140,27 +83,14 @@ client.on(Events.InteractionCreate, async interaction => {
         if (customId.startsWith('rank_')) return await require('./commands/promocao/rankingHandler.js')(interaction, client);
         if (customId.startsWith('emb_') || customId.startsWith('mdl_') || customId.startsWith('eb_')) return await require('./commands/adm/embedSystem.js').handleInteraction(interaction);
         if (customId.startsWith('tvoice_')) return await require('./commands/adm/tempVoiceButtonHandler.js')(interaction, client);
-        if (customId.startsWith('vcall_select_')) {
-            if (!interaction.values?.length) return interaction.reply({ content: '❌ Nenhum usuário selecionado.', flags: MessageFlags.Ephemeral });
-            interaction.customId = `vcall_k_${interaction.values[0]}`;
-            return await require('./commands/voz/voiceControlHandler.js')(interaction, client);
-        }
+        if (customId.startsWith('vcall_select_')) { if (!interaction.values?.length) return interaction.reply({ content: '❌ Nenhum usuário selecionado.', flags: MessageFlags.Ephemeral }); interaction.customId = `vcall_k_${interaction.values[0]}`; return await require('./commands/voz/voiceControlHandler.js')(interaction, client); }
         if (customId.startsWith('liga_') || ['iniciar_contabilizacao','ver_ranking','ver_todos_competidores','registrar','add_abate','fim_abates','add_cont','fim_cont'].includes(customId) || customId.startsWith('sel_') || customId.startsWith('reset_')) return await require('./commands/liga/buttons.js')(client, interaction);
     } catch (erro) {
         console.error('[INTERACTION] Erro:', erro);
-        if (interaction.isRepliable()) {
-            const resposta = { content: '❌ Erro ao processar esta ação.', flags: MessageFlags.Ephemeral };
-            if (interaction.replied || interaction.deferred) await interaction.followUp(resposta).catch(() => {});
-            else await interaction.reply(resposta).catch(() => {});
-        }
+        if (interaction.isRepliable()) { const r = { content: '❌ Erro ao processar esta ação.', flags: MessageFlags.Ephemeral }; if (interaction.replied || interaction.deferred) await interaction.followUp(r).catch(() => {}); else await interaction.reply(r).catch(() => {}); }
     }
 });
-
 process.on('unhandledRejection', erro => console.error('[PROCESS] Unhandled Rejection:', erro));
 process.on('uncaughtException', erro => console.error('[PROCESS] Uncaught Exception:', erro));
-
-if (!TOKEN) {
-    console.error('❌ TOKEN NÃO ENCONTRADO. Configure DISCORD_TOKEN, BOT_TOKEN ou TOKEN no ambiente.');
-    process.exit(1);
-}
+if (!TOKEN) { console.error('❌ TOKEN NÃO ENCONTRADO. Configure DISCORD_TOKEN, BOT_TOKEN ou TOKEN no ambiente.'); process.exit(1); }
 client.login(TOKEN);

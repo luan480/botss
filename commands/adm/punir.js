@@ -93,7 +93,7 @@ module.exports = {
                 punicoes[alvo.id].ultimaPunicao = Date.now();
                 corEmbed = '#F1C40F';
                 tituloSentenca = '🔇 TRIBUNAL MILITAR • SENTENÇA DE SILENCIAMENTO';
-                await membro.timeout(ms, `Silenciado: ${justificativa}`);
+                await membro.voice.setMute(true, `Silenciado: ${justificativa}`);
                 await removerCargosWarn();
                 let cargo = ID_CARGO_WARN_1;
                 cargoAtribuidoTexto = `<@&${ID_CARGO_WARN_1}>`;
@@ -128,7 +128,6 @@ module.exports = {
 
             if (pontosPerdidos > 0) {
                 const atuais = Number(pontuacao[alvo.id]) || 0;
-                // Penalidade pode deixar o jogador negativo: o ranking deve refletir a punição.
                 pontuacao[alvo.id] = atuais - pontosPerdidos;
                 if (!safeWriteJson(pontuacaoPath, pontuacao)) throw new Error('Não foi possível salvar a pontuação da Liga.');
             }

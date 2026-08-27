@@ -8,7 +8,6 @@ const path = require('path');
 const TOKEN = process.env.DISCORD_TOKEN || process.env.BOT_TOKEN || process.env.TOKEN;
 const ID_SERVIDOR_AUTORIZADO = '849696655510863914';
 
-// Estrutura real do repositório: os módulos ficam diretamente em /commands.
 const handleReverter = require('./commands/liga/handlers/handleReverter.js');
 const pontuacaoPath = path.join(__dirname, 'commands', 'liga', 'pontuacao.json');
 const partidasPath = path.join(__dirname, 'commands', 'liga', 'partidas.json');
@@ -154,6 +153,24 @@ client.on(Events.InteractionCreate, async interaction => {
     if (!(interaction.isButton() || interaction.isStringSelectMenu() || interaction.isUserSelectMenu() || interaction.isRoleSelectMenu() || interaction.isChannelSelectMenu() || interaction.isMentionableSelectMenu())) return;
 
     try {
+        // Botão criado pelo sistema de promoção/ficha.
+        if (customId.startsWith('ver_ficha_')) {
+            const userId = customId.slice('ver_ficha_'.length);
+            if (!/^\d{15,22}$/.test(userId)) {
+                return interaction.reply({ content: '❌ Usuário inválido.', flags: MessageFlags.Ephemeral });
+            }
+            const { safeReadJson } = require('./commands/liga/utils/helpers.js');
+            const { criarFicha } = require('./commands/promocao/fichaBuilder.js');
+            const progressao = safeReadJson(path.join(__dirname, 'commands', 'promocao', 'progressao.json'));
+            const carreiras = safeReadJson(path.join(__dirname, 'commands', 'promocao', 'carreiras.json'));
+            const economy = safeReadJson(path.join(__dirname, 'commands', 'economy', 'economy.json'));
+            const member = await interaction.guild.members.fetch(userId).catch(() => null);
+            if (!member) return interaction.reply({ content: '❌ Não foi possível encontrar esse membro.', flags: MessageFlags.Ephemeral });
+            const ficha = criarFicha({ progressao, carreiras, economy, userId, member, modo: 'carreira' });
+            if (!ficha) return interaction.reply({ content: '❌ A ficha desse usuário não está disponível.', flags: MessageFlags.Ephemeral });
+            return interaction.reply({ embeds: [ficha], flags: MessageFlags.Ephemeral });
+        }
+
         if (customId.startsWith('hist_') || customId.startsWith('hall_')) return await require('./commands/promocao/historicoHandler.js')(interaction, client);
         if (customId.startsWith('edit_match_')) return await handleReverter(client, interaction, pontuacaoPath, partidasPath);
         if (customId.startsWith('ticket_')) return await require('./commands/ticket/buttonRouter.js')(interaction, client);

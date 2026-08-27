@@ -26,9 +26,7 @@ function calcularSanacao(d) {
     return d;
 }
 
-function formatarTempoMs(ms) {
-    return `${ms / (60 * 60 * 1000)} Hora(s)`;
-}
+function formatarTempoMs(ms) { return `${ms / (60 * 60 * 1000)} Hora(s)`; }
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -44,7 +42,6 @@ module.exports = {
 
     async execute(interaction) {
         await interaction.deferReply({ ephemeral: true });
-
         if (!isStaff(interaction.member)) return interaction.editReply('❌ Apenas membros da equipe (Staff, Suporte, Mod ou ADM) podem operar o Tribunal Militar.');
 
         const alvo = interaction.options.getUser('alvo');
@@ -75,13 +72,11 @@ module.exports = {
                 pontosPerdidos = PONTOS_PROGRESSIVOS[i];
                 punicoes[alvo.id].mutes++;
                 punicoes[alvo.id].ultimaPunicao = Date.now();
+                punicoes[alvo.id].muteAte = Date.now() + ms;
                 corEmbed = '#F1C40F';
                 tituloSentenca = '🔇 TRIBUNAL MILITAR • SENTENÇA DE SILENCIAMENTO';
 
-                // Silenciar NÃO usa timeout: o membro permanece na call e pode entrar novamente.
-                if (membro.voice.channel) {
-                    await membro.voice.setMute(true, `Silenciado por ${duracaoTexto}: ${justificativa}`);
-                }
+                if (membro.voice.channel) await membro.voice.setMute(true, `Silenciado por ${duracaoTexto}: ${justificativa}`);
 
                 await removerCargosWarn();
                 let cargo = ID_CARGO_WARN_1;
@@ -97,6 +92,7 @@ module.exports = {
                 pontosPerdidos = PONTOS_PROGRESSIVOS[i];
                 punicoes[alvo.id].castigos++;
                 punicoes[alvo.id].ultimaPunicao = Date.now();
+                delete punicoes[alvo.id].muteAte;
                 corEmbed = '#E67E22';
                 tituloSentenca = '⏳ TRIBUNAL MILITAR • SENTENÇA DE CASTIGO';
                 await membro.timeout(ms, `Castigo: ${justificativa}`);
@@ -108,6 +104,7 @@ module.exports = {
                 descricaoPena = `⏳ **Sanção Aplicada (Castigo).**\n• Duração: **${duracaoTexto}** (Castigo #${punicoes[alvo.id].castigos})\n• Penalidade: Perda de **${pontosPerdidos} pontos** na Liga.\n• Condecoração/Warn: ${cargoAtribuidoTexto}`;
             } else if (tipo === 'ban') {
                 corEmbed = '#000000'; tituloSentenca = '💀 TRIBUNAL MILITAR • EXÍLIO ABSOLUTO'; duracaoTexto = 'Permanente'; pontosPerdidos = 160;
+                delete punicoes[alvo.id].muteAte;
                 await membro.ban({ reason: justificativa });
                 descricaoPena = '💀 **Exílio Executado.** O soldado foi desonrado e banido permanentemente do quartel por quebra grave da lei militar.';
             } else return interaction.editReply('❌ Tipo de punição inválido.');

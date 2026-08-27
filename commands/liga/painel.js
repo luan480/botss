@@ -201,15 +201,10 @@ module.exports =
                         .setContent(
 
                             `📆 **Início:** 01/08 — **Fim:** 31/08\n` +
-
                             `⚔️ **Só os fortes sobrevivem!**\n\n` +
-
                             `__**PREMIAÇÃO:**__\n` +
-
                             `🥇 **1º Lugar:** R$ 30,00 + <@&1429934221216186458>\n` +
-
                             `🥈 **2º Lugar:** R$ 20,00 + <@&938174095470772305>\n` +
-
                             `🥉 **3º Lugar:** <@&938174095470772305>`
 
                         )
@@ -234,11 +229,8 @@ module.exports =
                         .setContent(
 
                             `📈 **TOP 3 ATUAL — TEMPO REAL**\n\n` +
-
                             `🥇 ${top1}\n` +
-
                             `🥈 ${top2}\n` +
-
                             `🥉 ${top3}`
 
                         )
@@ -264,9 +256,7 @@ module.exports =
 
                             new MediaGalleryItemBuilder()
                                 .setURL(
-
                                     'https://cdn.discordapp.com/attachments/1082774011676729365/1283426407313182803/WAR.gif'
-
                                 )
 
                         )
@@ -277,10 +267,8 @@ module.exports =
 
                     new TextDisplayBuilder()
                         .setContent(
-
                             `📖 **GUIA DA LIGA:** ` +
                             `regras, como registrar partidas, perguntas frequentes e pontuação.`
-
                         )
 
                 );
@@ -291,79 +279,28 @@ module.exports =
                 .addComponents(
 
                     new ButtonBuilder()
-
-                        .setCustomId(
-                            'iniciar_contabilizacao'
-                        )
-
-                        .setLabel(
-                            'Contabilizar'
-                        )
-
-                        .setEmoji(
-                            '▶️'
-                        )
-
-                        .setStyle(
-                            ButtonStyle.Primary
-                        ),
-
+                        .setCustomId('iniciar_contabilizacao')
+                        .setLabel('Contabilizar')
+                        .setEmoji('▶️')
+                        .setStyle(ButtonStyle.Primary),
 
                     new ButtonBuilder()
-
-                        .setCustomId(
-                            'ver_ranking'
-                        )
-
-                        .setLabel(
-                            'Ver Ranking'
-                        )
-
-                        .setEmoji(
-                            '🏆'
-                        )
-
-                        .setStyle(
-                            ButtonStyle.Success
-                        ),
-
+                        .setCustomId('ver_ranking')
+                        .setLabel('Ver Ranking')
+                        .setEmoji('🏆')
+                        .setStyle(ButtonStyle.Success),
 
                     new ButtonBuilder()
-
-                        .setCustomId(
-                            'liga_estatisticas'
-                        )
-
-                        .setLabel(
-                            'Estatísticas'
-                        )
-
-                        .setEmoji(
-                            '📊'
-                        )
-
-                        .setStyle(
-                            ButtonStyle.Primary
-                        ),
-
+                        .setCustomId('estatisticas_selecionar')
+                        .setLabel('Estatísticas')
+                        .setEmoji('📊')
+                        .setStyle(ButtonStyle.Primary),
 
                     new ButtonBuilder()
-
-                        .setCustomId(
-                            'liga_guia'
-                        )
-
-                        .setLabel(
-                            'Guia da Liga'
-                        )
-
-                        .setEmoji(
-                            '📖'
-                        )
-
-                        .setStyle(
-                            ButtonStyle.Secondary
-                        )
+                        .setCustomId('liga_guia')
+                        .setLabel('Guia da Liga')
+                        .setEmoji('📖')
+                        .setStyle(ButtonStyle.Secondary)
 
                 );
 
@@ -399,25 +336,16 @@ module.exports =
         ) {
 
             await painelMsg.edit({
-
-                flags:
-                    MessageFlags.IsComponentsV2,
-
+                flags: MessageFlags.IsComponentsV2,
                 components: [
-
                     containerPainel,
-
                     row
-
                 ]
-
             });
-
 
             console.log(
                 '[Painel] Painel da Liga atualizado.'
             );
-
 
             return painelMsg;
 
@@ -426,38 +354,24 @@ module.exports =
 
         const novaMensagem =
             await canal.send({
-
-                flags:
-                    MessageFlags.IsComponentsV2,
-
+                flags: MessageFlags.IsComponentsV2,
                 components: [
-
                     containerPainel,
-
                     row
-
                 ]
-
             });
 
 
         fs.writeFileSync(
-
             painelPath,
-
             JSON.stringify(
                 {
-
                     messageId:
                         novaMensagem.id
-
                 },
-
                 null,
                 2
-
             )
-
         );
 
 

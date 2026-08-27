@@ -1,99 +1,27 @@
-const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require('discord.js');
+const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, MessageFlags } = require('discord.js');
 const path = require('path');
 const { safeReadJson, safeWriteJson } = require('../liga/utils/helpers.js');
-const HISTORICO_PATH = path.join(__dirname, 'historico.json');
-const CATEGORIAS = ['liga', 'eventos', 'records', 'imperador'];
-const txt = v => v == null ? '' : String(v).trim();
-const limit = (v, n = 1024) => { const s = txt(v); return s.length <= n ? s : s.slice(0, n - 3) + '...'; };
-const admin = i => Boolean(i.memberPermissions?.has(PermissionFlagsBits.Administrator));
-const nome = r => txt(r?.nome || r?.titulo || r?.temporada || r?.evento || r?.descricao || 'Registro sem nome');
-function carregar() { const d = safeReadJson(HISTORICO_PATH) || {}; for (const c of CATEGORIAS) if (!Array.isArray(d[c])) d[c] = []; return d; }
-function achar(d, c, id) { const lista = d[c] || []; const indice = lista.findIndex(r => r && String(r.id) === String(id)); return { lista, indice, registro: indice >= 0 ? lista[indice] : null }; }
-function atual(r, c) { const v = r?.[c]; if (v == null) return ''; if (Array.isArray(v)) return v.join('\n'); if (typeof v === 'object') return JSON.stringify(v); return String(v); }
-function valorOu(r, c) { return limit(atual(r, c) || 'Não informado'); }
-function embedResumo(c, r) {
-    const e = new EmbedBuilder().setColor('#C9A227').setTitle('🏛️ GERENCIAMENTO DO HALL DA FAMA').setDescription(`**${limit(nome(r), 256)}**\n${c === 'liga' ? '🏆' : c === 'imperador' ? '👑' : c === 'eventos' ? '⚔️' : '📊'} Categoria: **${c.toUpperCase()}**`);
-    if (c === 'eventos') e.addFields(
-        { name: '🥇 VENCEDOR', value: valorOu(r, 'vencedor'), inline: true }, { name: '🥈 2º LUGAR', value: valorOu(r, 'segundo'), inline: true }, { name: '🥉 3º LUGAR', value: valorOu(r, 'terceiro'), inline: true },
-        { name: '👥 PARTICIPANTES', value: valorOu(r, 'participantes'), inline: true }, { name: '💰 VALOR', value: valorOu(r, 'valor'), inline: true }, { name: '🎁 PRÊMIO', value: valorOu(r, 'premio'), inline: true },
-        { name: '📅 DATA', value: valorOu(r, 'data'), inline: true }, { name: '🕐 HORÁRIO', value: valorOu(r, 'horario'), inline: true }, { name: '📝 DESCRIÇÃO', value: valorOu(r, 'descricao') },
-        { name: '📌 OBSERVAÇÕES', value: valorOu(r, 'observacoes') }, { name: '🖼️ IMAGEM', value: valorOu(r, 'imagem') }
-    );
-    else if (c === 'liga' || c === 'imperador') e.addFields({ name: '📅 ANO', value: valorOu(r, 'ano'), inline: true }, { name: '📝 DESCRIÇÃO', value: valorOu(r, 'descricao') }, { name: '🗓️ MESES / VENCEDORES', value: valorOu(r, 'meses') });
-    else e.addFields({ name: '📝 DESCRIÇÃO', value: valorOu(r, 'descricao') }, { name: '📊 RECORDS', value: valorOu(r, 'linhas') });
-    return e.setFooter({ text: 'Hall da Fama • Gerenciamento administrativo' });
-}
-async function atualizarMural(guild) { try { const p = require('./painel-ranking.js'); if (typeof p.atualizarMural === 'function') await p.atualizarMural(guild); } catch (e) { console.error('[HALL] mural:', e); } }
-
-async function perguntar(channel, userId, pergunta, valorAtual = '') {
-    const aviso = valorAtual ? `\n**Atual:** ${limit(valorAtual, 700)}\nDigite **pular** para manter ou **-** para limpar.` : '\nDigite **pular** para deixar como está ou **-** para deixar vazio.';
-    const perguntaMsg = await channel.send(`✏️ **${pergunta}**${aviso}`);
-    const resposta = await new Promise(resolve => {
-        const col = channel.createMessageCollector({ filter: m => m.author.id === userId && !m.author.bot, max: 1, time: 120000 });
-        col.on('collect', m => resolve(m));
-        col.on('end', c => { if (!c.size) resolve(null); });
-    });
-    await perguntaMsg.delete().catch(() => {});
-    if (!resposta) throw new Error('TIMEOUT');
-    const valor = txt(resposta.content);
-    await resposta.delete().catch(() => {});
-    if (valor.toLowerCase() === 'pular') return { changed: false };
-    if (valor === '-') return { changed: true, value: null };
-    return { changed: true, value: valor };
-}
-function aplicar(r, campo, res) { if (!res.changed) return; if (res.value === null) delete r[campo]; else if (campo === 'meses' || campo === 'linhas') r[campo] = res.value.split('\n').map(x => x.trim()).filter(Boolean); else r[campo] = res.value; }
-
-async function editarNoChat(interaction, categoria, id) {
-    const d = carregar(), a = achar(d, categoria, id);
-    if (!a.registro) return interaction.reply({ content: '❌ Esse registro não existe mais.', flags: MessageFlags.Ephemeral });
-    await interaction.reply({ content: `✏️ Edição iniciada para **${nome(a.registro)}**. Vou fazer as perguntas aqui no chat.`, flags: MessageFlags.Ephemeral });
-    const r = a.registro, canal = interaction.channel, uid = interaction.user.id;
-    const campos = [{ k: 'nome', p: 'Nome do registro' }];
-    if (categoria === 'liga' || categoria === 'imperador') campos.push({ k: 'ano', p: 'Ano' }, { k: 'descricao', p: 'Descrição' }, { k: 'meses', p: 'Meses / vencedores — envie um por linha' });
-    else if (categoria === 'records') campos.push({ k: 'descricao', p: 'Descrição' }, { k: 'linhas', p: 'Records — envie um por linha' });
-    else campos.push(
-        { k: 'vencedor', p: 'Vencedor' }, { k: 'segundo', p: '2º lugar' }, { k: 'terceiro', p: '3º lugar' }, { k: 'participantes', p: 'Participantes' },
-        { k: 'valor', p: 'Valor' }, { k: 'premio', p: 'Prêmio' }, { k: 'descricao', p: 'Descrição' }, { k: 'data', p: 'Data' }, { k: 'horario', p: 'Horário' }, { k: 'observacoes', p: 'Observações' }, { k: 'imagem', p: 'Imagem — URL' }
-    );
-    try {
-        for (const f of campos) aplicar(r, f.k, await perguntar(canal, uid, f.p, atual(r, f.k)));
-        if (!safeWriteJson(HISTORICO_PATH, d)) throw new Error('SAVE');
-        await atualizarMural(interaction.guild);
-        await canal.send(`✅ **${nome(r)}** foi editado com sucesso. O Hall da Fama foi atualizado.`);
-    } catch (e) {
-        await canal.send(e.message === 'TIMEOUT' ? '⏱️ Edição cancelada por falta de resposta durante 2 minutos.' : '❌ Não consegui salvar a edição no historico.json.').catch(() => {});
-        console.error('[HALL] edição:', e);
-    }
-}
-
-async function handler(interaction) {
-    if (!admin(interaction)) return interaction.reply({ content: '❌ Apenas administradores podem gerenciar o Hall.', flags: MessageFlags.Ephemeral });
-    if (!interaction.isButton()) return;
-    const p = interaction.customId.split('_'); if (p[0] !== 'hall' || p[1] !== 'manage') return;
-    if (p[2] === 'cancel') return interaction.update({ content: '↩️ Remoção cancelada.', embeds: [], components: [] });
-    const categoria = p[3], id = p.slice(4).join('_'), d = carregar(), a = achar(d, categoria, id);
-    if (!a.registro) return interaction.reply({ content: '❌ Esse registro não existe mais.', flags: MessageFlags.Ephemeral });
-    if (p[2] === 'edit') return editarNoChat(interaction, categoria, id);
-    if (p[2] === 'delete') return interaction.update({ content: `⚠️ **Confirma a remoção de ${nome(a.registro)}?**`, embeds: [], components: [new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`hall_manage_confirm_${categoria}_${id}`).setLabel('Confirmar remoção').setEmoji('🗑️').setStyle(ButtonStyle.Danger), new ButtonBuilder().setCustomId('hall_manage_cancel').setLabel('Cancelar').setEmoji('↩️').setStyle(ButtonStyle.Secondary))] });
-    if (p[2] === 'confirm') { const n = nome(a.registro); a.lista.splice(a.indice, 1); if (!safeWriteJson(HISTORICO_PATH, d)) return interaction.reply({ content: '❌ Não consegui salvar a remoção.', flags: MessageFlags.Ephemeral }); await atualizarMural(interaction.guild); return interaction.update({ content: `✅ **${n}** foi removido do Hall da Fama.`, embeds: [], components: [] }); }
-}
-
-module.exports = {
-    data: new SlashCommandBuilder().setName('hall-gerenciar').setDescription('✏️ Edita ou remove registros do Hall da Fama.').setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
-        .addStringOption(o => o.setName('categoria').setDescription('Categoria do registro.').setRequired(true).addChoices({ name: '🏆 Liga', value: 'liga' }, { name: '⚔️ Eventos', value: 'eventos' }, { name: '📊 Records', value: 'records' }, { name: '👑 Imperador', value: 'imperador' }))
-        .addStringOption(o => o.setName('registro').setDescription('Digite parte do nome e escolha o registro.').setRequired(true).setAutocomplete(true)),
-    async autocomplete(interaction) {
-        if (!admin(interaction)) return interaction.respond([]);
-        const c = interaction.options.getString('categoria'); if (!CATEGORIAS.includes(c)) return interaction.respond([]);
-        const termo = txt(interaction.options.getString('registro')).toLowerCase(), d = carregar();
-        return interaction.respond((d[c] || []).filter(r => { const n = nome(r).toLowerCase(); return !termo || n.includes(termo) || txt(r.id).toLowerCase().includes(termo); }).slice(0, 25).map(r => ({ name: limit(nome(r), 100), value: String(r.id) })));
-    },
-    async execute(interaction) {
-        if (!admin(interaction)) return interaction.reply({ content: '❌ Apenas administradores.', flags: MessageFlags.Ephemeral });
-        const c = interaction.options.getString('categoria'), id = interaction.options.getString('registro'), a = achar(carregar(), c, id);
-        if (!a.registro) return interaction.reply({ content: '❌ Registro não encontrado. Escolha um item do autocomplete.', flags: MessageFlags.Ephemeral });
-        const row = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`hall_manage_edit_${c}_${id}`).setLabel('Editar no chat').setEmoji('✏️').setStyle(ButtonStyle.Primary), new ButtonBuilder().setCustomId(`hall_manage_delete_${c}_${id}`).setLabel('Remover').setEmoji('🗑️').setStyle(ButtonStyle.Danger));
-        return interaction.reply({ embeds: [embedResumo(c, a.registro)], components: [row], flags: MessageFlags.Ephemeral });
-    },
-    handler
+const FILE = path.join(__dirname, 'historico.json');
+const CATS = ['liga','eventos','records','imperador'];
+const t = v => v == null ? '' : String(v).trim();
+const cut = (v,n=1024) => { const s=t(v); return s.length<=n?s:s.slice(0,n-3)+'...'; };
+const isAdmin = i => Boolean(i.memberPermissions?.has(PermissionFlagsBits.Administrator));
+const recordName = r => t(r?.nome || r?.titulo || r?.temporada || r?.evento || r?.descricao || 'Registro sem nome');
+function load(){ const d=safeReadJson(FILE)||{}; for(const c of CATS) if(!Array.isArray(d[c])) d[c]=[]; return d; }
+function find(d,c,id){ const list=d[c]||[]; const index=list.findIndex(r=>r&&String(r.id)===String(id)); return {list,index,record:index>=0?list[index]:null}; }
+function val(r,k){ const v=r?.[k]; if(v==null)return ''; if(Array.isArray(v))return v.join('\n'); if(typeof v==='object')return JSON.stringify(v); return String(v); }
+function show(r,k){return cut(val(r,k)||'Não informado');}
+function embed(c,r){ const e=new EmbedBuilder().setColor('#C9A227').setTitle('🏛️ HALL DA FAMA — GERENCIAMENTO').setDescription(`**${cut(recordName(r),256)}**\nCategoria: **${c.toUpperCase()}**`); if(c==='eventos')e.addFields({name:'🥇 VENCEDOR',value:show(r,'vencedor'),inline:true},{name:'🥈 2º LUGAR',value:show(r,'segundo'),inline:true},{name:'🥉 3º LUGAR',value:show(r,'terceiro'),inline:true},{name:'👥 PARTICIPANTES',value:show(r,'participantes'),inline:true},{name:'💰 VALOR',value:show(r,'valor'),inline:true},{name:'🎁 PRÊMIO',value:show(r,'premio'),inline:true},{name:'📅 DATA',value:show(r,'data'),inline:true},{name:'🕐 HORÁRIO',value:show(r,'horario'),inline:true},{name:'📝 DESCRIÇÃO',value:show(r,'descricao')},{name:'📌 OBSERVAÇÕES',value:show(r,'observacoes')},{name:'🖼️ IMAGEM',value:show(r,'imagem')}); else if(c==='liga'||c==='imperador')e.addFields({name:'📅 ANO',value:show(r,'ano'),inline:true},{name:'📝 DESCRIÇÃO',value:show(r,'descricao')},{name:'🗓️ MESES / VENCEDORES',value:show(r,'meses')}); else e.addFields({name:'📝 DESCRIÇÃO',value:show(r,'descricao')},{name:'📊 RECORDS',value:show(r,'linhas')}); return e.setFooter({text:'Somente administradores • edição feita diretamente pelo chat'}); }
+async function mural(g){try{const p=require('./painel-ranking.js');if(typeof p.atualizarMural==='function')await p.atualizarMural(g);}catch(e){console.error('[HALL] mural:',e);}}
+async function ask(ch,uid,label,current){const q=await ch.send(`✏️ **${label}**${current?`\n> Atual: **${cut(current,700)}**`:''}\n> Responda aqui. Digite **pular** para manter ou **-** para apagar.`);const a=await new Promise(resolve=>{const c=ch.createMessageCollector({filter:m=>m.author.id===uid&&!m.author.bot,max:1,time:120000});c.on('collect',m=>resolve(m));c.on('end',x=>{if(!x.size)resolve(null);});});await q.delete().catch(()=>{});if(!a)throw new Error('TIMEOUT');const v=t(a.content);await a.delete().catch(()=>{});if(v.toLowerCase()==='pular')return {change:false};if(v==='-')return {change:true,value:null};return {change:true,value:v};}
+function apply(r,k,x){if(!x.change)return;if(x.value===null)delete r[k];else if(k==='meses'||k==='linhas')r[k]=x.value.split('\n').map(s=>s.trim()).filter(Boolean);else r[k]=x.value;}
+async function edit(i,c,id){const d=load(),a=find(d,c,id);if(!a.record)return i.reply({content:'❌ Registro não encontrado.',flags:MessageFlags.Ephemeral});const r=a.record;await i.reply({content:`✏️ **Edição iniciada:** ${recordName(r)}\nAs perguntas serão feitas aqui no chat. Só você poderá responder.`,flags:MessageFlags.Ephemeral});const fields=[['nome','Nome do registro']];if(c==='liga'||c==='imperador')fields.push(['ano','Ano'],['descricao','Descrição'],['meses','Meses / vencedores (um por linha)']);else if(c==='records')fields.push(['descricao','Descrição'],['linhas','Records (um por linha)']);else fields.push(['vencedor','Vencedor'],['segundo','2º lugar'],['terceiro','3º lugar'],['participantes','Participantes'],['valor','Valor'],['premio','Prêmio'],['descricao','Descrição'],['data','Data'],['horario','Horário'],['observacoes','Observações'],['imagem','Imagem (URL)']);try{for(const [k,label] of fields)apply(r,k,await ask(i.channel,i.user.id,label,val(r,k)));if(!safeWriteJson(FILE,d))throw new Error('SAVE');await mural(i.guild);await i.channel.send(`✅ **${recordName(r)}** foi atualizado com sucesso.`);}catch(e){await i.channel.send(e.message==='TIMEOUT'?'⏱️ Edição cancelada por falta de resposta.':'❌ Falha ao salvar a edição.').catch(()=>{});console.error('[HALL] edição:',e);}}
+async function remove(i,c,id){const d=load(),a=find(d,c,id);if(!a.record)return i.reply({content:'❌ Registro não encontrado.',flags:MessageFlags.Ephemeral});const n=recordName(a.record);a.list.splice(a.index,1);if(!safeWriteJson(FILE,d))return i.reply({content:'❌ Falha ao salvar a remoção.',flags:MessageFlags.Ephemeral});await mural(i.guild);return i.reply({content:`🗑️ **${n}** foi removido do Hall da Fama.`,flags:MessageFlags.Ephemeral});}
+module.exports={
+ data:new SlashCommandBuilder().setName('hall-gerenciar').setDescription('✏️ Edita ou remove registros do Hall da Fama.').setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+  .addStringOption(o=>o.setName('acao').setDescription('Ação').setRequired(true).addChoices({name:'✏️ Editar no chat',value:'editar'},{name:'🗑️ Remover',value:'remover'}))
+  .addStringOption(o=>o.setName('categoria').setDescription('Categoria').setRequired(true).addChoices({name:'🏆 Liga',value:'liga'},{name:'⚔️ Eventos',value:'eventos'},{name:'📊 Records',value:'records'},{name:'👑 Imperador',value:'imperador'}))
+  .addStringOption(o=>o.setName('registro').setDescription('Digite parte do nome e selecione o registro.').setRequired(true).setAutocomplete(true)),
+ async autocomplete(i){if(!isAdmin(i))return i.respond([]);const c=i.options.getString('categoria');if(!CATS.includes(c))return i.respond([]);const q=t(i.options.getString('registro')).toLowerCase(),d=load();return i.respond((d[c]||[]).filter(r=>{const n=recordName(r).toLowerCase();return !q||n.includes(q)||t(r.id).toLowerCase().includes(q);}).slice(0,25).map(r=>({name:cut(recordName(r),100),value:String(r.id)})));},
+ async execute(i){if(!isAdmin(i))return i.reply({content:'❌ Apenas administradores podem gerenciar o Hall.',flags:MessageFlags.Ephemeral});const acao=i.options.getString('acao'),c=i.options.getString('categoria'),id=i.options.getString('registro'),a=find(load(),c,id);if(!a.record)return i.reply({content:'❌ Registro não encontrado. Selecione uma sugestão do autocomplete.',flags:MessageFlags.Ephemeral});if(acao==='editar')return edit(i,c,id);await i.reply({embeds:[embed(c,a.record)],content:'⚠️ Para confirmar a remoção, escreva **CONFIRMAR** neste chat em até 30 segundos.',flags:MessageFlags.Ephemeral});const col=i.channel.createMessageCollector({filter:m=>m.author.id===i.user.id&&!m.author.bot,max:1,time:30000});const m=await new Promise(r=>{col.on('collect',x=>r(x));col.on('end',x=>{if(!x.size)r(null);});});if(!m)return i.followUp({content:'⏱️ Remoção cancelada.',flags:MessageFlags.Ephemeral});const ok=t(m.content).toUpperCase()==='CONFIRMAR';await m.delete().catch(()=>{});if(!ok)return i.followUp({content:'↩️ Remoção cancelada.',flags:MessageFlags.Ephemeral});return remove(i,c,id);}
 };

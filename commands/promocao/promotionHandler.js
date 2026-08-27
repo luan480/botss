@@ -1,6 +1,7 @@
 /* ========================================================================
    ARQUIVO: commands/promocao/promotionHandler.js
    DESCRIÇÃO: Atribui cargos de patente no Discord usando os IDs do carreiras.json.
+   Também registra o roteamento do gerenciamento do Hall da Fama.
    ======================================================================== */
 
 const path = require('path');
@@ -61,9 +62,59 @@ async function atualizarCargoPatente(member) {
     }
 }
 
+function registrarHallHandler(client) {
+    if (client.__hallManagerInteractionHandler) return;
+
+    client.__hallManagerInteractionHandler = true;
+
+    client.on('interactionCreate', async interaction => {
+        try {
+            if (interaction.guildId && interaction.guildId !== String(interaction.client.config?.guildId || '8496966981924687914')) {
+                // O index.js já faz a validação principal de servidor.
+                // Não bloquear aqui para evitar duplicar a configuração.
+            }
+
+            if (interaction.isAutocomplete() && interaction.commandName === 'hall-gerenciar') {
+                const comando = client.commands?.get('hall-gerenciar');
+                if (comando?.autocomplete) {
+                    return await comando.autocomplete(interaction);
+                }
+                return interaction.respond([]).catch(() => {});
+            }
+
+            const customId = interaction.customId || '';
+            const ehHallGerenciamento =
+                (interaction.isButton() && customId.startsWith('hall_manage_')) ||
+                (interaction.isModalSubmit() && customId.startsWith('hall_edit_submit_'));
+
+            if (!ehHallGerenciamento) return;
+
+            const comando = client.commands?.get('hall-gerenciar') || require('./hall-gerenciar.js');
+            if (typeof comando.handler === 'function') {
+                return await comando.handler(interaction);
+            }
+        } catch (erro) {
+            console.error('[HALL] Erro no autocomplete/gerenciamento:', erro);
+
+            if (interaction.isAutocomplete()) {
+                return interaction.respond([]).catch(() => {});
+            }
+
+            if (interaction.isRepliable() && !interaction.replied && !interaction.deferred) {
+                return interaction.reply({
+                    content: '❌ Ocorreu um erro ao processar o gerenciamento do Hall.',
+                    flags: 64
+                }).catch(() => {});
+            }
+        }
+    });
+}
+
 module.exports = (client) => {
     client.atualizarCargoPatente = atualizarCargoPatente;
+    registrarHallHandler(client);
     console.log('✅ Sistema de atribuição de cargos por ID (PromotionHandler) ativado.');
 };
 
 module.exports.atualizarCargoPatente = atualizarCargoPatente;
+module.exports.registrarHallHandler = registrarHallHandler;

@@ -4,9 +4,9 @@
    ======================================================================== */
 
 const path = require('path');
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { EmbedBuilder } = require('discord.js');
 const { safeReadJson, safeWriteJson } = require('../liga/utils/helpers.js');
-const { criarFicha } = require('./fichaBuilder.js');
+const { criarResumoPrint } = require('./printSummaryBuilder.js');
 
 const carreirasPath = path.join(__dirname, 'carreiras.json');
 const progressaoPath = path.join(__dirname, 'progressao.json');
@@ -74,7 +74,6 @@ async function executarVarreduraCanal(client) {
         }
 
         const faccao = faccaoId ? carreirasConfig.faccoes?.[faccaoId] : null;
-        // Nunca atribuir automaticamente a primeira facção do JSON.
         if (!faccao?.caminho?.length) {
             console.warn(`[PROMOÇÃO] Print ${message.id} ignorado: facção não identificada para ${member.user.tag}.`);
             continue;
@@ -122,31 +121,34 @@ async function executarVarreduraCanal(client) {
 
             if (subiuDePatente) {
                 economy[userId] += 500;
-                await sincronizarCargo(member, faccao, novoRankObj);
+                const cargoSincronizado = await sincronizarCargo(member, faccao, novoRankObj);
+                if (!cargoSincronizado) console.warn(`[PROMOÇÃO] Cargo não sincronizado para ${member.user.tag}.`);
 
-                const embedPromo = new EmbedBuilder()
-                    .setColor('#FFD700')
-                    .setTitle('🏆 PROMOÇÃO AUTOMÁTICA 🏆')
-                    .setDescription(`Parabéns, ${member}! Você subiu para **${novoRankObj.nome}**!\n💰 **Bônus de promoção:** +500 WarCoins`)
-                    .setTimestamp();
-                const rowBtn = new ActionRowBuilder().addComponents(
-                    new ButtonBuilder().setCustomId(`ver_ficha_${userId}`).setLabel('Ver Ficha').setStyle(ButtonStyle.Secondary).setEmoji('📋')
-                );
+                const resumo = criarResumoPrint({
+                    progressao,
+                    carreiras: carreirasConfig,
+                    economy,
+                    userId,
+                    member,
+                    promocao: { anterior: faccao.caminho.find(r => r.id === rankAntigoId)?.nome || 'Patente anterior', nova: novoRankObj.nome }
+                });
 
                 let canalDestino = message.channel;
                 if (faccao.canalDeAnuncio) {
                     const canalFaccao = await message.guild.channels.fetch(faccao.canalDeAnuncio).catch(() => null);
                     if (canalFaccao) canalDestino = canalFaccao;
                 }
-                await canalDestino.send({ content: `${member}`, embeds: [embedPromo], components: [rowBtn] })
-                    .catch(error => console.error('[PROMOÇÃO] Falha ao anunciar:', error));
+
+                if (resumo) {
+                    await canalDestino.send({ content: `${member}`, embeds: [resumo.embed], components: resumo.components })
+                        .catch(error => console.error('[PROMOÇÃO] Falha ao anunciar:', error));
+                }
             } else {
-                const ficha = criarFicha({ progressao, carreiras: carreirasConfig, economy, userId, member, modo: 'print' });
-                const rowBtn = new ActionRowBuilder().addComponents(
-                    new ButtonBuilder().setCustomId(`ver_ficha_${userId}`).setLabel('Ver Ficha').setStyle(ButtonStyle.Secondary).setEmoji('📋')
-                );
-                await message.channel.send({ content: `📋 ${member}`, embeds: ficha ? [ficha] : [], components: [rowBtn] })
-                    .catch(error => console.error('[PROMOÇÃO] Falha ao enviar ficha:', error));
+                const resumo = criarResumoPrint({ progressao, carreiras: carreirasConfig, economy, userId, member });
+                if (resumo) {
+                    await message.channel.send({ content: `${member}`, embeds: [resumo.embed], components: resumo.components })
+                        .catch(error => console.error('[PROMOÇÃO] Falha ao enviar resumo:', error));
+                }
             }
         } else if (estaInvalidado && foiProcessado) {
             progressao[userId].totalWins = Math.max(0, (Number(progressao[userId].totalWins) || 0) - 1);

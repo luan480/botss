@@ -11,10 +11,19 @@ const {
     MessageFlags
 } = require('discord.js');
 const path = require('path');
-const { safeReadJson, safeWriteJson } = require('../liga/utils/helpers.js');
+const {
+    safeReadJson,
+    safeWriteJson
+} = require('../liga/utils/helpers.js');
 
 const FILE = path.join(__dirname, 'historico.json');
-const CATEGORIAS = ['liga', 'eventos', 'records', 'imperador'];
+
+const CATEGORIAS = [
+    'liga',
+    'eventos',
+    'records',
+    'imperador'
+];
 
 function texto(valor) {
     return valor == null ? '' : String(valor).trim();
@@ -22,9 +31,12 @@ function texto(valor) {
 
 function limitar(valor, limite = 1024) {
     const valorTexto = texto(valor);
-    return valorTexto.length <= limite
-        ? valorTexto
-        : `${valorTexto.slice(0, limite - 3)}...`;
+
+    if (valorTexto.length <= limite) {
+        return valorTexto;
+    }
+
+    return `${valorTexto.slice(0, limite - 3)}...`;
 }
 
 function isAdmin(interaction) {
@@ -74,17 +86,29 @@ function encontrarRegistro(dados, categoria, id) {
 function valorCampo(registro, campo) {
     const valor = registro?.[campo];
 
-    if (valor == null) return '';
-    if (Array.isArray(valor)) return valor.join('\n');
-    if (typeof valor === 'object') return JSON.stringify(valor, null, 2);
+    if (valor == null) {
+        return '';
+    }
+
+    if (Array.isArray(valor)) {
+        return valor.join('\n');
+    }
+
+    if (typeof valor === 'object') {
+        return JSON.stringify(valor, null, 2);
+    }
 
     return String(valor);
+}
+
+function mostrarCampo(registro, campo) {
+    return limitar(valorCampo(registro, campo) || 'Não informado');
 }
 
 function campoEmbed(nome, valor, inline = false) {
     return {
         name: nome,
-        value: limitar(valor || 'Não informado'),
+        value: mostrarCampo({ valor }, 'valor'),
         inline
     };
 }
@@ -126,7 +150,7 @@ function criarEmbed(categoria, registro) {
     }
 
     return embed.setFooter({
-        text: 'Somente administradores • gerenciamento do Hall da Fama'
+        text: 'Somente administradores • edição por formulário'
     });
 }
 
@@ -145,42 +169,80 @@ function criarBotoes(categoria, id) {
     );
 }
 
-function criarModal(categoria, id, registro, pagina = 1) {
-    const modal = new ModalBuilder()
-        .setCustomId(`hall_edit_submit_${categoria}_${id}_${pagina}`)
-        .setTitle(`✏️ Editar ${categoria}`);
-
-    const campos = categoria === 'eventos'
-        ? [
-            ['nome', 'Nome', TextInputStyle.Short, 100],
-            ['vencedor', 'Vencedor', TextInputStyle.Short, 500],
-            ['segundo', '2º lugar', TextInputStyle.Short, 500],
-            ['terceiro', '3º lugar', TextInputStyle.Short, 500],
-            ['descricao', 'Descrição', TextInputStyle.Paragraph, 1000]
-        ]
-        : categoria === 'liga' || categoria === 'imperador'
-            ? [
-                ['nome', 'Nome', TextInputStyle.Short, 100],
-                ['ano', 'Ano', TextInputStyle.Short, 10],
-                ['descricao', 'Descrição', TextInputStyle.Paragraph, 1000],
-                ['meses', 'Meses / vencedores', TextInputStyle.Paragraph, 1000]
-            ]
-            : [
-                ['nome', 'Nome', TextInputStyle.Short, 100],
-                ['descricao', 'Descrição', TextInputStyle.Paragraph, 1000],
-                ['linhas', 'Records', TextInputStyle.Paragraph, 1000]
+function obterCampos(categoria, pagina) {
+    if (categoria === 'eventos') {
+        if (pagina === 1) {
+            return [
+                ['nome', 'Nome do evento', TextInputStyle.Short, 100],
+                ['vencedor', '🥇 Vencedor', TextInputStyle.Short, 500],
+                ['segundo', '🥈 2º lugar', TextInputStyle.Short, 500],
+                ['terceiro', '🥉 3º lugar', TextInputStyle.Short, 500],
+                ['descricao', '📝 Descrição', TextInputStyle.Paragraph, 1000]
             ];
+        }
+
+        if (pagina === 2) {
+            return [
+                ['participantes', '👥 Participantes', TextInputStyle.Paragraph, 1000],
+                ['valor', '💰 Valor / prêmio em dinheiro', TextInputStyle.Short, 500],
+                ['premio', '🎁 Prêmio', TextInputStyle.Paragraph, 1000],
+                ['data', '📅 Data', TextInputStyle.Short, 100],
+                ['horario', '🕐 Horário', TextInputStyle.Short, 100]
+            ];
+        }
+
+        return [
+            ['observacoes', '📌 Observações', TextInputStyle.Paragraph, 1000],
+            ['imagem', '🖼️ Imagem / URL', TextInputStyle.Short, 1000]
+        ];
+    }
+
+    if (categoria === 'liga' || categoria === 'imperador') {
+        return [
+            ['nome', 'Nome', TextInputStyle.Short, 100],
+            ['ano', 'Ano', TextInputStyle.Short, 10],
+            ['descricao', 'Descrição', TextInputStyle.Paragraph, 1000],
+            ['meses', 'Meses / vencedores', TextInputStyle.Paragraph, 1000]
+        ];
+    }
+
+    return [
+        ['nome', 'Nome', TextInputStyle.Short, 100],
+        ['descricao', 'Descrição', TextInputStyle.Paragraph, 1000],
+        ['linhas', 'Records', TextInputStyle.Paragraph, 1000]
+    ];
+}
+
+function totalPaginas(categoria) {
+    return categoria === 'eventos' ? 3 : 1;
+}
+
+function criarModal(categoria, id, registro, pagina) {
+    const total = totalPaginas(categoria);
+    const tituloPagina = total > 1
+        ? `✏️ Evento • ${pagina}/${total}`
+        : `✏️ Editar ${categoria}`;
+
+    const modal = new ModalBuilder()
+        .setCustomId(`hall_edit_submit:${categoria}:${id}:${pagina}`)
+        .setTitle(tituloPagina.slice(0, 45));
+
+    const campos = obterCampos(categoria, pagina);
 
     for (const [campo, label, estilo, maxLength] of campos) {
         const input = new TextInputBuilder()
             .setCustomId(campo)
-            .setLabel(label)
+            .setLabel(label.slice(0, 45))
             .setStyle(estilo)
             .setRequired(false)
-            .setMaxLength(maxLength);
+            .setMaxLength(maxLength)
+            .setPlaceholder('Deixe vazio para manter o valor atual');
 
         const atual = limitar(valorCampo(registro, campo), maxLength);
-        if (atual) input.setValue(atual);
+
+        if (atual) {
+            input.setValue(atual);
+        }
 
         modal.addComponents(
             new ActionRowBuilder().addComponents(input)
@@ -190,11 +252,19 @@ function criarModal(categoria, id, registro, pagina = 1) {
     return modal;
 }
 
-function atualizarCampo(registro, campo, valor) {
+function aplicarCampo(registro, campo, valor) {
     const novoValor = texto(valor);
 
-    // Vazio mantém o valor atual para evitar apagar dados antigos por acidente.
-    if (!novoValor) return;
+    // Campo vazio no modal = manter o valor antigo.
+    if (!novoValor) {
+        return;
+    }
+
+    // Digitar '-' = apagar o campo.
+    if (novoValor === '-') {
+        delete registro[campo];
+        return;
+    }
 
     if (campo === 'meses' || campo === 'linhas') {
         registro[campo] = novoValor
@@ -205,6 +275,14 @@ function atualizarCampo(registro, campo, valor) {
     }
 
     registro[campo] = novoValor;
+}
+
+function salvar(dados) {
+    const resultado = safeWriteJson(FILE, dados);
+
+    if (resultado === false) {
+        throw new Error('SAVE_FAILED');
+    }
 }
 
 async function atualizarMural(guild) {
@@ -267,13 +345,80 @@ async function executarEdicao(interaction, categoria, id) {
         });
     }
 
-    const modal = criarModal(
-        categoria,
-        id,
-        encontrado.registro
+    return interaction.showModal(
+        criarModal(
+            categoria,
+            id,
+            encontrado.registro,
+            1
+        )
     );
+}
 
-    return interaction.showModal(modal);
+async function processarModal(interaction) {
+    const partes = interaction.customId.split(':');
+    const categoria = partes[1];
+    const id = partes[2];
+    const pagina = Number(partes[3]);
+
+    if (!CATEGORIAS.includes(categoria) || !pagina) {
+        return interaction.reply({
+            content: '❌ Dados da edição inválidos.',
+            flags: MessageFlags.Ephemeral
+        });
+    }
+
+    const dados = carregarHistorico();
+    const encontrado = encontrarRegistro(dados, categoria, id);
+
+    if (!encontrado.registro) {
+        return interaction.reply({
+            content: '❌ Esse registro não existe mais.',
+            flags: MessageFlags.Ephemeral
+        });
+    }
+
+    const campos = obterCampos(categoria, pagina);
+
+    for (const [campo] of campos) {
+        aplicarCampo(
+            encontrado.registro,
+            campo,
+            interaction.fields.getTextInputValue(campo)
+        );
+    }
+
+    try {
+        salvar(dados);
+    } catch (erro) {
+        console.error('[HALL] Erro ao salvar edição:', erro);
+
+        return interaction.reply({
+            content: '❌ Falha ao salvar as alterações.',
+            flags: MessageFlags.Ephemeral
+        });
+    }
+
+    const total = totalPaginas(categoria);
+
+    if (pagina < total) {
+        return interaction.showModal(
+            criarModal(
+                categoria,
+                id,
+                encontrado.registro,
+                pagina + 1
+            )
+        );
+    }
+
+    await atualizarMural(interaction.guild);
+
+    return interaction.reply({
+        content:
+            `✅ **${nomeRegistro(encontrado.registro)}** foi atualizado com sucesso.`,
+        flags: MessageFlags.Ephemeral
+    });
 }
 
 async function executarRemocao(interaction, categoria, id) {
@@ -325,9 +470,11 @@ async function confirmarRemocao(interaction, categoria, id) {
 
     encontrado.registros.splice(encontrado.indice, 1);
 
-    const salvo = safeWriteJson(FILE, dados);
+    try {
+        salvar(dados);
+    } catch (erro) {
+        console.error('[HALL] Erro ao salvar remoção:', erro);
 
-    if (salvo === false) {
         return interaction.update({
             content: '❌ Falha ao salvar a remoção.',
             embeds: [],
@@ -344,60 +491,6 @@ async function confirmarRemocao(interaction, categoria, id) {
     });
 }
 
-async function processarModal(interaction) {
-    const partes = interaction.customId.split('_');
-    const categoria = partes[3];
-    const id = partes.slice(4, -1).join('_');
-
-    if (!CATEGORIAS.includes(categoria)) {
-        return interaction.reply({
-            content: '❌ Categoria inválida.',
-            flags: MessageFlags.Ephemeral
-        });
-    }
-
-    const dados = carregarHistorico();
-    const encontrado = encontrarRegistro(dados, categoria, id);
-
-    if (!encontrado.registro) {
-        return interaction.reply({
-            content: '❌ Esse registro não existe mais.',
-            flags: MessageFlags.Ephemeral
-        });
-    }
-
-    const campos = categoria === 'eventos'
-        ? ['nome', 'vencedor', 'segundo', 'terceiro', 'descricao']
-        : categoria === 'liga' || categoria === 'imperador'
-            ? ['nome', 'ano', 'descricao', 'meses']
-            : ['nome', 'descricao', 'linhas'];
-
-    for (const campo of campos) {
-        atualizarCampo(
-            encontrado.registro,
-            campo,
-            interaction.fields.getTextInputValue(campo)
-        );
-    }
-
-    const salvo = safeWriteJson(FILE, dados);
-
-    if (salvo === false) {
-        return interaction.reply({
-            content: '❌ Falha ao salvar as alterações.',
-            flags: MessageFlags.Ephemeral
-        });
-    }
-
-    await atualizarMural(interaction.guild);
-
-    return interaction.reply({
-        content:
-            `✅ **${nomeRegistro(encontrado.registro)}** foi atualizado com sucesso.`,
-        flags: MessageFlags.Ephemeral
-    });
-}
-
 async function processarInteracao(interaction) {
     if (!isAdmin(interaction)) {
         return interaction.reply({
@@ -406,43 +499,63 @@ async function processarInteracao(interaction) {
         });
     }
 
-    if (interaction.isButton()) {
-        if (interaction.customId === 'hall_cancel_delete') {
-            return interaction.update({
-                content: '↩️ Remoção cancelada.',
-                embeds: [],
-                components: []
-            });
+    if (interaction.isModalSubmit()) {
+        if (interaction.customId.startsWith('hall_edit_submit:')) {
+            return processarModal(interaction);
         }
 
-        const partes = interaction.customId.split('_');
-
-        if (partes[0] !== 'hall') return;
-
-        if (partes[1] === 'edit') {
-            const categoria = partes[2];
-            const id = partes.slice(3).join('_');
-            return executarEdicao(interaction, categoria, id);
-        }
-
-        if (partes[1] === 'delete') {
-            const categoria = partes[2];
-            const id = partes.slice(3).join('_');
-            return executarRemocao(interaction, categoria, id);
-        }
-
-        if (partes[1] === 'confirm') {
-            const categoria = partes[3];
-            const id = partes.slice(4).join('_');
-            return confirmarRemocao(interaction, categoria, id);
-        }
+        return;
     }
 
-    if (
-        interaction.isModalSubmit() &&
-        interaction.customId.startsWith('hall_edit_submit_')
-    ) {
-        return processarModal(interaction);
+    if (!interaction.isButton()) {
+        return;
+    }
+
+    if (interaction.customId === 'hall_cancel_delete') {
+        return interaction.update({
+            content: '↩️ Remoção cancelada.',
+            embeds: [],
+            components: []
+        });
+    }
+
+    const partes = interaction.customId.split('_');
+
+    if (partes[0] !== 'hall') {
+        return;
+    }
+
+    if (partes[1] === 'edit') {
+        const categoria = partes[2];
+        const id = partes.slice(3).join('_');
+
+        return executarEdicao(
+            interaction,
+            categoria,
+            id
+        );
+    }
+
+    if (partes[1] === 'delete') {
+        const categoria = partes[2];
+        const id = partes.slice(3).join('_');
+
+        return executarRemocao(
+            interaction,
+            categoria,
+            id
+        );
+    }
+
+    if (partes[1] === 'confirm') {
+        const categoria = partes[3];
+        const id = partes.slice(4).join('_');
+
+        return confirmarRemocao(
+            interaction,
+            categoria,
+            id
+        );
     }
 }
 
@@ -450,7 +563,9 @@ module.exports = {
     data: new SlashCommandBuilder()
         .setName('hall-gerenciar')
         .setDescription('✏️ Edita ou remove registros do Hall da Fama.')
-        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+        .setDefaultMemberPermissions(
+            PermissionFlagsBits.Administrator
+        )
 
         .addStringOption(option =>
             option
@@ -497,7 +612,9 @@ module.exports = {
         .addStringOption(option =>
             option
                 .setName('registro')
-                .setDescription('Digite parte do nome e selecione o registro.')
+                .setDescription(
+                    'Digite parte do nome e selecione o registro.'
+                )
                 .setRequired(true)
                 .setAutocomplete(true)
         ),
@@ -509,7 +626,8 @@ module.exports = {
     async execute(interaction) {
         if (!isAdmin(interaction)) {
             return interaction.reply({
-                content: '❌ Apenas administradores podem gerenciar o Hall.',
+                content:
+                    '❌ Apenas administradores podem gerenciar o Hall.',
                 flags: MessageFlags.Ephemeral
             });
         }
@@ -519,21 +637,33 @@ module.exports = {
         const id = interaction.options.getString('registro');
 
         const dados = carregarHistorico();
-        const encontrado = encontrarRegistro(dados, categoria, id);
+        const encontrado = encontrarRegistro(
+            dados,
+            categoria,
+            id
+        );
 
         if (!encontrado.registro) {
             return interaction.reply({
                 content:
-                    '❌ Registro não encontrado. Escolha um registro pela lista de sugestões.',
+                    '❌ Registro não encontrado. Escolha uma sugestão válida do autocomplete.',
                 flags: MessageFlags.Ephemeral
             });
         }
 
         if (acao === 'editar') {
-            return executarEdicao(interaction, categoria, id);
+            return executarEdicao(
+                interaction,
+                categoria,
+                id
+            );
         }
 
-        return executarRemocao(interaction, categoria, id);
+        return executarRemocao(
+            interaction,
+            categoria,
+            id
+        );
     },
 
     processarInteracao

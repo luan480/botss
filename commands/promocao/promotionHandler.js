@@ -1,6 +1,6 @@
 /* ========================================================================
    ARQUIVO: commands/promocao/promotionHandler.js
-   DESCRIÇÃO: Atribui cargos de patente no Discord usando diretamente os IDs do carreiras.json
+   DESCRIÇÃO: Atribui cargos de patente no Discord usando os IDs do carreiras.json.
    ======================================================================== */
 
 const path = require('path');
@@ -9,62 +9,61 @@ const { safeReadJson } = require('../liga/utils/helpers.js');
 const progressaoPath = path.join(__dirname, 'progressao.json');
 const carreirasPath = path.join(__dirname, 'carreiras.json');
 
-/**
- * Atualiza os cargos de um membro com base no ID do cargo definido no carreiras.json
- * @import { GuildMember } from 'discord.js'
- */
 async function atualizarCargoPatente(member) {
-    if (!member || member.user.bot) return;
+    if (!member || member.user?.bot) return false;
 
     const progressao = safeReadJson(progressaoPath);
     const carreiras = safeReadJson(carreirasPath);
+    const dadosMembro = progressao?.[member.id];
 
-    const dadosMembro = progressao[member.id];
-    if (!dadosMembro || !dadosMembro.currentRankId) return;
+    if (!dadosMembro?.currentRankId || !dadosMembro?.factionId) return false;
 
-    const faccao = carreiras.faccoes?.[dadosMembro.factionId];
-    if (!faccao) return;
+    const faccao = carreiras?.faccoes?.[dadosMembro.factionId];
+    if (!faccao?.caminho?.length) return false;
 
-    // Acha a patente atual do membro no JSON de carreiras
     const rankAtual = faccao.caminho.find(r => r.id === dadosMembro.currentRankId);
-    if (!rankAtual || !rankAtual.id) return;
+    if (!rankAtual?.id) return false;
 
-    const cargoIdDesejado = rankAtual.id; // ID exato do cargo no Discord (ex: "874481262520315934")
-
-    // Busca o cargo diretamente pelo ID no servidor
-    const cargoDiscord = member.guild.roles.cache.get(cargoIdDesejado);
-
+    const cargoDiscord = member.guild.roles.cache.get(rankAtual.id);
     if (!cargoDiscord) {
-        console.log(`[CARGOS] ⚠️ Aviso: O cargo com ID ${cargoIdDesejado} (${rankAtual.nome}) não foi encontrado no servidor!`);
-        return;
+        console.error(`[CARGOS] Cargo da patente não encontrado: ${rankAtual.id} (${rankAtual.nome || 'sem nome'})`);
+        return false;
     }
 
-    // Verifica se o membro já possui o cargo correto
-    if (member.roles.cache.has(cargoDiscord.id)) return;
+    const botMember = member.guild.members.me || await member.guild.members.fetch(member.client.user.id).catch(() => null);
+    if (!botMember) {
+        console.error('[CARGOS] Não foi possível localizar o membro do bot no servidor.');
+        return false;
+    }
+
+    if (cargoDiscord.id !== member.guild.id && cargoDiscord.position >= botMember.roles.highest.position) {
+        console.error(`[CARGOS] O cargo ${cargoDiscord.name} está acima (ou no mesmo nível) do cargo do bot.`);
+        return false;
+    }
+
+    if (member.roles.cache.has(cargoDiscord.id)) return true;
+
+    const idsCargosFaccao = new Set(faccao.caminho.map(r => r.id).filter(Boolean));
+    const cargosParaRemover = member.roles.cache.filter(
+        role => idsCargosFaccao.has(role.id) && role.id !== cargoDiscord.id
+    );
 
     try {
-        // Coleta todos os IDs de cargos possíveis desta facção para fazer a limpeza correta
-        const idsCargosFaccao = faccao.caminho.map(r => r.id).filter(Boolean);
-
-        // Remove os cargos antigos de patentes anteriores da mesma facção
-        const cargosParaRemover = member.roles.cache.filter(role => idsCargosFaccao.includes(role.id) && role.id !== cargoDiscord.id);
         if (cargosParaRemover.size > 0) {
-            await member.roles.remove(cargosParaRemover).catch(() => {});
+            await member.roles.remove(cargosParaRemover);
         }
-
-        // Adiciona a nova patente no perfil do usuário usando o ID
         await member.roles.add(cargoDiscord);
-        console.log(`[CARGOS] ✅ Sucesso! Cargo "${cargoDiscord.name}" (${cargoIdDesejado}) entregue ao membro ${member.user.tag}.`);
-
+        console.log(`[CARGOS] ✅ Cargo "${cargoDiscord.name}" (${cargoDiscord.id}) entregue a ${member.user.tag}.`);
+        return true;
     } catch (error) {
-        console.error(`[CARGOS] ❌ Erro ao atribuir cargo a ${member.user.tag}:`, error.message);
-        console.log(`[DICA] Certifique-se de que o cargo do bot está posicionado ACIMA do cargo "${cargoDiscord.name}" na lista de cargos do Discord!`);
+        console.error(`[CARGOS] ❌ Erro ao atualizar patente de ${member.user.tag}:`, error);
+        return false;
     }
 }
 
 module.exports = (client) => {
     client.atualizarCargoPatente = atualizarCargoPatente;
-    console.log("✅ Sistema de Atribuição de Cargos por ID (PromotionHandler) ativado.");
+    console.log('✅ Sistema de atribuição de cargos por ID (PromotionHandler) ativado.');
 };
 
 module.exports.atualizarCargoPatente = atualizarCargoPatente;

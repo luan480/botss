@@ -36,7 +36,7 @@ module.exports = {
         .setDescription('⚖️ [STAFF] Aplica sanções com progressão de tempo, pontos e Cargos de Warn.')
         .addUserOption(opt => opt.setName('alvo').setDescription('O soldado envolvido').setRequired(true))
         .addStringOption(opt => opt.setName('tipo').setDescription('Tipo de sanção disciplinar').setRequired(true).addChoices(
-            { name: 'Silenciar (Mute progressivo + Warn 1 ou progressão)', value: 'silenciar' },
+            { name: 'Silenciar (Mute progressivo + Warn)', value: 'silenciar' },
             { name: 'Castigo (Timeout progressivo + Warn 2/3)', value: 'castigo' },
             { name: 'Exílio Absoluto (Banimento - Apenas Mod/Adm)', value: 'ban' }
         ))
@@ -45,9 +45,7 @@ module.exports = {
     async execute(interaction) {
         await interaction.deferReply({ ephemeral: true });
 
-        if (!isStaff(interaction.member)) {
-            return interaction.editReply('❌ Apenas membros da equipe (Staff, Suporte, Mod ou ADM) podem operar o Tribunal Militar.');
-        }
+        if (!isStaff(interaction.member)) return interaction.editReply('❌ Apenas membros da equipe (Staff, Suporte, Mod ou ADM) podem operar o Tribunal Militar.');
 
         const alvo = interaction.options.getUser('alvo');
         const tipo = interaction.options.getString('tipo');
@@ -57,31 +55,17 @@ module.exports = {
         if (!membro) return interaction.editReply('❌ Soldado não encontrado neste servidor.');
         if (membro.id === interaction.member.id) return interaction.editReply('❌ Você não pode aplicar uma sanção em si mesmo.');
         if (membro.id === interaction.guild.ownerId) return interaction.editReply('❌ O dono do servidor não pode ser punido por este comando.');
-        if (membro.roles.highest.position >= interaction.member.roles.highest.position) {
-            return interaction.editReply('❌ Você não pode punir alguém com cargo igual ou superior ao seu.');
-        }
-        if (membro.roles.highest.position >= interaction.guild.members.me.roles.highest.position) {
-            return interaction.editReply('❌ Meu cargo precisa estar acima do cargo do alvo para aplicar esta punição.');
-        }
-
-        if (tipo === 'ban' && !isMod(interaction.member)) {
-            return interaction.editReply('❌ **Acesso Negado:** apenas Moderadores e Administradores podem executar Exílio Absoluto.');
-        }
+        if (membro.roles.highest.position >= interaction.member.roles.highest.position) return interaction.editReply('❌ Você não pode punir alguém com cargo igual ou superior ao seu.');
+        if (membro.roles.highest.position >= interaction.guild.members.me.roles.highest.position) return interaction.editReply('❌ Meu cargo precisa estar acima do cargo do alvo para aplicar esta punição.');
+        if (tipo === 'ban' && !isMod(interaction.member)) return interaction.editReply('❌ **Acesso Negado:** apenas Moderadores e Administradores podem executar Exílio Absoluto.');
 
         const punicoes = safeReadJson(punicoesPath);
         if (!punicoes[alvo.id]) punicoes[alvo.id] = { mutes: 0, castigos: 0, ultimaPunicao: null };
         calcularSanacao(punicoes[alvo.id]);
 
-        let corEmbed = '#3498DB';
-        let tituloSentenca = '';
-        let descricaoPena = '';
-        let duracaoTexto = 'N/A';
-        let pontosPerdidos = 0;
-        let cargoAtribuidoTexto = 'Nenhum';
+        let corEmbed = '#3498DB', tituloSentenca = '', descricaoPena = '', duracaoTexto = 'N/A', pontosPerdidos = 0, cargoAtribuidoTexto = 'Nenhum';
         const pontuacao = safeReadJson(pontuacaoPath) || {};
-        const removerCargosWarn = async () => {
-            await membro.roles.remove([ID_CARGO_WARN_1, ID_CARGO_WARN_2, ID_CARGO_WARN_3]);
-        };
+        const removerCargosWarn = async () => { await membro.roles.remove([ID_CARGO_WARN_1, ID_CARGO_WARN_2, ID_CARGO_WARN_3]); };
 
         try {
             if (tipo === 'silenciar') {
@@ -93,7 +77,12 @@ module.exports = {
                 punicoes[alvo.id].ultimaPunicao = Date.now();
                 corEmbed = '#F1C40F';
                 tituloSentenca = '🔇 TRIBUNAL MILITAR • SENTENÇA DE SILENCIAMENTO';
-                await membro.voice.setMute(true, `Silenciado: ${justificativa}`);
+
+                // Silenciar NÃO usa timeout: o membro permanece na call e pode entrar novamente.
+                if (membro.voice.channel) {
+                    await membro.voice.setMute(true, `Silenciado por ${duracaoTexto}: ${justificativa}`);
+                }
+
                 await removerCargosWarn();
                 let cargo = ID_CARGO_WARN_1;
                 cargoAtribuidoTexto = `<@&${ID_CARGO_WARN_1}>`;
@@ -118,10 +107,7 @@ module.exports = {
                 await membro.roles.add(cargo);
                 descricaoPena = `⏳ **Sanção Aplicada (Castigo).**\n• Duração: **${duracaoTexto}** (Castigo #${punicoes[alvo.id].castigos})\n• Penalidade: Perda de **${pontosPerdidos} pontos** na Liga.\n• Condecoração/Warn: ${cargoAtribuidoTexto}`;
             } else if (tipo === 'ban') {
-                corEmbed = '#000000';
-                tituloSentenca = '💀 TRIBUNAL MILITAR • EXÍLIO ABSOLUTO';
-                duracaoTexto = 'Permanente';
-                pontosPerdidos = 160;
+                corEmbed = '#000000'; tituloSentenca = '💀 TRIBUNAL MILITAR • EXÍLIO ABSOLUTO'; duracaoTexto = 'Permanente'; pontosPerdidos = 160;
                 await membro.ban({ reason: justificativa });
                 descricaoPena = '💀 **Exílio Executado.** O soldado foi desonrado e banido permanentemente do quartel por quebra grave da lei militar.';
             } else return interaction.editReply('❌ Tipo de punição inválido.');
@@ -137,20 +123,19 @@ module.exports = {
             return interaction.editReply(`❌ Não foi possível concluir a punição. Verifique as permissões do bot e a hierarquia dos cargos.\n\`${error.message?.slice(0, 300) || 'erro desconhecido'}\``);
         }
 
-        const embed = new EmbedBuilder()
-            .setTitle(tituloSentenca).setColor(corEmbed).setThumbnail(alvo.displayAvatarURL())
-            .addFields(
-                { name: '🛡️ Réu (Soldado)', value: `${alvo} (\`${alvo.username}\`)`, inline: true },
-                { name: '👮 Relator (Staff)', value: `${interaction.user}`, inline: true },
-                { name: '⌛ Prazo / Duração', value: `\`${duracaoTexto}\``, inline: true },
-                { name: '📋 Justificativa Oficial', value: `> ${justificativa}`, inline: false },
-                { name: '⚖️ Veredito Corregedoria', value: descricaoPena, inline: false }
-            ).setFooter({ text: 'WorldWarBR • Corregedoria Geral (Warns Automáticos)' }).setTimestamp();
+        const embed = new EmbedBuilder().setTitle(tituloSentenca).setColor(corEmbed).setThumbnail(alvo.displayAvatarURL()).addFields(
+            { name: '🛡️ Réu (Soldado)', value: `${alvo} (\`${alvo.username}\`)`, inline: true },
+            { name: '👮 Relator (Staff)', value: `${interaction.user}`, inline: true },
+            { name: '⌛ Prazo / Duração', value: `\`${duracaoTexto}\``, inline: true },
+            { name: '📋 Justificativa Oficial', value: `> ${justificativa}`, inline: false },
+            { name: '⚖️ Veredito Corregedoria', value: descricaoPena, inline: false }
+        ).setFooter({ text: 'WorldWarBR • Corregedoria Geral (Warns Automáticos)' }).setTimestamp();
 
         try {
-            const dm = new EmbedBuilder().setTitle(tituloSentenca).setColor(corEmbed)
-                .setDescription(`Você recebeu uma sanção oficial no servidor **${interaction.guild.name}**.\n\n**Detalhes:**`)
-                .addFields({ name: '📋 Justificativa', value: `> ${justificativa}`, inline: false }, { name: '⚖️ Veredito', value: descricaoPena, inline: false }).setTimestamp();
+            const dm = new EmbedBuilder().setTitle(tituloSentenca).setColor(corEmbed).setDescription(`Você recebeu uma sanção oficial no servidor **${interaction.guild.name}**.\n\n**Detalhes:**`).addFields(
+                { name: '📋 Justificativa', value: `> ${justificativa}`, inline: false },
+                { name: '⚖️ Veredito', value: descricaoPena, inline: false }
+            ).setTimestamp();
             await alvo.send({ embeds: [dm] });
         } catch {}
 

@@ -38,24 +38,13 @@ function permitido(interaction) {
 }
 
 function nomeRegistro(registro) {
-    return texto(
-        registro?.nome ||
-        registro?.titulo ||
-        registro?.temporada ||
-        registro?.evento ||
-        registro?.descricao ||
-        'Registro sem nome'
-    );
+    return texto(registro?.nome || registro?.titulo || registro?.temporada || registro?.evento || registro?.descricao || 'Registro sem nome');
 }
 
 function encontrar(dados, categoria, id) {
     const lista = dados[categoria] || [];
     const indice = lista.findIndex(registro => registro && String(registro.id) === String(id));
-    return {
-        lista,
-        indice,
-        registro: indice >= 0 ? lista[indice] : null
-    };
+    return { lista, indice, registro: indice >= 0 ? lista[indice] : null };
 }
 
 function campoAtual(registro, campo) {
@@ -73,10 +62,8 @@ function adicionarCampo(modal, id, label, estilo, maxLength, valor, required = f
         .setStyle(estilo)
         .setRequired(required)
         .setMaxLength(maxLength);
-
     const atual = limitar(valor, maxLength);
     if (atual) input.setValue(atual);
-
     modal.addComponents(new ActionRowBuilder().addComponents(input));
 }
 
@@ -100,14 +87,12 @@ function criarModalEdicao(categoria, id, registro) {
         return modal;
     }
 
+    // Discord permite no máximo 5 componentes em um modal.
+    // Os campos menos usados (participantes/valor/data/horário) continuam preservados.
     adicionarCampo(modal, 'vencedor', 'Vencedor', TextInputStyle.Short, 500, campoAtual(registro, 'vencedor'));
     adicionarCampo(modal, 'segundo', '2º lugar', TextInputStyle.Short, 500, campoAtual(registro, 'segundo'));
     adicionarCampo(modal, 'terceiro', '3º lugar', TextInputStyle.Short, 500, campoAtual(registro, 'terceiro'));
-    adicionarCampo(modal, 'participantes', 'Participantes', TextInputStyle.Paragraph, 1000, campoAtual(registro, 'participantes'));
-    adicionarCampo(modal, 'valor', 'Valor / prêmio', TextInputStyle.Short, 200, campoAtual(registro, 'valor'));
     adicionarCampo(modal, 'descricao', 'Descrição', TextInputStyle.Paragraph, 1000, campoAtual(registro, 'descricao'));
-    adicionarCampo(modal, 'data', 'Data', TextInputStyle.Short, 50, campoAtual(registro, 'data'));
-    adicionarCampo(modal, 'horario', 'Horário', TextInputStyle.Short, 20, campoAtual(registro, 'horario'));
 
     return modal;
 }
@@ -186,16 +171,8 @@ async function handler(interaction) {
 
         if (acao === 'delete') {
             const row = new ActionRowBuilder().addComponents(
-                new ButtonBuilder()
-                    .setCustomId(`hall_manage_confirm_${categoria}_${id}`)
-                    .setLabel('Confirmar remoção')
-                    .setEmoji('🗑️')
-                    .setStyle(ButtonStyle.Danger),
-                new ButtonBuilder()
-                    .setCustomId('hall_manage_cancel')
-                    .setLabel('Cancelar')
-                    .setEmoji('↩️')
-                    .setStyle(ButtonStyle.Secondary)
+                new ButtonBuilder().setCustomId(`hall_manage_confirm_${categoria}_${id}`).setLabel('Confirmar remoção').setEmoji('🗑️').setStyle(ButtonStyle.Danger),
+                new ButtonBuilder().setCustomId('hall_manage_cancel').setLabel('Cancelar').setEmoji('↩️').setStyle(ButtonStyle.Secondary)
             );
 
             return interaction.update({
@@ -237,14 +214,14 @@ async function handler(interaction) {
             const meses = obter('meses');
             if (ano) registro.ano = ano; else delete registro.ano;
             if (descricao) registro.descricao = descricao; else delete registro.descricao;
-            if (meses) registro.meses = meses.split('\n').map(v => v.trim()).filter(Boolean); else registro.meses = [];
+            registro.meses = meses ? meses.split('\n').map(v => v.trim()).filter(Boolean) : [];
         } else if (categoria === 'records') {
             const descricao = obter('descricao');
             const linhas = obter('linhas');
             if (descricao) registro.descricao = descricao; else delete registro.descricao;
             registro.linhas = linhas ? linhas.split('\n').map(v => v.trim()).filter(Boolean) : [];
         } else {
-            for (const campo of ['vencedor', 'segundo', 'terceiro', 'participantes', 'valor', 'descricao', 'data', 'horario']) {
+            for (const campo of ['vencedor', 'segundo', 'terceiro', 'descricao']) {
                 const valor = obter(campo);
                 registro[campo] = valor || null;
             }
@@ -295,10 +272,7 @@ module.exports = {
                 return !termo || nome.includes(termo) || id.includes(termo);
             })
             .slice(0, 25)
-            .map(registro => ({
-                name: limitar(nomeRegistro(registro), 100),
-                value: String(registro.id)
-            }));
+            .map(registro => ({ name: limitar(nomeRegistro(registro), 100), value: String(registro.id) }));
 
         return interaction.respond(resultados);
     },
@@ -318,16 +292,8 @@ module.exports = {
         }
 
         const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder()
-                .setCustomId(`hall_manage_edit_${categoria}_${id}`)
-                .setLabel('Editar')
-                .setEmoji('✏️')
-                .setStyle(ButtonStyle.Primary),
-            new ButtonBuilder()
-                .setCustomId(`hall_manage_delete_${categoria}_${id}`)
-                .setLabel('Remover')
-                .setEmoji('🗑️')
-                .setStyle(ButtonStyle.Danger)
+            new ButtonBuilder().setCustomId(`hall_manage_edit_${categoria}_${id}`).setLabel('Editar').setEmoji('✏️').setStyle(ButtonStyle.Primary),
+            new ButtonBuilder().setCustomId(`hall_manage_delete_${categoria}_${id}`).setLabel('Remover').setEmoji('🗑️').setStyle(ButtonStyle.Danger)
         );
 
         return interaction.reply({

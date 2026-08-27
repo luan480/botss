@@ -154,7 +154,16 @@ client.on(Events.InteractionCreate, async interaction => {
 
     try {
         // Estatísticas individuais da Liga: não polui o painel com todos os jogadores.
-        if (customId === 'estatisticas_selecionar' || customId === 'estatisticas_usuario' || customId === 'estatisticas_voltar') {
+        if (
+            customId === 'estatisticas_selecionar' ||
+            customId === 'estatisticas_usuario' ||
+            customId === 'estatisticas_voltar' ||
+            customId === 'liga_estatisticas' ||
+            customId.startsWith('liga_estatisticas_prev_') ||
+            customId.startsWith('liga_estatisticas_next_') ||
+            customId.startsWith('liga_estatisticas_pagina_') ||
+            customId === 'liga_estatisticas_voltar'
+        ) {
             return await require('./commands/liga/estatisticasSelecionar.js')(interaction);
         }
 

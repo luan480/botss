@@ -80,7 +80,6 @@ async function mostrarJogador(interaction, userId) {
     const pontos = numero(jogador.pontos);
     const continentes = numero(jogador.continentes);
     const winrate = partidas > 0 ? ((vitorias / partidas) * 100).toFixed(1) : '0.0';
-
     const nome = membro?.displayName || membro?.user?.globalName || membro?.user?.username || `Usuário ${userId}`;
 
     const embed = new EmbedBuilder()
@@ -116,7 +115,13 @@ async function mostrarJogador(interaction, userId) {
 module.exports = async function estatisticasSelecionar(interaction) {
     const id = interaction.customId;
 
-    if (id === 'estatisticas_selecionar') {
+    if (
+        id === 'estatisticas_selecionar' ||
+        id === 'liga_estatisticas' ||
+        id.startsWith('liga_estatisticas_prev_') ||
+        id.startsWith('liga_estatisticas_next_') ||
+        id.startsWith('liga_estatisticas_pagina_')
+    ) {
         return mostrarSelecao(interaction);
     }
 
@@ -126,7 +131,7 @@ module.exports = async function estatisticasSelecionar(interaction) {
         return mostrarJogador(interaction, userId);
     }
 
-    if (id === 'estatisticas_voltar') {
+    if (id === 'estatisticas_voltar' || id === 'liga_estatisticas_voltar') {
         const painelMod = require('./painel.js');
         await interaction.deferUpdate().catch(() => {});
         return painelMod(interaction.guild, '1429504377395351854');

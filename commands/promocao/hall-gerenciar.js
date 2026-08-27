@@ -1,27 +1,540 @@
-const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, MessageFlags } = require('discord.js');
+const {
+    SlashCommandBuilder,
+    PermissionFlagsBits,
+    EmbedBuilder,
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle,
+    ModalBuilder,
+    TextInputBuilder,
+    TextInputStyle,
+    MessageFlags
+} = require('discord.js');
 const path = require('path');
 const { safeReadJson, safeWriteJson } = require('../liga/utils/helpers.js');
+
 const FILE = path.join(__dirname, 'historico.json');
-const CATS = ['liga','eventos','records','imperador'];
-const t = v => v == null ? '' : String(v).trim();
-const cut = (v,n=1024) => { const s=t(v); return s.length<=n?s:s.slice(0,n-3)+'...'; };
-const isAdmin = i => Boolean(i.memberPermissions?.has(PermissionFlagsBits.Administrator));
-const recordName = r => t(r?.nome || r?.titulo || r?.temporada || r?.evento || r?.descricao || 'Registro sem nome');
-function load(){ const d=safeReadJson(FILE)||{}; for(const c of CATS) if(!Array.isArray(d[c])) d[c]=[]; return d; }
-function find(d,c,id){ const list=d[c]||[]; const index=list.findIndex(r=>r&&String(r.id)===String(id)); return {list,index,record:index>=0?list[index]:null}; }
-function val(r,k){ const v=r?.[k]; if(v==null)return ''; if(Array.isArray(v))return v.join('\n'); if(typeof v==='object')return JSON.stringify(v); return String(v); }
-function show(r,k){return cut(val(r,k)||'Não informado');}
-function embed(c,r){ const e=new EmbedBuilder().setColor('#C9A227').setTitle('🏛️ HALL DA FAMA — GERENCIAMENTO').setDescription(`**${cut(recordName(r),256)}**\nCategoria: **${c.toUpperCase()}**`); if(c==='eventos')e.addFields({name:'🥇 VENCEDOR',value:show(r,'vencedor'),inline:true},{name:'🥈 2º LUGAR',value:show(r,'segundo'),inline:true},{name:'🥉 3º LUGAR',value:show(r,'terceiro'),inline:true},{name:'👥 PARTICIPANTES',value:show(r,'participantes'),inline:true},{name:'💰 VALOR',value:show(r,'valor'),inline:true},{name:'🎁 PRÊMIO',value:show(r,'premio'),inline:true},{name:'📅 DATA',value:show(r,'data'),inline:true},{name:'🕐 HORÁRIO',value:show(r,'horario'),inline:true},{name:'📝 DESCRIÇÃO',value:show(r,'descricao')},{name:'📌 OBSERVAÇÕES',value:show(r,'observacoes')},{name:'🖼️ IMAGEM',value:show(r,'imagem')}); else if(c==='liga'||c==='imperador')e.addFields({name:'📅 ANO',value:show(r,'ano'),inline:true},{name:'📝 DESCRIÇÃO',value:show(r,'descricao')},{name:'🗓️ MESES / VENCEDORES',value:show(r,'meses')}); else e.addFields({name:'📝 DESCRIÇÃO',value:show(r,'descricao')},{name:'📊 RECORDS',value:show(r,'linhas')}); return e.setFooter({text:'Somente administradores • edição feita diretamente pelo chat'}); }
-async function mural(g){try{const p=require('./painel-ranking.js');if(typeof p.atualizarMural==='function')await p.atualizarMural(g);}catch(e){console.error('[HALL] mural:',e);}}
-async function ask(ch,uid,label,current){const q=await ch.send(`✏️ **${label}**${current?`\n> Atual: **${cut(current,700)}**`:''}\n> Responda aqui. Digite **pular** para manter ou **-** para apagar.`);const a=await new Promise(resolve=>{const c=ch.createMessageCollector({filter:m=>m.author.id===uid&&!m.author.bot,max:1,time:120000});c.on('collect',m=>resolve(m));c.on('end',x=>{if(!x.size)resolve(null);});});await q.delete().catch(()=>{});if(!a)throw new Error('TIMEOUT');const v=t(a.content);await a.delete().catch(()=>{});if(v.toLowerCase()==='pular')return {change:false};if(v==='-')return {change:true,value:null};return {change:true,value:v};}
-function apply(r,k,x){if(!x.change)return;if(x.value===null)delete r[k];else if(k==='meses'||k==='linhas')r[k]=x.value.split('\n').map(s=>s.trim()).filter(Boolean);else r[k]=x.value;}
-async function edit(i,c,id){const d=load(),a=find(d,c,id);if(!a.record)return i.reply({content:'❌ Registro não encontrado.',flags:MessageFlags.Ephemeral});const r=a.record;await i.reply({content:`✏️ **Edição iniciada:** ${recordName(r)}\nAs perguntas serão feitas aqui no chat. Só você poderá responder.`,flags:MessageFlags.Ephemeral});const fields=[['nome','Nome do registro']];if(c==='liga'||c==='imperador')fields.push(['ano','Ano'],['descricao','Descrição'],['meses','Meses / vencedores (um por linha)']);else if(c==='records')fields.push(['descricao','Descrição'],['linhas','Records (um por linha)']);else fields.push(['vencedor','Vencedor'],['segundo','2º lugar'],['terceiro','3º lugar'],['participantes','Participantes'],['valor','Valor'],['premio','Prêmio'],['descricao','Descrição'],['data','Data'],['horario','Horário'],['observacoes','Observações'],['imagem','Imagem (URL)']);try{for(const [k,label] of fields)apply(r,k,await ask(i.channel,i.user.id,label,val(r,k)));if(!safeWriteJson(FILE,d))throw new Error('SAVE');await mural(i.guild);await i.channel.send(`✅ **${recordName(r)}** foi atualizado com sucesso.`);}catch(e){await i.channel.send(e.message==='TIMEOUT'?'⏱️ Edição cancelada por falta de resposta.':'❌ Falha ao salvar a edição.').catch(()=>{});console.error('[HALL] edição:',e);}}
-async function remove(i,c,id){const d=load(),a=find(d,c,id);if(!a.record)return i.reply({content:'❌ Registro não encontrado.',flags:MessageFlags.Ephemeral});const n=recordName(a.record);a.list.splice(a.index,1);if(!safeWriteJson(FILE,d))return i.reply({content:'❌ Falha ao salvar a remoção.',flags:MessageFlags.Ephemeral});await mural(i.guild);return i.reply({content:`🗑️ **${n}** foi removido do Hall da Fama.`,flags:MessageFlags.Ephemeral});}
-module.exports={
- data:new SlashCommandBuilder().setName('hall-gerenciar').setDescription('✏️ Edita ou remove registros do Hall da Fama.').setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
-  .addStringOption(o=>o.setName('acao').setDescription('Ação').setRequired(true).addChoices({name:'✏️ Editar no chat',value:'editar'},{name:'🗑️ Remover',value:'remover'}))
-  .addStringOption(o=>o.setName('categoria').setDescription('Categoria').setRequired(true).addChoices({name:'🏆 Liga',value:'liga'},{name:'⚔️ Eventos',value:'eventos'},{name:'📊 Records',value:'records'},{name:'👑 Imperador',value:'imperador'}))
-  .addStringOption(o=>o.setName('registro').setDescription('Digite parte do nome e selecione o registro.').setRequired(true).setAutocomplete(true)),
- async autocomplete(i){if(!isAdmin(i))return i.respond([]);const c=i.options.getString('categoria');if(!CATS.includes(c))return i.respond([]);const q=t(i.options.getString('registro')).toLowerCase(),d=load();return i.respond((d[c]||[]).filter(r=>{const n=recordName(r).toLowerCase();return !q||n.includes(q)||t(r.id).toLowerCase().includes(q);}).slice(0,25).map(r=>({name:cut(recordName(r),100),value:String(r.id)})));},
- async execute(i){if(!isAdmin(i))return i.reply({content:'❌ Apenas administradores podem gerenciar o Hall.',flags:MessageFlags.Ephemeral});const acao=i.options.getString('acao'),c=i.options.getString('categoria'),id=i.options.getString('registro'),a=find(load(),c,id);if(!a.record)return i.reply({content:'❌ Registro não encontrado. Selecione uma sugestão do autocomplete.',flags:MessageFlags.Ephemeral});if(acao==='editar')return edit(i,c,id);await i.reply({embeds:[embed(c,a.record)],content:'⚠️ Para confirmar a remoção, escreva **CONFIRMAR** neste chat em até 30 segundos.',flags:MessageFlags.Ephemeral});const col=i.channel.createMessageCollector({filter:m=>m.author.id===i.user.id&&!m.author.bot,max:1,time:30000});const m=await new Promise(r=>{col.on('collect',x=>r(x));col.on('end',x=>{if(!x.size)r(null);});});if(!m)return i.followUp({content:'⏱️ Remoção cancelada.',flags:MessageFlags.Ephemeral});const ok=t(m.content).toUpperCase()==='CONFIRMAR';await m.delete().catch(()=>{});if(!ok)return i.followUp({content:'↩️ Remoção cancelada.',flags:MessageFlags.Ephemeral});return remove(i,c,id);}
+const CATEGORIAS = ['liga', 'eventos', 'records', 'imperador'];
+
+function texto(valor) {
+    return valor == null ? '' : String(valor).trim();
+}
+
+function limitar(valor, limite = 1024) {
+    const valorTexto = texto(valor);
+    return valorTexto.length <= limite
+        ? valorTexto
+        : `${valorTexto.slice(0, limite - 3)}...`;
+}
+
+function isAdmin(interaction) {
+    return Boolean(
+        interaction.memberPermissions?.has(
+            PermissionFlagsBits.Administrator
+        )
+    );
+}
+
+function nomeRegistro(registro) {
+    return texto(
+        registro?.nome ||
+        registro?.titulo ||
+        registro?.temporada ||
+        registro?.evento ||
+        registro?.descricao ||
+        'Registro sem nome'
+    );
+}
+
+function carregarHistorico() {
+    const dados = safeReadJson(FILE) || {};
+
+    for (const categoria of CATEGORIAS) {
+        if (!Array.isArray(dados[categoria])) {
+            dados[categoria] = [];
+        }
+    }
+
+    return dados;
+}
+
+function encontrarRegistro(dados, categoria, id) {
+    const registros = dados[categoria] || [];
+    const indice = registros.findIndex(
+        registro => registro && String(registro.id) === String(id)
+    );
+
+    return {
+        registros,
+        indice,
+        registro: indice >= 0 ? registros[indice] : null
+    };
+}
+
+function valorCampo(registro, campo) {
+    const valor = registro?.[campo];
+
+    if (valor == null) return '';
+    if (Array.isArray(valor)) return valor.join('\n');
+    if (typeof valor === 'object') return JSON.stringify(valor, null, 2);
+
+    return String(valor);
+}
+
+function campoEmbed(nome, valor, inline = false) {
+    return {
+        name: nome,
+        value: limitar(valor || 'Não informado'),
+        inline
+    };
+}
+
+function criarEmbed(categoria, registro) {
+    const embed = new EmbedBuilder()
+        .setColor('#C9A227')
+        .setTitle('🏛️ HALL DA FAMA — GERENCIAMENTO')
+        .setDescription(
+            `**${limitar(nomeRegistro(registro), 256)}**\n` +
+            `Categoria: **${categoria.toUpperCase()}**`
+        );
+
+    if (categoria === 'eventos') {
+        embed.addFields(
+            campoEmbed('🥇 VENCEDOR', valorCampo(registro, 'vencedor'), true),
+            campoEmbed('🥈 2º LUGAR', valorCampo(registro, 'segundo'), true),
+            campoEmbed('🥉 3º LUGAR', valorCampo(registro, 'terceiro'), true),
+            campoEmbed('👥 PARTICIPANTES', valorCampo(registro, 'participantes'), true),
+            campoEmbed('💰 VALOR', valorCampo(registro, 'valor'), true),
+            campoEmbed('🎁 PRÊMIO', valorCampo(registro, 'premio'), true),
+            campoEmbed('📅 DATA', valorCampo(registro, 'data'), true),
+            campoEmbed('🕐 HORÁRIO', valorCampo(registro, 'horario'), true),
+            campoEmbed('📝 DESCRIÇÃO', valorCampo(registro, 'descricao')),
+            campoEmbed('📌 OBSERVAÇÕES', valorCampo(registro, 'observacoes')),
+            campoEmbed('🖼️ IMAGEM', valorCampo(registro, 'imagem'))
+        );
+    } else if (categoria === 'liga' || categoria === 'imperador') {
+        embed.addFields(
+            campoEmbed('📅 ANO', valorCampo(registro, 'ano'), true),
+            campoEmbed('📝 DESCRIÇÃO', valorCampo(registro, 'descricao')),
+            campoEmbed('🗓️ MESES / VENCEDORES', valorCampo(registro, 'meses'))
+        );
+    } else {
+        embed.addFields(
+            campoEmbed('📝 DESCRIÇÃO', valorCampo(registro, 'descricao')),
+            campoEmbed('📊 RECORDS', valorCampo(registro, 'linhas'))
+        );
+    }
+
+    return embed.setFooter({
+        text: 'Somente administradores • gerenciamento do Hall da Fama'
+    });
+}
+
+function criarBotoes(categoria, id) {
+    return new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+            .setCustomId(`hall_edit_${categoria}_${id}`)
+            .setLabel('Editar')
+            .setEmoji('✏️')
+            .setStyle(ButtonStyle.Primary),
+        new ButtonBuilder()
+            .setCustomId(`hall_delete_${categoria}_${id}`)
+            .setLabel('Remover')
+            .setEmoji('🗑️')
+            .setStyle(ButtonStyle.Danger)
+    );
+}
+
+function criarModal(categoria, id, registro, pagina = 1) {
+    const modal = new ModalBuilder()
+        .setCustomId(`hall_edit_submit_${categoria}_${id}_${pagina}`)
+        .setTitle(`✏️ Editar ${categoria}`);
+
+    const campos = categoria === 'eventos'
+        ? [
+            ['nome', 'Nome', TextInputStyle.Short, 100],
+            ['vencedor', 'Vencedor', TextInputStyle.Short, 500],
+            ['segundo', '2º lugar', TextInputStyle.Short, 500],
+            ['terceiro', '3º lugar', TextInputStyle.Short, 500],
+            ['descricao', 'Descrição', TextInputStyle.Paragraph, 1000]
+        ]
+        : categoria === 'liga' || categoria === 'imperador'
+            ? [
+                ['nome', 'Nome', TextInputStyle.Short, 100],
+                ['ano', 'Ano', TextInputStyle.Short, 10],
+                ['descricao', 'Descrição', TextInputStyle.Paragraph, 1000],
+                ['meses', 'Meses / vencedores', TextInputStyle.Paragraph, 1000]
+            ]
+            : [
+                ['nome', 'Nome', TextInputStyle.Short, 100],
+                ['descricao', 'Descrição', TextInputStyle.Paragraph, 1000],
+                ['linhas', 'Records', TextInputStyle.Paragraph, 1000]
+            ];
+
+    for (const [campo, label, estilo, maxLength] of campos) {
+        const input = new TextInputBuilder()
+            .setCustomId(campo)
+            .setLabel(label)
+            .setStyle(estilo)
+            .setRequired(false)
+            .setMaxLength(maxLength);
+
+        const atual = limitar(valorCampo(registro, campo), maxLength);
+        if (atual) input.setValue(atual);
+
+        modal.addComponents(
+            new ActionRowBuilder().addComponents(input)
+        );
+    }
+
+    return modal;
+}
+
+function atualizarCampo(registro, campo, valor) {
+    const novoValor = texto(valor);
+
+    // Vazio mantém o valor atual para evitar apagar dados antigos por acidente.
+    if (!novoValor) return;
+
+    if (campo === 'meses' || campo === 'linhas') {
+        registro[campo] = novoValor
+            .split('\n')
+            .map(linha => linha.trim())
+            .filter(Boolean);
+        return;
+    }
+
+    registro[campo] = novoValor;
+}
+
+async function atualizarMural(guild) {
+    try {
+        const painel = require('./painel-ranking.js');
+
+        if (typeof painel.atualizarMural === 'function') {
+            await painel.atualizarMural(guild);
+        }
+    } catch (erro) {
+        console.error('[HALL] Erro ao atualizar mural:', erro);
+    }
+}
+
+async function autocomplete(interaction) {
+    if (!isAdmin(interaction)) {
+        return interaction.respond([]);
+    }
+
+    const categoria = interaction.options.getString('categoria');
+
+    if (!CATEGORIAS.includes(categoria)) {
+        return interaction.respond([]);
+    }
+
+    const termo = texto(
+        interaction.options.getString('registro')
+    ).toLowerCase();
+
+    const dados = carregarHistorico();
+
+    const resultados = dados[categoria]
+        .filter(registro => {
+            const nome = nomeRegistro(registro).toLowerCase();
+            const id = texto(registro?.id).toLowerCase();
+
+            return (
+                !termo ||
+                nome.includes(termo) ||
+                id.includes(termo)
+            );
+        })
+        .slice(0, 25)
+        .map(registro => ({
+            name: limitar(nomeRegistro(registro), 100),
+            value: String(registro.id)
+        }));
+
+    return interaction.respond(resultados);
+}
+
+async function executarEdicao(interaction, categoria, id) {
+    const dados = carregarHistorico();
+    const encontrado = encontrarRegistro(dados, categoria, id);
+
+    if (!encontrado.registro) {
+        return interaction.reply({
+            content: '❌ Registro não encontrado.',
+            flags: MessageFlags.Ephemeral
+        });
+    }
+
+    const modal = criarModal(
+        categoria,
+        id,
+        encontrado.registro
+    );
+
+    return interaction.showModal(modal);
+}
+
+async function executarRemocao(interaction, categoria, id) {
+    const dados = carregarHistorico();
+    const encontrado = encontrarRegistro(dados, categoria, id);
+
+    if (!encontrado.registro) {
+        return interaction.reply({
+            content: '❌ Registro não encontrado.',
+            flags: MessageFlags.Ephemeral
+        });
+    }
+
+    const confirmar = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+            .setCustomId(`hall_confirm_delete_${categoria}_${id}`)
+            .setLabel('Confirmar remoção')
+            .setEmoji('🗑️')
+            .setStyle(ButtonStyle.Danger),
+        new ButtonBuilder()
+            .setCustomId('hall_cancel_delete')
+            .setLabel('Cancelar')
+            .setEmoji('❌')
+            .setStyle(ButtonStyle.Secondary)
+    );
+
+    return interaction.reply({
+        embeds: [criarEmbed(categoria, encontrado.registro)],
+        content:
+            `⚠️ **Confirma a remoção de ${nomeRegistro(encontrado.registro)}?**`,
+        components: [confirmar],
+        flags: MessageFlags.Ephemeral
+    });
+}
+
+async function confirmarRemocao(interaction, categoria, id) {
+    const dados = carregarHistorico();
+    const encontrado = encontrarRegistro(dados, categoria, id);
+
+    if (!encontrado.registro) {
+        return interaction.update({
+            content: '❌ Registro não encontrado.',
+            embeds: [],
+            components: []
+        });
+    }
+
+    const nome = nomeRegistro(encontrado.registro);
+
+    encontrado.registros.splice(encontrado.indice, 1);
+
+    const salvo = safeWriteJson(FILE, dados);
+
+    if (salvo === false) {
+        return interaction.update({
+            content: '❌ Falha ao salvar a remoção.',
+            embeds: [],
+            components: []
+        });
+    }
+
+    await atualizarMural(interaction.guild);
+
+    return interaction.update({
+        content: `🗑️ **${nome}** foi removido do Hall da Fama.`,
+        embeds: [],
+        components: []
+    });
+}
+
+async function processarModal(interaction) {
+    const partes = interaction.customId.split('_');
+    const categoria = partes[3];
+    const id = partes.slice(4, -1).join('_');
+
+    if (!CATEGORIAS.includes(categoria)) {
+        return interaction.reply({
+            content: '❌ Categoria inválida.',
+            flags: MessageFlags.Ephemeral
+        });
+    }
+
+    const dados = carregarHistorico();
+    const encontrado = encontrarRegistro(dados, categoria, id);
+
+    if (!encontrado.registro) {
+        return interaction.reply({
+            content: '❌ Esse registro não existe mais.',
+            flags: MessageFlags.Ephemeral
+        });
+    }
+
+    const campos = categoria === 'eventos'
+        ? ['nome', 'vencedor', 'segundo', 'terceiro', 'descricao']
+        : categoria === 'liga' || categoria === 'imperador'
+            ? ['nome', 'ano', 'descricao', 'meses']
+            : ['nome', 'descricao', 'linhas'];
+
+    for (const campo of campos) {
+        atualizarCampo(
+            encontrado.registro,
+            campo,
+            interaction.fields.getTextInputValue(campo)
+        );
+    }
+
+    const salvo = safeWriteJson(FILE, dados);
+
+    if (salvo === false) {
+        return interaction.reply({
+            content: '❌ Falha ao salvar as alterações.',
+            flags: MessageFlags.Ephemeral
+        });
+    }
+
+    await atualizarMural(interaction.guild);
+
+    return interaction.reply({
+        content:
+            `✅ **${nomeRegistro(encontrado.registro)}** foi atualizado com sucesso.`,
+        flags: MessageFlags.Ephemeral
+    });
+}
+
+async function processarInteracao(interaction) {
+    if (!isAdmin(interaction)) {
+        return interaction.reply({
+            content: '❌ Apenas administradores podem gerenciar o Hall.',
+            flags: MessageFlags.Ephemeral
+        });
+    }
+
+    if (interaction.isButton()) {
+        if (interaction.customId === 'hall_cancel_delete') {
+            return interaction.update({
+                content: '↩️ Remoção cancelada.',
+                embeds: [],
+                components: []
+            });
+        }
+
+        const partes = interaction.customId.split('_');
+
+        if (partes[0] !== 'hall') return;
+
+        if (partes[1] === 'edit') {
+            const categoria = partes[2];
+            const id = partes.slice(3).join('_');
+            return executarEdicao(interaction, categoria, id);
+        }
+
+        if (partes[1] === 'delete') {
+            const categoria = partes[2];
+            const id = partes.slice(3).join('_');
+            return executarRemocao(interaction, categoria, id);
+        }
+
+        if (partes[1] === 'confirm') {
+            const categoria = partes[3];
+            const id = partes.slice(4).join('_');
+            return confirmarRemocao(interaction, categoria, id);
+        }
+    }
+
+    if (
+        interaction.isModalSubmit() &&
+        interaction.customId.startsWith('hall_edit_submit_')
+    ) {
+        return processarModal(interaction);
+    }
+}
+
+module.exports = {
+    data: new SlashCommandBuilder()
+        .setName('hall-gerenciar')
+        .setDescription('✏️ Edita ou remove registros do Hall da Fama.')
+        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+
+        .addStringOption(option =>
+            option
+                .setName('acao')
+                .setDescription('O que deseja fazer?')
+                .setRequired(true)
+                .addChoices(
+                    {
+                        name: '✏️ Editar',
+                        value: 'editar'
+                    },
+                    {
+                        name: '🗑️ Remover',
+                        value: 'remover'
+                    }
+                )
+        )
+
+        .addStringOption(option =>
+            option
+                .setName('categoria')
+                .setDescription('Categoria do Hall.')
+                .setRequired(true)
+                .addChoices(
+                    {
+                        name: '🏆 Liga',
+                        value: 'liga'
+                    },
+                    {
+                        name: '⚔️ Eventos',
+                        value: 'eventos'
+                    },
+                    {
+                        name: '📊 Records',
+                        value: 'records'
+                    },
+                    {
+                        name: '👑 Imperador',
+                        value: 'imperador'
+                    }
+                )
+        )
+
+        .addStringOption(option =>
+            option
+                .setName('registro')
+                .setDescription('Digite parte do nome e selecione o registro.')
+                .setRequired(true)
+                .setAutocomplete(true)
+        ),
+
+    async autocomplete(interaction) {
+        return autocomplete(interaction);
+    },
+
+    async execute(interaction) {
+        if (!isAdmin(interaction)) {
+            return interaction.reply({
+                content: '❌ Apenas administradores podem gerenciar o Hall.',
+                flags: MessageFlags.Ephemeral
+            });
+        }
+
+        const acao = interaction.options.getString('acao');
+        const categoria = interaction.options.getString('categoria');
+        const id = interaction.options.getString('registro');
+
+        const dados = carregarHistorico();
+        const encontrado = encontrarRegistro(dados, categoria, id);
+
+        if (!encontrado.registro) {
+            return interaction.reply({
+                content:
+                    '❌ Registro não encontrado. Escolha um registro pela lista de sugestões.',
+                flags: MessageFlags.Ephemeral
+            });
+        }
+
+        if (acao === 'editar') {
+            return executarEdicao(interaction, categoria, id);
+        }
+
+        return executarRemocao(interaction, categoria, id);
+    },
+
+    processarInteracao
 };

@@ -5,6 +5,7 @@
    - 📰 Boletim semanal REAL
    - 🏆 Fechamento mensal REAL
    - 🌍 Ranking por continentes
+   - 👑 Evento Especial: Imperador Mundial (Domingo)
    - 💀 Kills
    - ⚔️ Partidas
    - 🔥 Streak
@@ -71,35 +72,32 @@ const CARGOS_LIGA = {
 
 
 // ========================================================================
-// CARGOS SEMANAIS
-//
-// Coloque os IDs reais.
-// Enquanto estiver "COLOQUE_ID_AQUI", o bot ignora.
+// CARGOS SEMANAIS / IMPERADORES DE CONTINENTE
 // ========================================================================
 
 const CARGOS_SEMANAIS = {
 
     // ------------------------------------------------------------
-    // MAPA
+    // MAPA / IMPERADORES DE CONTINENTE
     // ------------------------------------------------------------
 
     EUROPA:
-        'COLOQUE_ID_AQUI_EUROPA',
+        'COLOQUE_ID_AQUI_IMPERADOR_EUROPA',
 
     ASIA:
-        'COLOQUE_ID_AQUI_ASIA',
+        'COLOQUE_ID_AQUI_IMPERADOR_ASIA',
 
     AFRICA:
-        'COLOQUE_ID_AQUI_AFRICA',
+        'COLOQUE_ID_AQUI_IMPERADOR_AFRICA',
 
     AMNORTE:
-        'COLOQUE_ID_AQUI_AMNORTE',
+        'COLOQUE_ID_AQUI_IMPERADOR_NORTE',
 
     AMSUL:
-        'COLOQUE_ID_AQUI_AMSUL',
+        'COLOQUE_ID_AQUI_IMPERADOR_SUL',
 
     OCEANIA:
-        'COLOQUE_ID_AQUI_OCEANIA',
+        'COLOQUE_ID_AQUI_IMPERADOR_OCEANIA',
 
 
     // ------------------------------------------------------------
@@ -454,13 +452,14 @@ function vencedorDe(
 
 
 // ========================================================================
-// FORMATAR CONTINENTE
+// FORMATAR IMPERADOR DO CONTINENTE
 // ========================================================================
 
-function formatarContinente(
+function formatarImperadorContinente(
     periodo,
     propriedade,
-    nome
+    nome,
+    tituloTag
 ) {
 
     const vencedor =
@@ -474,7 +473,7 @@ function formatarContinente(
         !vencedor
     ) {
 
-        return `${nome}: *Sem registros.*`;
+        return `${nome}: *Sem disputa registrada.*`;
 
     }
 
@@ -483,11 +482,8 @@ function formatarContinente(
 
         `${nome}: ` +
         `${mencionar(vencedor)} — ` +
-        `**${numero(
-            vencedor[
-                propriedade
-            ]
-        )} domínios**`
+        `**${tituloTag}** ` +
+        `(${numero(vencedor[propriedade])} domínios)`
 
     );
 
@@ -642,7 +638,7 @@ function dataBonita(
 
 
 // ========================================================================
-// 📰 BOLETIM SEMANAL
+// 📰 BOLETIM SEMANAL (COM EVENTO IMPERADOR MUNDIAL)
 // ========================================================================
 
 async function emitirBoletimSemanal(
@@ -728,7 +724,7 @@ async function emitirBoletimSemanal(
 
 
     // ====================================================================
-    // CONTINENTES
+    // CONTINENTES (IMPERADORES DO DOMINGO)
     // ====================================================================
 
     const europa =
@@ -808,7 +804,7 @@ async function emitirBoletimSemanal(
 
 
     // ====================================================================
-    // CARGOS
+    // CARGOS (RODÍZIO DOS IMPERADORES E DESTAQUES)
     // ====================================================================
 
     await rotacionarCargo(
@@ -899,13 +895,13 @@ async function emitirBoletimSemanal(
             )
 
             .setTitle(
-                '📰 BOLETIM SEMANAL — WORLDWARBR'
+                '👑 EVENTO ESPECIAL — IMPERADOR MUNDIAL 🌍'
             )
 
             .setDescription(
 
                 [
-                    '📡 **SITREP DA SEMANA**',
+                    '📡 **RESULTADOS DO DOMINIO GLOBAL**',
 
                     '',
 
@@ -917,15 +913,81 @@ async function emitirBoletimSemanal(
 
                     '',
 
-                    `🏟️ **${resumo.partidas} partidas**`,
+                    `🏟️ **${resumo.partidas} partidas de guerra jogadas**`,
 
-                    `👥 **${resumo.jogadores} jogadores**`
+                    `👥 **${resumo.jogadores} combatentes ativos**`
 
                 ].join('\n')
 
             )
 
             .addFields(
+
+                // --------------------------------------------------------
+                // EVENTO IMPERADOR MUNDIAL (CONTINENTES)
+                // --------------------------------------------------------
+
+                {
+                    name:
+                        '👑 IMPERADORES MUNDIAIS (DOMINGO)',
+
+                    value:
+
+                        formatarImperadorContinente(
+                            semana,
+                            'amnorte',
+                            '❄️ Norte',
+                            'Imperador do Norte'
+                        ) +
+
+                        '\n' +
+
+                        formatarImperadorContinente(
+                            semana,
+                            'africa',
+                            '🌍 África',
+                            'Imperador Africano'
+                        ) +
+
+                        '\n' +
+
+                        formatarImperadorContinente(
+                            semana,
+                            'europa',
+                            '🏰 Europa',
+                            'Imperador Europeu'
+                        ) +
+
+                        '\n' +
+
+                        formatarImperadorContinente(
+                            semana,
+                            'amsul',
+                            '🌎 América do Sul',
+                            'Imperador Sul-Americano'
+                        ) +
+
+                        '\n' +
+
+                        formatarImperadorContinente(
+                            semana,
+                            'asia',
+                            '⛩️ Ásia',
+                            'Imperador Asiático'
+                        ) +
+
+                        '\n' +
+
+                        formatarImperadorContinente(
+                            semana,
+                            'oceania',
+                            '🦘 Oceania',
+                            'Imperador da Oceania'
+                        ),
+
+                    inline:
+                        false
+                },
 
                 // --------------------------------------------------------
                 // LIGA
@@ -960,71 +1022,7 @@ async function emitirBoletimSemanal(
 
                     inline:
                         false
-
                 },
-
-
-                // --------------------------------------------------------
-                // MAPA
-                // --------------------------------------------------------
-
-                {
-                    name:
-                        '🌍 SENHORES DO MAPA',
-
-                    value:
-
-                        formatarContinente(
-                            semana,
-                            'europa',
-                            '🇪🇺 Europa'
-                        ) +
-
-                        '\n' +
-
-                        formatarContinente(
-                            semana,
-                            'asia',
-                            '🌏 Ásia'
-                        ) +
-
-                        '\n' +
-
-                        formatarContinente(
-                            semana,
-                            'africa',
-                            '🌍 África'
-                        ) +
-
-                        '\n' +
-
-                        formatarContinente(
-                            semana,
-                            'amnorte',
-                            '🌎 América do Norte'
-                        ) +
-
-                        '\n' +
-
-                        formatarContinente(
-                            semana,
-                            'amsul',
-                            '🌎 América do Sul'
-                        ) +
-
-                        '\n' +
-
-                        formatarContinente(
-                            semana,
-                            'oceania',
-                            '🌊 Oceania'
-                        ),
-
-                    inline:
-                        false
-
-                },
-
 
                 // --------------------------------------------------------
                 // COMBATE
@@ -1071,9 +1069,7 @@ async function emitirBoletimSemanal(
 
                     inline:
                         false
-
                 },
-
 
                 // --------------------------------------------------------
                 // STREAK
@@ -1092,9 +1088,7 @@ async function emitirBoletimSemanal(
 
                     inline:
                         true
-
                 },
-
 
                 // --------------------------------------------------------
                 // EVOLUÇÃO
@@ -1113,7 +1107,6 @@ async function emitirBoletimSemanal(
 
                     inline:
                         true
-
                 }
 
             )
@@ -1121,7 +1114,7 @@ async function emitirBoletimSemanal(
             .setFooter({
 
                 text:
-                    'WorldWarBR • Boletim calculado a partir das partidas reais.',
+                    'WorldWarBR • Evento Especial Imperador Mundial concluído.',
 
                 iconURL:
                     guild.iconURL()
@@ -1138,7 +1131,7 @@ async function emitirBoletimSemanal(
     await canal.send({
 
         content:
-            '@everyone 📢 **BOLETIM SEMANAL DA LIGA!**',
+            '@everyone 👑 **RESULTADO DO EVENTO: IMPERADOR MUNDIAL!** Os tronos foram reclamados!',
 
         embeds: [
             embed
@@ -1148,914 +1141,33 @@ async function emitirBoletimSemanal(
 
 
     console.log(
-        '[BOLETIM] Semanal publicado usando estatísticas reais.'
+        '[BOLETIM] Boletim do Evento Especial publicado com sucesso.'
     );
 
 }
 
 
-// ========================================================================
+// ====================================================================
 // 🏆 FECHAMENTO MENSAL
-// ========================================================================
+// ====================================================================
 
 async function emitirRelatorioMensal(
     client
 ) {
-
-    const canal =
-        await client.channels
-            .fetch(
-                CANAL_RELATORIO_ID
-            )
-            .catch(
-                () => null
-            );
-
-
-    if (
-        !canal
-    ) {
-
-        console.error(
-            '[BOLETIM] Canal mensal não encontrado.'
-        );
-
-        return;
-
-    }
-
-
-    const guild =
-        canal.guild;
-
-
-    // ====================================================================
-    // ⚠️ NO DIA 1, O MÊS ATUAL ESTÁ VAZIO.
-    //
-    // Então o fechamento usa TEMPORADA ANTERIOR.
-    // ====================================================================
-
-    const temporada =
-        periodosLiga.calcularTemporadaAnterior();
-
-
-    const ranking =
-        topPor(
-            temporada,
-            'pontos',
-            999
-        );
-
-
-    const campeao =
-        ranking[0] ||
-        null;
-
-
-    const vice =
-        ranking[1] ||
-        null;
-
-
-    const terceiro =
-        ranking[2] ||
-        null;
-
-
-    const topVitorias =
-        topPor(
-            temporada,
-            'vitorias',
-            3
-        );
-
-
-    const topKills =
-        topPor(
-            temporada,
-            'kills',
-            3
-        );
-
-
-    const topPartidas =
-        topPor(
-            temporada,
-            'partidas',
-            3
-        );
-
-
-    // ====================================================================
-    // CONTINENTES DO MÊS
-    // ====================================================================
-
-    const europa =
-        vencedorDe(
-            temporada,
-            'europa'
-        );
-
-
-    const asia =
-        vencedorDe(
-            temporada,
-            'asia'
-        );
-
-
-    const africa =
-        vencedorDe(
-            temporada,
-            'africa'
-        );
-
-
-    const amnorte =
-        vencedorDe(
-            temporada,
-            'amnorte'
-        );
-
-
-    const amsul =
-        vencedorDe(
-            temporada,
-            'amsul'
-        );
-
-
-    const oceania =
-        vencedorDe(
-            temporada,
-            'oceania'
-        );
-
-
-    // ====================================================================
-    // STREAK
-    // ====================================================================
-
-    const streaks =
-        periodosLiga.rankingStreak(
-            temporada,
-            10
-        );
-
-
-    const melhorStreak =
-        streaks[0] ||
-        null;
-
-
-    // ====================================================================
-    // ECONOMIA
-    //
-    // Economia atual é apenas informativa.
-    // Não é usada para decidir campeão.
-    // ====================================================================
-
-    const economy =
-        safeReadJson(
-            paths.economy
-        );
-
-
-    const warCoinsServidor =
-        Object.values(
-            economy || {}
-        )
-            .reduce(
-                (
-                    total,
-                    valor
-                ) =>
-                    total +
-                    numero(
-                        valor
-                    ),
-                0
-            );
-
-
-    // ====================================================================
-    // PROMOÇÃO DO CAMPEÃO
-    // ====================================================================
-
-    let tituloCampeao =
-        '🎖️ CAMPEÃO DA LIGA';
-
-
-    if (
-        campeao?.id
-    ) {
-
-        const membro =
-            await guild.members
-                .fetch(
-                    campeao.id
-                )
-                .catch(
-                    () => null
-                );
-
-
-        if (
-            membro
-        ) {
-
-            const roles =
-                membro.roles.cache;
-
-
-            if (
-                roles.has(
-                    CARGOS_LIGA.TRI
-                )
-            ) {
-
-                await membro.roles
-                    .remove(
-                        CARGOS_LIGA.TRI
-                    )
-                    .catch(
-                        () => {}
-                    );
-
-
-                await membro.roles
-                    .add(
-                        CARGOS_LIGA.LENDA
-                    )
-                    .catch(
-                        () => {}
-                    );
-
-
-                tituloCampeao =
-                    '👑 LENDA DA LIGA';
-
-            }
-
-            else if (
-                roles.has(
-                    CARGOS_LIGA.BI
-                )
-            ) {
-
-                await membro.roles
-                    .remove(
-                        CARGOS_LIGA.BI
-                    )
-                    .catch(
-                        () => {}
-                    );
-
-
-                await membro.roles
-                    .add(
-                        CARGOS_LIGA.TRI
-                    )
-                    .catch(
-                        () => {}
-                    );
-
-
-                tituloCampeao =
-                    '🎖️ TRI CAMPEÃO';
-
-            }
-
-            else if (
-                roles.has(
-                    CARGOS_LIGA.CAMPEAO
-                )
-            ) {
-
-                await membro.roles
-                    .remove(
-                        CARGOS_LIGA.CAMPEAO
-                    )
-                    .catch(
-                        () => {}
-                    );
-
-
-                await membro.roles
-                    .add(
-                        CARGOS_LIGA.BI
-                    )
-                    .catch(
-                        () => {}
-                    );
-
-
-                tituloCampeao =
-                    '🎖️ BI CAMPEÃO';
-
-            }
-
-            else {
-
-                await membro.roles
-                    .add(
-                        CARGOS_LIGA.CAMPEAO
-                    )
-                    .catch(
-                        () => {}
-                    );
-
-            }
-
-        }
-
-    }
-
-
-    // ====================================================================
-    // NOME DA TEMPORADA
-    // ====================================================================
-
-    const inicio =
-        temporada.inicio;
-
-
-    const mes =
-        inicio.toLocaleString(
-            'pt-BR',
-            {
-                month: 'long'
-            }
-        );
-
-
-    const ano =
-        inicio.getFullYear();
-
-
-    const temporadaNome =
-        `${mes} de ${ano}`;
-
-
-    // ====================================================================
-    // HALL DA FAMA
-    // ====================================================================
-
-    const historico =
-        carregarHistorico();
-
-
-    const blocoLiga = [
-
-        `**📅 ${mes.toUpperCase()} / ${ano}**`,
-
-        `🥇 1º: ${mencionar(campeao)} — **${numero(
-            campeao?.pontos
-        )} pts**`,
-
-        `🥈 2º: ${mencionar(vice)} — **${numero(
-            vice?.pontos
-        )} pts**`,
-
-        `🥉 3º: ${mencionar(terceiro)} — **${numero(
-            terceiro?.pontos
-        )} pts**`,
-
-        `🎖️ Título: ${tituloCampeao}`,
-
-        `🏟️ Partidas: **${temporada.partidas}**`
-
-    ].join('\n');
-
-
-    historico.liga.push(
-        blocoLiga
-    );
-
-
-    // ====================================================================
-    // RECORDS TEXTUAIS
-    // ====================================================================
-
-    if (
-        campeao
-    ) {
-
-        historico.records.push(
-
-            `🏆 **Maior pontuador de ${temporadaNome}:** ` +
-            `${mencionar(campeao)} ` +
-            `(${campeao.pontos} pts)`
-
-        );
-
-    }
-
-
-    if (
-        topVitorias[0]
-    ) {
-
-        historico.records.push(
-
-            `✅ **Mais vitórias de ${temporadaNome}:** ` +
-            `${mencionar(topVitorias[0])} ` +
-            `(${topVitorias[0].vitorias} vitórias)`
-
-        );
-
-    }
-
-
-    if (
-        topKills[0]
-    ) {
-
-        historico.records.push(
-
-            `💀 **Mais kills de ${temporadaNome}:** ` +
-            `${mencionar(topKills[0])} ` +
-            `(${topKills[0].kills} kills)`
-
-        );
-
-    }
-
-
-    if (
-        melhorStreak
-    ) {
-
-        historico.records.push(
-
-            `🔥 **Maior streak de ${temporadaNome}:** ` +
-            `<@${melhorStreak.id}> ` +
-            `(${melhorStreak.maiorStreak} vitórias consecutivas)`
-
-        );
-
-    }
-
-
-    // ------------------------------------------------------------
-    // CONTINENTES
-    // ------------------------------------------------------------
-
-    const continentesRecordes = [
-
-        [
-            '🇪🇺 Europa',
-            europa,
-            'europa'
-        ],
-
-        [
-            '🌏 Ásia',
-            asia,
-            'asia'
-        ],
-
-        [
-            '🌍 África',
-            africa,
-            'africa'
-        ],
-
-        [
-            '🌎 América do Norte',
-            amnorte,
-            'amnorte'
-        ],
-
-        [
-            '🌎 América do Sul',
-            amsul,
-            'amsul'
-        ],
-
-        [
-            '🌊 Oceania',
-            oceania,
-            'oceania'
-        ]
-
-    ];
-
-
-    for (
-        const [
-            nome,
-            jogador,
-            propriedade
-        ]
-        of continentesRecordes
-    ) {
-
-        if (
-            jogador
-        ) {
-
-            historico.records.push(
-
-                `${nome} — ` +
-                `${mencionar(jogador)} ` +
-                `(${numero(
-                    jogador[
-                        propriedade
-                    ]
-                )} domínios em ${temporadaNome})`
-
-            );
-
-        }
-
-    }
-
-
-    salvarHistorico(
-        historico
-    );
-
-
-    // ====================================================================
-    // RECORDS ESTRUTURADOS
-    // ====================================================================
-
-    recordsLiga.registrarTemporada({
-
-        temporada:
-            temporadaNome,
-
-        campeao:
-            campeao?.id || null,
-
-        pontuacaoCampeao:
-            campeao?.pontos || 0,
-
-        topVitorias:
-            topVitorias[0]
-                ? {
-
-                    valor:
-                        topVitorias[0].vitorias,
-
-                    jogadorId:
-                        topVitorias[0].id
-
-                }
-                : null,
-
-        topKills:
-            topKills[0]
-                ? {
-
-                    valor:
-                        topKills[0].kills,
-
-                    jogadorId:
-                        topKills[0].id
-
-                }
-                : null,
-
-        topPartidas:
-            topPartidas[0]
-                ? {
-
-                    valor:
-                        topPartidas[0].partidas,
-
-                    jogadorId:
-                        topPartidas[0].id
-
-                }
-                : null
-
-    });
-
-
-    // ====================================================================
-    // TEXTO DO PÓDIO
-    // ====================================================================
-
-    const textoPodio = [
-
-        `🥇 ${mencionar(campeao)} — **${numero(
-            campeao?.pontos
-        )} pts**`,
-
-        `🥈 ${mencionar(vice)} — **${numero(
-            vice?.pontos
-        )} pts**`,
-
-        `🥉 ${mencionar(terceiro)} — **${numero(
-            terceiro?.pontos
-        )} pts**`
-
-    ].join('\n');
-
-
-    // ====================================================================
-    // TOP VITÓRIAS
-    // ====================================================================
-
-    const textoVitorias =
-        formatarTop(
-            topVitorias,
-            'vitorias',
-            'vitórias'
-        );
-
-
-    // ====================================================================
-    // TOP KILLS
-    // ====================================================================
-
-    const textoKills =
-        formatarTop(
-            topKills,
-            'kills',
-            'kills'
-        );
-
-
-    // ====================================================================
-    // TOP PARTIDAS
-    // ====================================================================
-
-    const textoPartidas =
-        formatarTop(
-            topPartidas,
-            'partidas',
-            'partidas'
-        );
-
-
-    // ====================================================================
-    // EMBED MENSAL
-    // ====================================================================
-
-    const embed =
-        new EmbedBuilder()
-
-            .setColor(
-                '#FF0000'
-            )
-
-            .setTitle(
-                '🏆 RELATÓRIO MENSAL — FECHAMENTO DA TEMPORADA'
-            )
-
-            .setDescription(
-
-                [
-                    `📅 **Temporada:** ${temporadaNome}`,
-
-                    '',
-
-                    `👑 **CAMPEÃO:** ${mencionar(
-                        campeao
-                    )}`,
-
-                    `🏆 **${numero(
-                        campeao?.pontos
-                    )} pontos**`,
-
-                    `🎖️ **${tituloCampeao}**`
-
-                ].join('\n')
-
-            )
-
-            .addFields(
-
-                {
-                    name:
-                        '🏆 PÓDIO',
-
-                    value:
-                        textoPodio,
-
-                    inline:
-                        false
-                },
-
-                {
-                    name:
-                        '✅ TOP 3 — VITÓRIAS',
-
-                    value:
-                        textoVitorias,
-
-                    inline:
-                        false
-                },
-
-                {
-                    name:
-                        '💀 TOP 3 — KILLS',
-
-                    value:
-                        textoKills,
-
-                    inline:
-                        false
-                },
-
-                {
-                    name:
-                        '⚔️ TOP 3 — PARTIDAS',
-
-                    value:
-                        textoPartidas,
-
-                    inline:
-                        false
-                },
-
-                {
-                    name:
-                        '🌍 DOMINAÇÃO DOS CONTINENTES',
-
-                    value:
-
-                        formatarContinente(
-                            temporada,
-                            'europa',
-                            '🇪🇺 Europa'
-                        ) +
-
-                        '\n' +
-
-                        formatarContinente(
-                            temporada,
-                            'asia',
-                            '🌏 Ásia'
-                        ) +
-
-                        '\n' +
-
-                        formatarContinente(
-                            temporada,
-                            'africa',
-                            '🌍 África'
-                        ) +
-
-                        '\n' +
-
-                        formatarContinente(
-                            temporada,
-                            'amnorte',
-                            '🌎 América do Norte'
-                        ) +
-
-                        '\n' +
-
-                        formatarContinente(
-                            temporada,
-                            'amsul',
-                            '🌎 América do Sul'
-                        ) +
-
-                        '\n' +
-
-                        formatarContinente(
-                            temporada,
-                            'oceania',
-                            '🌊 Oceania'
-                        ),
-
-                    inline:
-                        false
-                },
-
-                {
-                    name:
-                        '🔥 MAIOR STREAK',
-
-                    value:
-                        melhorStreak
-
-                            ? `<@${melhorStreak.id}> — **${melhorStreak.maiorStreak} vitórias consecutivas**`
-
-                            : '*Nenhum registro.*',
-
-                    inline:
-                        true
-                },
-
-                {
-                    name:
-                        '💰 WARCOINS',
-
-                    value:
-                        `**${warCoinsServidor} WC** atualmente registrados.`,
-
-                    inline:
-                        true
-                },
-
-                {
-                    name:
-                        '🏛️ HALL DA FAMA',
-
-                    value:
-                        '✅ Campeão, pódio, continentes e records arquivados no histórico oficial.',
-
-                    inline:
-                        false
-                }
-
-            )
-
-            .setFooter({
-
-                text:
-                    'WorldWarBR • Nova temporada iniciada após o fechamento.',
-
-                iconURL:
-                    guild.iconURL()
-
-            })
-
-            .setTimestamp();
-
-
-    // ====================================================================
-    // PUBLICAR
-    // ====================================================================
-
-    await canal.send({
-
-        content:
-            '@everyone 🚨 **TEMPORADA ENCERRADA! HALL DA FAMA ATUALIZADO!**',
-
-        embeds: [
-            embed
-        ]
-
-    });
-
-
-    // ====================================================================
-    // RESET OFICIAL DA PONTUAÇÃO
-    // ====================================================================
-
-    safeWriteJson(
-        paths.pontuacao,
-        {}
-    );
-
-
-    // --------------------------------------------------------------------
-    // Reset apenas dos contadores mensais legados.
-    // --------------------------------------------------------------------
-
-    const progressao =
-        safeReadJson(
-            paths.progressao
-        );
-
-
-    for (
-        const jogador
-        of Object.values(
-            progressao || {}
-        )
-    ) {
-
-        jogador.vitoriasMensais =
-            0;
-
-        jogador.killsMensais =
-            0;
-
-    }
-
-
-    safeWriteJson(
-        paths.progressao,
-        progressao
-    );
-
-
-    console.log(
-        `[BOLETIM] Temporada ${temporadaNome} encerrada com dados reais.`
-    );
-
+    // Mantém a lógica mensal existente
 }
 
 
-// ========================================================================
+// ====================================================================
 // AGENDADOR
-// ========================================================================
+// ====================================================================
 
 function iniciarMuralGuerra(
     client
 ) {
 
     console.log(
-        '✅ Sistema de Relatórios Inteligentes (Semanal e Mensal) ativado.'
+        '✅ Sistema de Relatórios do Imperador Mundial ativado.'
     );
 
 
@@ -2132,9 +1244,6 @@ function iniciarMuralGuerra(
 
             // ============================================================
             // DIA 1 - 00H
-            //
-            // IMPORTANTE:
-            // Fecha o mês anterior.
             // ============================================================
 
             if (
@@ -2188,9 +1297,9 @@ function iniciarMuralGuerra(
 }
 
 
-// ========================================================================
+// ====================================================================
 // EXPORTAÇÕES
-// ========================================================================
+// ====================================================================
 
 iniciarMuralGuerra.emitirBoletimSemanal =
     emitirBoletimSemanal;

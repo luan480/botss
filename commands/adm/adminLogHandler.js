@@ -54,9 +54,8 @@ module.exports = (client) => {
 
         await sleep(1200);
         const executor = await buscarExecutor(message.guild, AuditLogEvent.MessageDelete, message.author.id);
-        const responsavel = executor || message.author;
-        const origem = executor ? '🛡️ **Quem apagou:**' : '👤 **Quem apagou:**';
-        const desc = `👤 **Autor:** ${message.author} (\`${message.author.id}\`)\n📍 **Canal:** ${message.channel}\n${origem} ${responsavel}\n\n**Conteúdo:**\n\`\`\`${texto}\`\`\``;
+        const responsavel = executor || 'Não identificado pelo Discord';
+        const desc = `👤 **Autor:** ${message.author} (\`${message.author.id}\`)\n📍 **Canal:** ${message.channel}\n👮 **Quem apagou:** ${responsavel}\n\n**Conteúdo:**\n\`\`\`${texto}\`\`\``;
         await enviarLogAdm(client, 'MENSAGENS', 'Mensagem apagada', desc, '#e74c3c');
     });
 
@@ -65,7 +64,7 @@ module.exports = (client) => {
         if (!first?.guild) return;
         await sleep(1000);
         const executor = await buscarExecutor(first.guild, AuditLogEvent.MessageBulkDelete, first.channelId);
-        const desc = `📍 **Canal:** ${first.channel}\n👮 **Responsável:** ${executor || 'Não identificado'}\n🗑️ **Quantidade:** ${messages.size} mensagens`;
+        const desc = `📍 **Canal:** ${first.channel}\n👮 **Responsável:** ${executor || 'Não identificado pelo Discord'}\n🗑️ **Quantidade:** ${messages.size} mensagens`;
         await enviarLogAdm(client, 'MENSAGENS', 'Mensagens apagadas em massa', desc, '#c0392b');
     });
 
@@ -76,7 +75,7 @@ module.exports = (client) => {
         let depois = newMessage.content || '*[Vazio/Embed]*';
         if (antes.length > 1200) antes = antes.slice(0, 1200) + '...';
         if (depois.length > 1200) depois = depois.slice(0, 1200) + '...';
-        const desc = `👤 **Responsável pela edição:** ${oldMessage.author} (\`${oldMessage.author.id}\`)\n📍 **Canal:** ${oldMessage.channel}\n\n**Antes:**\n\`\`\`${antes}\`\`\`\n\n**Depois:**\n\`\`\`${depois}\`\`\``;
+        const desc = `👤 **Quem editou:** ${oldMessage.author} (\`${oldMessage.author.id}\`)\n📍 **Canal:** ${oldMessage.channel}\n\n**Antes:**\n\`\`\`${antes}\`\`\`\n\n**Depois:**\n\`\`\`${depois}\`\`\``;
         await enviarLogAdm(client, 'MENSAGENS', 'Mensagem editada', desc, '#f1c40f');
     });
 
@@ -92,20 +91,20 @@ module.exports = (client) => {
         if (executor) {
             await enviarLogAdm(client, 'MODERAÇÃO', 'Membro expulso', `👮 **Responsável:** ${executor}\n👤 **Alvo:** ${member.user.tag} (\`${member.id}\`)`, '#e67e22');
         } else {
-            await enviarLogAdm(client, 'MEMBROS', 'Membro saiu do servidor', `👤 **Membro:** ${member.user.tag} (\`${member.id}\`)\n👮 **Responsável:** O próprio membro ou não identificado`, '#95a5a6');
+            await enviarLogAdm(client, 'MEMBROS', 'Membro saiu do servidor', `👤 **Membro:** ${member.user.tag} (\`${member.id}\`)\n👮 **Responsável:** Não identificado pelo Discord`, '#95a5a6');
         }
     });
 
     client.on(Events.GuildBanAdd, async ban => {
         await sleep(700);
         const executor = await buscarExecutor(ban.guild, AuditLogEvent.MemberBanAdd, ban.user.id, 7000);
-        await enviarLogAdm(client, 'MODERAÇÃO', 'Membro banido', `👮 **Responsável:** ${executor || 'Não identificado'}\n🎯 **Alvo:** ${ban.user.tag} (\`${ban.user.id}\`)`, '#8e44ad');
+        await enviarLogAdm(client, 'MODERAÇÃO', 'Membro banido', `👮 **Responsável:** ${executor || 'Não identificado pelo Discord'}\n🎯 **Alvo:** ${ban.user.tag} (\`${ban.user.id}\`)`, '#8e44ad');
     });
 
     client.on(Events.GuildBanRemove, async ban => {
         await sleep(700);
         const executor = await buscarExecutor(ban.guild, AuditLogEvent.MemberBanRemove, ban.user.id, 7000);
-        await enviarLogAdm(client, 'MODERAÇÃO', 'Banimento removido', `👮 **Responsável:** ${executor || 'Não identificado'}\n🎯 **Alvo:** ${ban.user.tag} (\`${ban.user.id}\`)`, '#2ecc71');
+        await enviarLogAdm(client, 'MODERAÇÃO', 'Banimento removido', `👮 **Responsável:** ${executor || 'Não identificado pelo Discord'}\n🎯 **Alvo:** ${ban.user.tag} (\`${ban.user.id}\`)`, '#2ecc71');
     });
 
     client.on(Events.GuildMemberUpdate, async (oldMember, newMember) => {
@@ -129,7 +128,7 @@ module.exports = (client) => {
         if (!executor && oldMember.nickname !== newMember.nickname) executor = await buscarExecutor(newMember.guild, AuditLogEvent.MemberUpdate, newMember.id);
         if (!executor && oldMember.communicationDisabledUntilTimestamp !== newMember.communicationDisabledUntilTimestamp) executor = await buscarExecutor(newMember.guild, AuditLogEvent.MemberUpdate, newMember.id);
 
-        const desc = `👤 **Membro:** ${newMember} (\`${newMember.id}\`)\n👮 **Responsável:** ${executor || 'O próprio membro ou não identificado'}\n\n${mudancas.join('\n')}`;
+        const desc = `👤 **Membro:** ${newMember} (\`${newMember.id}\`)\n👮 **Responsável:** ${executor || 'O próprio membro ou não identificado pelo Discord'}\n\n${mudancas.join('\n')}`;
         await enviarLogAdm(client, 'MEMBROS', 'Membro alterado', desc, '#f39c12');
     });
 
@@ -147,13 +146,13 @@ module.exports = (client) => {
         if (oldChannel && !newChannel) {
             await sleep(800);
             const executor = await buscarExecutor(newState.guild, AuditLogEvent.MemberDisconnect, member.id, 5000);
-            await enviarLogAdm(client, 'VOZ', executor ? 'Membro desconectado da call' : 'Saiu da call', `👤 **Membro:** ${member}\n📍 **Canal:** ${oldChannel.name}\n👮 **Responsável:** ${executor || 'O próprio membro'}`, executor ? '#c0392b' : '#e67e22');
+            await enviarLogAdm(client, 'VOZ', executor ? 'Membro desconectado da call' : 'Saiu da call', `👤 **Membro:** ${member}\n📍 **Canal:** ${oldChannel.name}\n👮 **Responsável:** ${executor || 'O próprio membro ou não identificado pelo Discord'}`, executor ? '#c0392b' : '#e67e22');
             return;
         }
         if (oldChannel && newChannel && oldChannel.id !== newChannel.id) {
             await sleep(800);
             const executor = await buscarExecutor(newState.guild, AuditLogEvent.MemberMove, member.id, 5000);
-            await enviarLogAdm(client, 'VOZ', executor ? 'Membro movido de call' : 'Membro trocou de call', `👤 **Membro:** ${member}\n📍 **De:** ${oldChannel.name}\n📍 **Para:** ${newChannel.name}\n👮 **Responsável:** ${executor || 'O próprio membro'}`, executor ? '#8e44ad' : '#9b59b6');
+            await enviarLogAdm(client, 'VOZ', executor ? 'Membro movido de call' : 'Membro trocou de call', `👤 **Membro:** ${member}\n📍 **De:** ${oldChannel.name}\n📍 **Para:** ${newChannel.name}\n👮 **Responsável:** ${executor || 'O próprio membro ou não identificado pelo Discord'}`, executor ? '#8e44ad' : '#9b59b6');
         }
     });
 

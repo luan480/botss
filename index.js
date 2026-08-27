@@ -153,6 +153,11 @@ client.on(Events.InteractionCreate, async interaction => {
     if (!(interaction.isButton() || interaction.isStringSelectMenu() || interaction.isUserSelectMenu() || interaction.isRoleSelectMenu() || interaction.isChannelSelectMenu() || interaction.isMentionableSelectMenu())) return;
 
     try {
+        // Estatísticas individuais da Liga: não polui o painel com todos os jogadores.
+        if (customId === 'estatisticas_selecionar' || customId === 'estatisticas_usuario' || customId === 'estatisticas_voltar') {
+            return await require('./commands/liga/estatisticasSelecionar.js')(interaction);
+        }
+
         // Botão criado pelo sistema de promoção/ficha.
         if (customId.startsWith('ver_ficha_')) {
             const userId = customId.slice('ver_ficha_'.length);

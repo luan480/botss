@@ -30,8 +30,11 @@ const HISTORICO_PATH = path.join(__dirname, 'historico.json');
 const CANAL_HALL = '1079671915431608372';
 const CANAL_RANKING = '1090178120910389349';
 
-const IMAGEM_GUERRA =
+const IMAGEM_HALL =
     'https://media.discordapp.net/attachments/1082774011676729365/1541522022327390398/Impactful_Tactical_Military_Banner_Design.png?format=webp&quality=lossless&width=1536&height=865';
+
+const IMAGEM_PATENTES =
+    'https://media.discordapp.net/attachments/1082774011676729365/1539320041093333022/image.png?format=webp&quality=lossless';
 
 function garantirHistorico() {
     const dados = safeReadJson(HISTORICO_PATH);
@@ -45,7 +48,7 @@ function garantirHistorico() {
         historico.paineis = {};
     }
 
-    // Migração segura do formato antigo: o mural antigo era o Hall.
+    // Migração segura: o mural antigo representa o Hall da Fama.
     if (!historico.paineis.hall && historico.mural?.channelId) {
         historico.paineis.hall = {
             channelId: String(historico.mural.channelId),
@@ -72,7 +75,8 @@ function cortar(valor, limite = 1024) {
 }
 
 function nomeRegistro(registro) {
-    if (!registro || typeof registro !== 'object') return 'Registro histórico';
+    if (!registro || typeof registro !== 'object') return 'Nenhum registro';
+
     return texto(
         registro.nome ||
         registro.titulo ||
@@ -103,23 +107,27 @@ function criarEmbedHall() {
             '📊 **RECORDS** — Marcas históricas\n' +
             '━━━━━━━━━━━━━━━━━━━━━━━━━━'
         )
-        .addFields({
-            name: '📜 ARQUIVO HISTÓRICO',
-            value:
-                `🏆 Ligas: **${historico.liga.length}**\n` +
-                `👑 Imperadores: **${historico.imperador.length}**\n` +
-                `⚔️ Eventos: **${historico.eventos.length}**\n` +
-                `📊 Records: **${historico.records.length}**`,
-            inline: true
-        }, {
-            name: '🔥 ÚLTIMOS REGISTROS',
-            value:
-                `🏆 ${cortar(nomeRegistro(ultimoRegistro(historico, 'liga')), 150)}\n` +
-                `👑 ${cortar(nomeRegistro(ultimoRegistro(historico, 'imperador')), 150)}\n` +
-                `⚔️ ${cortar(nomeRegistro(ultimoRegistro(historico, 'eventos')), 150)}\n` +
-                `📊 ${cortar(nomeRegistro(ultimoRegistro(historico, 'records')), 150)}`,
-            inline: true
-        })
+        .setImage(IMAGEM_HALL)
+        .addFields(
+            {
+                name: '📜 ARQUIVO HISTÓRICO',
+                value:
+                    `🏆 Ligas: **${historico.liga.length}**\n` +
+                    `👑 Imperadores: **${historico.imperador.length}**\n` +
+                    `⚔️ Eventos: **${historico.eventos.length}**\n` +
+                    `📊 Records: **${historico.records.length}**`,
+                inline: true
+            },
+            {
+                name: '🔥 ÚLTIMOS REGISTROS',
+                value:
+                    `🏆 ${cortar(nomeRegistro(ultimoRegistro(historico, 'liga')), 150)}\n` +
+                    `👑 ${cortar(nomeRegistro(ultimoRegistro(historico, 'imperador')), 150)}\n` +
+                    `⚔️ ${cortar(nomeRegistro(ultimoRegistro(historico, 'eventos')), 150)}\n` +
+                    `📊 ${cortar(nomeRegistro(ultimoRegistro(historico, 'records')), 150)}`,
+                inline: true
+            }
+        )
         .setFooter({ text: 'WorldWarBR • Hall da Fama • Memória de guerra' })
         .setTimestamp();
 }
@@ -139,7 +147,7 @@ function criarEmbedRanking() {
             '━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
             '🎖️ Selecione uma categoria abaixo para abrir as estatísticas.'
         )
-        .setImage(IMAGEM_GUERRA)
+        .setImage(IMAGEM_PATENTES)
         .addFields({
             name: '🎖️ CENTRO DE COMANDO',
             value: 'Escolha o ranking que deseja consultar usando os botões abaixo.',
@@ -151,23 +159,59 @@ function criarEmbedRanking() {
 
 function botoesHall() {
     return new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId('hist_liga').setLabel('Liga').setEmoji('🏆').setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId('hist_imperador').setLabel('Imperadores').setEmoji('👑').setStyle(ButtonStyle.Success),
-        new ButtonBuilder().setCustomId('hist_eventos').setLabel('Eventos').setEmoji('⚔️').setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder().setCustomId('hist_records').setLabel('Records').setEmoji('📊').setStyle(ButtonStyle.Danger)
+        new ButtonBuilder()
+            .setCustomId('hist_liga')
+            .setLabel('Liga')
+            .setEmoji('🏆')
+            .setStyle(ButtonStyle.Primary),
+        new ButtonBuilder()
+            .setCustomId('hist_imperador')
+            .setLabel('Imperadores')
+            .setEmoji('👑')
+            .setStyle(ButtonStyle.Success),
+        new ButtonBuilder()
+            .setCustomId('hist_eventos')
+            .setLabel('Eventos')
+            .setEmoji('⚔️')
+            .setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder()
+            .setCustomId('hist_records')
+            .setLabel('Records')
+            .setEmoji('📊')
+            .setStyle(ButtonStyle.Danger)
     );
 }
 
 function botoesRanking() {
     return [
         new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId('rank_global').setLabel('Top 10 Global').setEmoji('🏆').setStyle(ButtonStyle.Danger)
+            new ButtonBuilder()
+                .setCustomId('rank_global')
+                .setLabel('Top 10 Global')
+                .setEmoji('🏆')
+                .setStyle(ButtonStyle.Danger)
         ),
         new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId('rank_exercito').setLabel('Exército').setEmoji('🪖').setStyle(ButtonStyle.Secondary),
-            new ButtonBuilder().setCustomId('rank_marinha').setLabel('Marinha').setEmoji('⚓').setStyle(ButtonStyle.Primary),
-            new ButtonBuilder().setCustomId('rank_aeronautica').setLabel('Aeronáutica').setEmoji('✈️').setStyle(ButtonStyle.Success),
-            new ButtonBuilder().setCustomId('rank_mercenarios').setLabel('Mercenários').setEmoji('💀').setStyle(ButtonStyle.Danger)
+            new ButtonBuilder()
+                .setCustomId('rank_exercito')
+                .setLabel('Exército')
+                .setEmoji('🪖')
+                .setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder()
+                .setCustomId('rank_marinha')
+                .setLabel('Marinha')
+                .setEmoji('⚓')
+                .setStyle(ButtonStyle.Primary),
+            new ButtonBuilder()
+                .setCustomId('rank_aeronautica')
+                .setLabel('Aeronáutica')
+                .setEmoji('✈️')
+                .setStyle(ButtonStyle.Success),
+            new ButtonBuilder()
+                .setCustomId('rank_mercenarios')
+                .setLabel('Mercenários')
+                .setEmoji('💀')
+                .setStyle(ButtonStyle.Danger)
         )
     ];
 }
@@ -192,18 +236,22 @@ async function publicarPainel(guild, tipo, channelId, embed, components) {
     }
 
     const canal = await guild.channels.fetch(channelId).catch(() => null);
+
     if (!canal?.isTextBased()) {
         throw new Error(`Canal ${channelId} não encontrado ou não é de texto.`);
     }
 
-    const mensagem = await canal.send({ embeds: [embed], components });
+    const mensagem = await canal.send({
+        embeds: [embed],
+        components
+    });
 
     historico.paineis[tipo] = {
         channelId: String(channelId),
         messageId: String(mensagem.id)
     };
 
-    // Mantém compatibilidade com módulos antigos que ainda consultem mural.
+    // Compatibilidade com módulos antigos que ainda consultam mural.
     if (tipo === 'hall') {
         historico.mural = {
             channelId: String(channelId),
@@ -245,6 +293,7 @@ async function atualizarRanking(guild) {
     const historico = garantirHistorico();
     const referencia = historico.paineis?.ranking;
     const mensagem = await buscarMensagem(guild, referencia);
+
     if (!mensagem) return null;
 
     await mensagem.edit({
@@ -260,7 +309,6 @@ async function criarMural(canal) {
 
     const guild = canal.guild;
 
-    // O comando agora garante os dois painéis nos canais corretos.
     const hall = await publicarPainel(
         guild,
         'hall',
@@ -291,6 +339,7 @@ const comando = {
 
         try {
             await criarMural(interaction.channel);
+
             await interaction.editReply({
                 content:
                     '✅ **Painéis separados com sucesso!**\n\n' +
@@ -299,6 +348,7 @@ const comando = {
             });
         } catch (erro) {
             console.error('[PAINEIS] Erro:', erro);
+
             await interaction.editReply({
                 content: `❌ Falha ao criar/atualizar os painéis: ${erro.message}`
             });

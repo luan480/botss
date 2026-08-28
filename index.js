@@ -9,7 +9,7 @@ let config = {};
 try { config = require('./config.json'); } catch (erro) { console.error('❌ config.json não encontrado ou inválido.'); process.exit(1); }
 
 const TOKEN = config.token || config.DISCORD_TOKEN || config.botToken || process.env.DISCORD_TOKEN || process.env.BOT_TOKEN || process.env.TOKEN;
-const ID_SERVIDOR_AUTORIZADO = String(config.guildId || config.idServidor || config.servidorId || '8496966981');
+const ID_SERVIDOR_AUTORIZADO = String(config.guildId || config.idServidor || config.servidorId || '849696655510863914');
 const handleReverter = require('./commands/liga/handlers/handleReverter.js');
 const pontuacaoPath = path.join(__dirname, 'commands', 'liga', 'pontuacao.json');
 const partidasPath = path.join(__dirname, 'commands', 'liga', 'partidas.json');
@@ -42,24 +42,10 @@ readCommands(commandsPath);
 client.once(Events.ClientReady, async c => {
     console.log(`🤖 ${c.user.tag} está online!`);
     try { c.user.setPresence({ activities: [{ name: config.presence || 'WAR', type: ActivityType.Playing }], status: 'online' }); } catch {}
-
-    try {
-        const guilds = await c.guilds.fetch();
-        for (const [, guildData] of guilds) if (guildData.id !== ID_SERVIDOR_AUTORIZADO) { const guild = c.guilds.cache.get(guildData.id); if (guild) await guild.leave().catch(() => {}); }
-    } catch (erro) { console.error('❌ Erro ao validar servidores:', erro); }
-
-    try {
-        const guild = c.guilds.cache.get(ID_SERVIDOR_AUTORIZADO);
-        if (guild) {
-            await c.application.commands.set([]);
-            await guild.commands.set(client.commands.map(command => command.data.toJSON()));
-            console.log(`✅ ${client.commands.size} comandos sincronizados.`);
-        } else console.error(`❌ Servidor autorizado ${ID_SERVIDOR_AUTORIZADO} não encontrado.`);
-    } catch (erro) { console.error('❌ Erro ao sincronizar comandos:', erro); }
-
+    try { const guilds = await c.guilds.fetch(); for (const [, guildData] of guilds) if (guildData.id !== ID_SERVIDOR_AUTORIZADO) { const guild = c.guilds.cache.get(guildData.id); if (guild) await guild.leave().catch(() => {}); } } catch (erro) { console.error('❌ Erro ao validar servidores:', erro); }
+    try { const guild = c.guilds.cache.get(ID_SERVIDOR_AUTORIZADO); if (guild) { await c.application.commands.set([]); await guild.commands.set(client.commands.map(command => command.data.toJSON())); console.log(`✅ ${client.commands.size} comandos sincronizados.`); } else console.error(`❌ Servidor autorizado ${ID_SERVIDOR_AUTORIZADO} não encontrado.`); } catch (erro) { console.error('❌ Erro ao sincronizar comandos:', erro); }
     try { const promotion = require('./commands/promocao/promotionHandler.js'); if (typeof promotion === 'function') promotion(c); } catch (erro) { console.error('❌ Falha no PromotionHandler:', erro); }
     try { const syncEngine = require('./commands/promocao/syncEngine.js'); if (typeof syncEngine.executarVarreduraCanal === 'function') { await syncEngine.executarVarreduraCanal(c); console.log('✅ Varredura e recuperação automática de prints concluída.'); } } catch (erro) { console.error('❌ Falha na varredura automática:', erro); }
-
     const handlers = [
         ['./commands/promocao/reactionAddHandler.js','Reaction Handler'], ['./commands/adm/adminLogHandler.js','Admin Log'], ['./commands/voz/voiceControlHandler.js','Voice Control'], ['./commands/adm/temporaryVoiceHandler.js','Temporary Voice'], ['./commands/adm/temporaryMuteHandler.js','Temporary Mute'], ['./commands/adm/weeklyReportHandler.js','Relatórios'], ['./commands/economy/economyTextHandler.js','Economy'], ['./commands/adm/autoResponseHandler.js','Auto Response'], ['./commands/adm/antiNukeHandler.js','Anti-Nuke'], ['./commands/adm/onboardingSyncHandler.js','Onboarding']
     ];
@@ -69,18 +55,10 @@ client.once(Events.ClientReady, async c => {
 client.on(Events.GuildCreate, async guild => { if (guild.id !== ID_SERVIDOR_AUTORIZADO) await guild.leave().catch(() => {}); });
 
 client.on(Events.InteractionCreate, async interaction => {
-    if (interaction.guildId !== ID_SERVIDOR_AUTORIZADO) {
-        if (interaction.isRepliable()) {
-            const r = { content: '❌ Este bot é de uso exclusivo e restrito.', flags: MessageFlags.Ephemeral };
-            if (interaction.replied || interaction.deferred) return interaction.followUp(r).catch(() => {});
-            return interaction.reply(r).catch(() => {});
-        }
-        return;
-    }
-
+    if (interaction.guildId !== ID_SERVIDOR_AUTORIZADO) { if (interaction.isRepliable()) { const r = { content: '❌ Este bot é de uso exclusivo e restrito.', flags: MessageFlags.Ephemeral }; if (interaction.replied || interaction.deferred) return interaction.followUp(r).catch(() => {}); return interaction.reply(r).catch(() => {}); } return; }
     const customId = interaction.customId || '';
 
-    // AUTOCOMPLETE — precisa vir antes do ChatInputCommand
+    // AUTOCOMPLETE: precisa ser processado antes de ChatInputCommand.
     if (interaction.isAutocomplete()) {
         const command = client.commands.get(interaction.commandName);
         if (!command || typeof command.autocomplete !== 'function') return interaction.respond([]).catch(() => {});
@@ -91,73 +69,30 @@ client.on(Events.InteractionCreate, async interaction => {
     if (interaction.isChatInputCommand()) {
         const command = client.commands.get(interaction.commandName);
         if (!command) return;
-        try { await command.execute(interaction); }
-        catch (erro) {
-            console.error(`[CMD] Erro em /${interaction.commandName}:`, erro);
-            const r = { content: '❌ Erro ao executar o comando.', flags: MessageFlags.Ephemeral };
-            if (interaction.replied || interaction.deferred) await interaction.followUp(r).catch(() => {}); else await interaction.reply(r).catch(() => {});
-        }
+        try { await command.execute(interaction); } catch (erro) { console.error(`[CMD] Erro em /${interaction.commandName}:`, erro); const r = { content: '❌ Erro ao executar o comando.', flags: MessageFlags.Ephemeral }; if (interaction.replied || interaction.deferred) await interaction.followUp(r).catch(() => {}); else await interaction.reply(r).catch(() => {}); }
         return;
     }
 
-    if (interaction.isModalSubmit() && customId.startsWith('hall_modal_')) {
-        try { await require('./commands/promocao/historicoHandler.js')(interaction, client); } catch (erro) { console.error('[HALL] Erro no modal:', erro); }
-        return;
-    }
-
+    if (interaction.isModalSubmit() && customId.startsWith('hall_modal_')) { try { await require('./commands/promocao/historicoHandler.js')(interaction, client); } catch (erro) { console.error('[HALL] Erro no modal:', erro); } return; }
     const isSelect = interaction.isStringSelectMenu?.() || interaction.isUserSelectMenu?.() || interaction.isRoleSelectMenu?.() || interaction.isChannelSelectMenu?.() || interaction.isMentionableSelectMenu?.();
     if (!interaction.isButton() && !isSelect) return;
 
     try {
         if (['estatisticas_selecionar','estatisticas_usuario','estatisticas_voltar','liga_estatisticas','liga_estatisticas_voltar'].includes(customId) || customId.startsWith('liga_estatisticas_prev_') || customId.startsWith('liga_estatisticas_next_') || customId.startsWith('liga_estatisticas_pagina_')) return await require('./commands/liga/estatisticasSelecionar.js')(interaction);
-
-        if (customId.startsWith('ver_ficha_')) {
-            const userId = customId.slice('ver_ficha_'.length);
-            if (!/^\d{15,22}$/.test(userId)) return interaction.reply({ content:'❌ Usuário inválido.', flags:MessageFlags.Ephemeral });
-            const { safeReadJson } = require('./commands/liga/utils/helpers.js');
-            const { criarFicha } = require('./commands/promocao/fichaBuilder.js');
-            const progressao = safeReadJson(path.join(__dirname,'commands','promocao','progressao.json'));
-            const carreiras = safeReadJson(path.join(__dirname,'commands','promocao','carreiras.json'));
-            const economy = safeReadJson(path.join(__dirname,'commands','economy','economy.json'));
-            const member = await interaction.guild.members.fetch(userId).catch(() => null);
-            if (!member) return interaction.reply({content:'❌ Não foi possível encontrar esse membro.',flags:MessageFlags.Ephemeral});
-            const ficha = criarFicha({progressao,carreiras,economy,userId,member,modo:'carreira'});
-            if (!ficha) return interaction.reply({content:'❌ A ficha desse usuário não está disponível.',flags:MessageFlags.Ephemeral});
-            return interaction.reply({embeds:[ficha],flags:MessageFlags.Ephemeral});
-        }
-
+        if (customId.startsWith('ver_ficha_')) { const userId = customId.slice('ver_ficha_'.length); if (!/^\d{15,22}$/.test(userId)) return interaction.reply({ content:'❌ Usuário inválido.', flags:MessageFlags.Ephemeral }); const { safeReadJson } = require('./commands/liga/utils/helpers.js'); const { criarFicha } = require('./commands/promocao/fichaBuilder.js'); const progressao = safeReadJson(path.join(__dirname,'commands','promocao','progressao.json')); const carreiras = safeReadJson(path.join(__dirname,'commands','promocao','carreiras.json')); const economy = safeReadJson(path.join(__dirname,'commands','economy','economy.json')); const member = await interaction.guild.members.fetch(userId).catch(() => null); if (!member) return interaction.reply({content:'❌ Não foi possível encontrar esse membro.',flags:MessageFlags.Ephemeral}); const ficha = criarFicha({progressao,carreiras,economy,userId,member,modo:'carreira'}); if (!ficha) return interaction.reply({content:'❌ A ficha desse usuário não está disponível.',flags:MessageFlags.Ephemeral}); return interaction.reply({embeds:[ficha],flags:MessageFlags.Ephemeral}); }
         if (customId.startsWith('hist_') || customId.startsWith('hall_')) return await require('./commands/promocao/historicoHandler.js')(interaction, client);
         if (customId.startsWith('edit_match_')) return await handleReverter(client, interaction, pontuacaoPath, partidasPath);
         if (customId.startsWith('ticket_')) return await require('./commands/ticket/buttonRouter.js')(interaction, client);
         if (customId.startsWith('stt_')) return await require('./commands/promocao/statusHandler.js')(interaction, client);
         if (customId.startsWith('rank_')) return await require('./commands/promocao/rankingHandler.js')(interaction, client);
-
-        if (customId.startsWith('emb_') || customId.startsWith('mdl_') || customId.startsWith('eb_')) {
-            const embedSystem = require('./commands/adm/embedSystem.js');
-            if (typeof embedSystem.handleInteraction === 'function') return await embedSystem.handleInteraction(interaction);
-            if (typeof embedSystem === 'function') return await embedSystem(interaction, client);
-            return;
-        }
-
+        if (customId.startsWith('emb_') || customId.startsWith('mdl_') || customId.startsWith('eb_')) { const embedSystem = require('./commands/adm/embedSystem.js'); if (typeof embedSystem.handleInteraction === 'function') return await embedSystem.handleInteraction(interaction); if (typeof embedSystem === 'function') return await embedSystem(interaction, client); return; }
         if (customId.startsWith('tvoice_')) return await require('./commands/adm/tempVoiceButtonHandler.js')(interaction, client);
-        if (customId.startsWith('vcall_select_')) {
-            if (!interaction.values?.length) return interaction.reply({content:'❌ Nenhum usuário selecionado.',flags:MessageFlags.Ephemeral});
-            interaction.customId = `vcall_k_${interaction.values[0]}`;
-            return await require('./commands/voz/voiceControlHandler.js')(interaction, client);
-        }
-
+        if (customId.startsWith('vcall_select_')) { if (!interaction.values?.length) return interaction.reply({content:'❌ Nenhum usuário selecionado.',flags:MessageFlags.Ephemeral}); interaction.customId = `vcall_k_${interaction.values[0]}`; return await require('./commands/voz/voiceControlHandler.js')(interaction, client); }
         if (customId.startsWith('liga_') || ['iniciar_contabilizacao','ver_ranking','ver_todos_competidores','registrar','add_abate','fim_abates','add_cont','fim_cont'].includes(customId) || customId.startsWith('sel_') || customId.startsWith('reset_')) return await require('./commands/liga/buttons.js')(client, interaction);
-    } catch (erro) {
-        console.error('[INTERACTION] Erro:', erro);
-        if (interaction.isRepliable()) {
-            const r = {content:'❌ Erro ao processar esta ação.',flags:MessageFlags.Ephemeral};
-            if (interaction.replied || interaction.deferred) await interaction.followUp(r).catch(() => {}); else await interaction.reply(r).catch(() => {});
-        }
-    }
+    } catch (erro) { console.error('[INTERACTION] Erro:', erro); if (interaction.isRepliable()) { const r = {content:'❌ Erro ao processar esta ação.',flags:MessageFlags.Ephemeral}; if (interaction.replied || interaction.deferred) await interaction.followUp(r).catch(() => {}); else await interaction.reply(r).catch(() => {}); } }
 });
 
 process.on('unhandledRejection', erro => console.error('[PROCESS] Unhandled Rejection:', erro));
 process.on('uncaughtException', erro => console.error('[PROCESS] Uncaught Exception:', erro));
-
 if (!TOKEN) { console.error('❌ TOKEN NÃO ENCONTRADO. Configure "token" no config.json ou DISCORD_TOKEN/BOT_TOKEN/TOKEN no ambiente.'); process.exit(1); }
 client.login(TOKEN);

@@ -1,48 +1,26 @@
-const fs = require('fs');
-const path = require('path');
-
-const DATA_DIR = path.join(__dirname, 'data');
-const DATA_FILE = path.join(DATA_DIR, 'competitions.json');
-const TEMPLATES_FILE = path.join(DATA_DIR, 'templates.json');
-
-function ensure() {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-    if (!fs.existsSync(DATA_FILE)) fs.writeFileSync(DATA_FILE, JSON.stringify({ competitions: [] }, null, 2));
-    if (!fs.existsSync(TEMPLATES_FILE)) fs.writeFileSync(TEMPLATES_FILE, JSON.stringify({ templates: [] }, null, 2));
-}
-function read(file, fallback) { ensure(); try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return fallback; } }
-function write(file, value) { ensure(); const temp = `${file}.tmp`; fs.writeFileSync(temp, JSON.stringify(value, null, 2)); fs.renameSync(temp, file); }
-function id(prefix = 'cmp') { return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`; }
-function defaultCompetition(type = 'personalizado', creatorId = null) {
-    return { id: id(), version: 1, type, status: 'draft', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), createdBy: creatorId,
-        metadata: { name: 'Nova Competição', shortName: '', subtitle: '', description: '', season: '', edition: '', emoji: '🏆', tags: [], organizer: '' },
-        visual: { color: '#C9A227', banner: '', thumbnail: '', logo: '', images: {}, footer: 'WorldWarBR • Competição' },
-        registration: { enabled: true, mode: 'manual', minimum: 2, maximum: 32, reserves: 0, teamMode: 'individual', questions: [] },
-        participants: [], stages: [], scoring: { rules: [], tiebreakers: [] }, matches: [], customFields: [], rules: [], rewards: [], schedule: [], channels: {}, roles: {},
-        panel: { title: '', description: '', buttons: [] }, automation: { reminders: false, matchNotifications: true, resultNotifications: true, autoWalkover: false },
-        hallOfFame: { enabled: true, category: 'eventos', image: '' }, audit: [], snapshots: [] };
-}
-function list() { return read(DATA_FILE, { competitions: [] }).competitions; }
-function saveAll(competitions) { write(DATA_FILE, { competitions }); }
-function get(idValue) { return list().find(c => c.id === idValue); }
-function save(competition, actorId = null, action = 'update') {
-    const all = list(); const index = all.findIndex(c => c.id === competition.id);
-    competition.updatedAt = new Date().toISOString();
-    competition.version = Number(competition.version || 1) + (index >= 0 ? 1 : 0);
-    competition.audit = Array.isArray(competition.audit) ? competition.audit : [];
-    competition.audit.push({ at: competition.updatedAt, actorId, action, version: competition.version });
-    if (index >= 0) all[index] = competition; else all.push(competition);
-    saveAll(all); return competition;
-}
-function snapshot(competition, actorId, reason = 'manual') {
-    competition.snapshots = Array.isArray(competition.snapshots) ? competition.snapshots : [];
-    competition.snapshots.push({ version: competition.version, at: new Date().toISOString(), actorId, reason, data: JSON.parse(JSON.stringify(competition)) });
-    if (competition.snapshots.length > 20) competition.snapshots.shift();
-}
-function duplicate(source, creatorId) {
-    const copy = JSON.parse(JSON.stringify(source)); copy.id = id(); copy.version = 1; copy.status = 'draft'; copy.createdBy = creatorId;
-    copy.createdAt = new Date().toISOString(); copy.updatedAt = copy.createdAt; copy.participants = []; copy.matches = []; copy.audit = []; copy.snapshots = [];
-    copy.metadata.name = `${copy.metadata.name || 'Competição'} — Cópia`; return save(copy, creatorId, 'duplicate');
-}
-function addAudit(competition, actorId, action, details = {}) { competition.audit = Array.isArray(competition.audit) ? competition.audit : []; competition.audit.push({ at: new Date().toISOString(), actorId, action, details }); }
-module.exports = { id, defaultCompetition, list, saveAll, get, save, snapshot, duplicate, addAudit, DATA_FILE, TEMPLATES_FILE };
+const fs=require('fs');const path=require('path');
+const DATA_DIR=path.join(__dirname,'data'),DATA_FILE=path.join(DATA_DIR,'competitions.json'),TEMPLATES_FILE=path.join(DATA_DIR,'templates.json');
+const TYPES=['liga','torneio','evento','campeonato','clans','personalizado'];
+const now=()=>new Date().toISOString(),clone=v=>JSON.parse(JSON.stringify(v));
+const id=(p='cmp')=>`${p}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`;
+const num=(v,d=0)=>Number.isFinite(Number(v))?Number(v):d;const bool=v=>/^(1|true|yes|sim|s|y)$/i.test(String(v??'').trim());
+function ensure(){fs.mkdirSync(DATA_DIR,{recursive:true});if(!fs.existsSync(DATA_FILE))fs.writeFileSync(DATA_FILE,'{"competitions":[]}');if(!fs.existsSync(TEMPLATES_FILE))fs.writeFileSync(TEMPLATES_FILE,'{"templates":[]}')}
+function read(f,d){ensure();try{return JSON.parse(fs.readFileSync(f,'utf8'))}catch{return d}}function write(f,v){ensure();const t=f+'.tmp';fs.writeFileSync(t,JSON.stringify(v,null,2));fs.renameSync(t,f)}
+function defaultCompetition(type='personalizado',creatorId=null){return{id:id(),version:1,type:TYPES.includes(type)?type:'personalizado',status:'draft',createdAt:now(),updatedAt:now(),createdBy:creatorId,metadata:{name:'Nova Competição',shortName:'',subtitle:'',description:'',season:'',edition:'',emoji:'🏆',tags:[],organizer:''},visual:{color:'#C9A227',banner:'',thumbnail:'',logo:'',images:{},footer:'WorldWarBR • Competição'},registration:{enabled:true,mode:'manual',minimum:2,maximum:32,reserves:0,teamMode:'individual',questions:[]},participants:[],stages:[],scoring:{rules:[],tiebreakers:[]},matches:[],customFields:[],rules:[],rewards:[],schedule:[],channels:{},roles:{},panel:{title:'',description:'',buttons:[]},automation:{reminders:false,matchNotifications:true,resultNotifications:true,autoWalkover:false},hallOfFame:{enabled:true,category:'eventos',image:''},audit:[],snapshots:[]}}
+function list(){return read(DATA_FILE,{competitions:[]}).competitions}function saveAll(a){write(DATA_FILE,{competitions:a})}function get(x){return list().find(c=>String(c.id)===String(x))}
+function addAudit(c,actor,action,details={}){c.audit=Array.isArray(c.audit)?c.audit:[];c.audit.push({at:now(),actorId:actor,action,details})}
+function save(c,actor=null,action='update'){const a=list(),i=a.findIndex(x=>x.id===c.id);c.updatedAt=now();c.version=i<0?1:num(c.version,1)+1;addAudit(c,actor,action);if(i<0)a.push(c);else a[i]=c;saveAll(a);return c}
+function snapshot(c,actor,reason='manual'){c.snapshots=Array.isArray(c.snapshots)?c.snapshots:[];c.snapshots.push({version:c.version,at:now(),actorId:actor,reason,data:clone(c)});if(c.snapshots.length>20)c.snapshots.shift()}
+function duplicate(c,actor){const x=clone(c);x.id=id();x.version=1;x.status='draft';x.createdBy=actor;x.createdAt=now();x.updatedAt=x.createdAt;x.participants=[];x.matches=[];x.audit=[];x.snapshots=[];x.metadata.name=`${x.metadata.name||'Competição'} — Cópia`;return save(x,actor,'duplicate')}
+function participant(c,u){return c.participants.find(p=>String(p.userId)===String(u))}
+function register(c,u,data={}){if(!c.registration.enabled)throw Error('REGISTRATION_CLOSED');if(['finished','cancelled'].includes(c.status))throw Error('COMPETITION_CLOSED');if(participant(c,u))throw Error('ALREADY_REGISTERED');if(c.participants.length>=num(c.registration.maximum,32))throw Error('FULL');const p={id:id('p'),userId:String(u),teamId:data.teamId||null,answers:data.answers||{},stats:{},registeredAt:now(),status:'active'};c.participants.push(p);return p}
+function removeParticipant(c,u){const i=c.participants.findIndex(p=>String(p.userId)===String(u));if(i<0)return false;c.participants.splice(i,1);return true}
+function addStage(c,d={}){const s={id:id('stage'),name:d.name||`Fase ${c.stages.length+1}`,format:d.format||'manual',rounds:Math.max(1,num(d.rounds,1)),qualify:d.qualify===''?null:num(d.qualify,0),bestOf:Math.max(1,num(d.bestOf,1)),settings:d.settings||{},status:'pending'};c.stages.push(s);return s}
+function addMatch(c,d={}){const a=d.participantA||d.a,b=d.participantB||d.b;if(!a||!b)throw Error('MATCH_NEEDS_TWO');const m={id:id('match'),stageId:d.stageId||c.stages[0]?.id||null,round:num(d.round,1),participantA:String(a),participantB:String(b),scoreA:null,scoreB:null,winnerId:null,status:'scheduled',map:d.map||'',room:d.room||'',scheduledAt:d.scheduledAt||null,refereeId:d.refereeId||null,mvpId:null,proof:[],notes:'',createdAt:now(),updatedAt:now()};c.matches.push(m);return m}
+function findMatch(c,x){return c.matches.find(m=>String(m.id)===String(x))}
+function setResult(c,x,a,b,winner=null,actor=null,extra={}){const m=findMatch(c,x);if(!m)throw Error('MATCH_NOT_FOUND');a=num(a,NaN);b=num(b,NaN);if(!Number.isFinite(a)||!Number.isFinite(b))throw Error('INVALID_SCORE');if(a===b&&!winner)throw Error('DRAW_NEEDS_WINNER');if(winner&&! [m.participantA,m.participantB].includes(String(winner)))throw Error('INVALID_WINNER');m.scoreA=a;m.scoreB=b;m.winnerId=winner||(a>b?m.participantA:m.participantB);m.status='finished';m.updatedAt=now();Object.assign(m,{map:extra.map??m.map,room:extra.room??m.room,mvpId:extra.mvpId??m.mvpId,proof:extra.proof??m.proof,notes:extra.notes??m.notes});addAudit(c,actor,'match_result',{matchId:m.id,scoreA:a,scoreB:b,winnerId:m.winnerId});return m}
+function evaluate(rule,ctx){const parts=String(rule.condition||'').trim().split(/\s*(?:&&|\bAND\b)\s*/i);return parts.every(p=>{const m=p.match(/^([\w.]+)\s*(==|=|!=|>=|<=|>|<)\s*(.+)$/);if(!m)return false;const actual=m[1].split('.').reduce((o,k)=>o==null?undefined:o[k],ctx),exp=m[3].trim().replace(/^[\'\"]|[\'\"]$/g,''),an=Number(actual),en=Number(exp),n=Number.isFinite(an)&&Number.isFinite(en)&&exp!=='';const l=n?an:String(actual??'').toLowerCase(),r=n?en:exp.toLowerCase();return m[2]==='='||m[2]==='=='?l===r:m[2]==='!='?l!==r:m[2]==='>'?l>r:m[2]==='<'?l<r:m[2]==='>='?l>=r:l<=r})}
+function calculateParticipant(c,u){let points=0;for(const m of c.matches.filter(m=>m.status==='finished'&&[m.participantA,m.participantB].includes(String(u)))){const a=String(m.participantA)===String(u),score=a?m.scoreA:m.scoreB,opp=a?m.scoreB:m.scoreA,w=String(m.winnerId)===String(u),ctx={userId:String(u),result:w?'win':'loss',score,opponentScore:opp,match:m,mvp:String(m.mvpId||'')===String(u),participant:participant(c,u)||{}};for(const r of c.scoring?.rules||[])if(evaluate(r,ctx))points+=num(r.points)}return points}
+function standings(c){const rows=c.participants.filter(p=>p.status!=='removed').map(p=>{const ms=c.matches.filter(m=>m.status==='finished'&&[m.participantA,m.participantB].includes(String(p.userId))),wins=ms.filter(m=>String(m.winnerId)===String(p.userId)).length,scored=ms.reduce((n,m)=>n+(String(m.participantA)===String(p.userId)?num(m.scoreA):num(m.scoreB)),0),conceded=ms.reduce((n,m)=>n+(String(m.participantA)===String(p.userId)?num(m.scoreB):num(m.scoreA)),0);return{userId:String(p.userId),points:calculateParticipant(c,p.userId),wins,losses:ms.length-wins,played:ms.length,scored,conceded,saldo:scored-conceded}});const keys=c.scoring?.tiebreakers?.length?c.scoring.tiebreakers:['points','wins','saldo','scored'];return rows.sort((a,b)=>{for(const z of keys){const k=String(z).replace(/^[-+]/,'');const d=num(b[k])-num(a[k]);if(d)return d}return a.userId.localeCompare(b.userId)}).map((r,i)=>({rank:i+1,...r}))}
+function validate(c){const errors=[],warnings=[];if(!c.metadata?.name||c.metadata.name==='Nova Competição')errors.push('Defina o nome da competição.');if(num(c.registration?.minimum)<1||num(c.registration?.maximum)<num(c.registration?.minimum))errors.push('Limites de participantes inválidos.');if(!c.stages?.length)warnings.push('Nenhuma fase configurada.');if(!c.scoring?.rules?.length)warnings.push('Nenhuma regra de pontuação configurada.');for(const q of c.registration?.questions||[])if(!q.title||!q.type)errors.push(`Pergunta ${q.id||''} incompleta.`);return{valid:!errors.length,errors,warnings}}
+module.exports={id,defaultCompetition,list,saveAll,get,save,snapshot,duplicate,addAudit,participant,register,removeParticipant,addStage,addMatch,findMatch,setResult,standings,calculateParticipant,validate,evaluate,bool,num,TYPES,DATA_FILE,TEMPLATES_FILE};

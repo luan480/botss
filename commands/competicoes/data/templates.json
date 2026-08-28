@@ -1,0 +1,22 @@
+{
+  "templates": [
+    {
+      "id": "modelo-liga",
+      "name": "Liga WorldWarBR",
+      "description": "Modelo base para ligas com classificação por pontos.",
+      "type": "liga"
+    },
+    {
+      "id": "modelo-torneio",
+      "name": "Torneio Mata-Mata",
+      "description": "Modelo base para torneios eliminatórios.",
+      "type": "torneio"
+    },
+    {
+      "id": "modelo-evento",
+      "name": "Evento Personalizado",
+      "description": "Modelo livre para eventos especiais.",
+      "type": "evento"
+    }
+  ]
+}

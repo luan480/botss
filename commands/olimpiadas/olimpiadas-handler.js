@@ -1,35 +1,28 @@
 /* ========================================================================
    ARQUIVO: commands/olimpiadas/olimpiadas-handler.js
 
-   SISTEMA:
-   - 🟨 Olimpíadas de Duplas
-   - 📝 Registro de duplas
-   - 🏅 Contabilização de resultados
-   - 📸 Recebimento obrigatório de print anexado
-   - 👥 Consulta de duplas
-   - 🏆 Ranking de países, duplas e competidores
-   - 📖 Guia oficial da competição
+   SISTEMA: OLIMPÍADAS DE DUPLAS
+
+   - Registro sem nome de dupla.
+   - Lista de países em páginas de 25.
+   - Pesquisa digitando o nome do país.
+   - País ocupado não pode ser repetido.
+   - Ver duplas mostra país + os 2 jogadores.
+   - Contabilização somente nos dias pares de setembro de 2026.
+   - Print da vitória obrigatório como anexo.
+   - Resultado salvo permanentemente em olimpiadas.json.
+   - 🥇 vitória é o critério principal.
+   - 🥈 peso 3 e 🥉 peso 1 somente para desempate.
 
    LOCALIZAÇÃO:
-   commands/olimpiadas/
+   commands/olimpiadas/olimpiadas-handler.js
 
    IMPORTANTE:
    Este sistema é INDEPENDENTE da Liga.
-
-   REGRAS DE DATA:
-   - Registro de duplas: qualquer dia.
-   - Contabilização: somente dias pares de setembro de 2026.
-
-   PRINT:
-   - Somente arquivo de imagem anexado no Discord.
-   - PNG, JPG, JPEG e WEBP.
-   - Links não são aceitos.
-
    ======================================================================== */
 
 const fs = require('fs');
 const path = require('path');
-
 const {
     EmbedBuilder,
     ActionRowBuilder,
@@ -43,479 +36,214 @@ const {
     MessageFlags
 } = require('discord.js');
 
+const ARQUIVO_DADOS = path.join(__dirname, 'olimpiadas.json');
 
-// ========================================================================
-// ARQUIVO DE DADOS
-// ========================================================================
-// Tudo que pertence às Olimpíadas é salvo neste JSON.
-// Não utiliza partidas.json nem pontuacao.json da Liga.
-// ========================================================================
-
-const ARQUIVO_DADOS = path.join(
-    __dirname,
-    'olimpiadas.json'
-);
-
-const CONFIG = require(ARQUIVO_DADOS);
-
-
-// ========================================================================
-// LEITURA DOS DADOS
-// ========================================================================
-// Se o JSON estiver correto, retorna os dados atuais.
-// Se houver algum problema, cria uma estrutura segura para evitar crash.
-// ========================================================================
+function config() {
+    return JSON.parse(fs.readFileSync(ARQUIVO_DADOS, 'utf8'));
+}
 
 function carregarDados() {
-
     try {
-
-        const dados = JSON.parse(
-            fs.readFileSync(
-                ARQUIVO_DADOS,
-                'utf8'
-            )
-        );
-
-        dados.duplas ??= [];
-        dados.resultados ??= [];
-        dados.ranking ??= {};
-
+        const dados = config();
+        dados.duplas = Array.isArray(dados.duplas) ? dados.duplas : [];
+        dados.resultados = Array.isArray(dados.resultados) ? dados.resultados : [];
+        dados.ranking = dados.ranking && typeof dados.ranking === 'object' ? dados.ranking : {};
         return dados;
-
     } catch (erro) {
-
-        console.error(
-            '[OLIMPIADAS] Erro ao ler olimpiadas.json:',
-            erro
-        );
-
-        return {
-            ...CONFIG,
-            duplas: [],
-            resultados: [],
-            ranking: {}
-        };
+        console.error('[OLIMPIADAS] Erro lendo olimpiadas.json:', erro);
+        return { duplas: [], resultados: [], ranking: {} };
     }
 }
-
-
-// ========================================================================
-// SALVAR DADOS
-// ========================================================================
-// Grava o estado atual das Olimpíadas no JSON.
-// ========================================================================
 
 function salvarDados(dados) {
-
-    fs.writeFileSync(
-        ARQUIVO_DADOS,
-        JSON.stringify(
-            dados,
-            null,
-            2
-        ),
-        'utf8'
-    );
+    fs.writeFileSync(ARQUIVO_DADOS, JSON.stringify(dados, null, 2), 'utf8');
 }
-
-
-// ========================================================================
-// SEGURANÇA DE TEXTO
-// ========================================================================
-// Remove caracteres que poderiam quebrar a formatação dos embeds.
-// ========================================================================
 
 function limparTexto(valor) {
-
-    return String(
-        valor ?? ''
-    ).replace(
-        /[\\`*_~|]/g,
-        ''
-    );
+    return String(valor ?? '').replace(/[\\`*_~|]/g, '');
 }
 
-
-// ========================================================================
-// BUSCAR DUPLA
-// ========================================================================
-// Exemplo:
-// buscarDupla(dados, 'dupla_123')
-// ========================================================================
-
-function buscarDupla(dados, id) {
-
-    return dados.duplas.find(
-        dupla => dupla.id === id
-    );
+function normalizar(valor) {
+    return String(valor ?? '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .trim();
 }
-
-
-// ========================================================================
-// VERIFICAR PAÍS OCUPADO
-// ========================================================================
-// Cada país só pode pertencer a uma dupla.
-// ========================================================================
 
 function paisOcupado(dados, pais) {
-
-    return dados.duplas.some(
-        dupla =>
-            dupla.pais.toLowerCase() ===
-            pais.toLowerCase()
-    );
+    return dados.duplas.some(dupla => normalizar(dupla.pais) === normalizar(pais));
 }
 
+function jogadorOcupado(dados, id) {
+    return dados.duplas.some(dupla => dupla.jogador1 === id || dupla.jogador2 === id);
+}
 
-// ========================================================================
-// VERIFICAR DIA DA CONTABILIZAÇÃO
-// ========================================================================
-// Registro não depende desta função.
-// Ela é usada SOMENTE quando alguém tenta contabilizar uma partida.
-// ========================================================================
+function buscarDupla(dados, id) {
+    return dados.duplas.find(dupla => dupla.id === id);
+}
+
+function buscarDuplaPorPais(dados, pais) {
+    return dados.duplas.find(dupla => normalizar(dupla.pais) === normalizar(pais));
+}
+
+function paisesDisponiveis(dados, excluir = []) {
+    const ocupados = new Set(dados.duplas.map(d => normalizar(d.pais)));
+    const ignorar = new Set(excluir.map(normalizar));
+    return (config().paises || []).filter(pais =>
+        !ocupados.has(normalizar(pais)) && !ignorar.has(normalizar(pais))
+    );
+}
 
 function podeContabilizar() {
-
     const agora = new Date();
-
-    return (
-        agora.getFullYear() === Number(CONFIG.ano) &&
-        agora.getMonth() + 1 === Number(CONFIG.mes) &&
-        agora.getDate() % 2 === 0
-    );
+    const cfg = config();
+    return agora.getFullYear() === Number(cfg.ano) &&
+        agora.getMonth() + 1 === Number(cfg.mes) &&
+        agora.getDate() % 2 === 0;
 }
 
+/* ========================================================================
+   PESQUISA DE PAÍSES
 
-// ========================================================================
-// MONTAR RANKING
-// ========================================================================
-// 🥇 vitória = critério principal.
-// 🥈 segundo = +3 somente no desempate.
-// 🥉 terceiro = +1 somente no desempate.
-// ========================================================================
+   Discord limita cada String Select a 25 opções.
+   Por isso o sistema mostra 25 por página e oferece pesquisa por texto.
+   ======================================================================== */
 
-function calcularRanking(dados) {
+const pesquisas = new Map();
 
-    const ranking = {};
-
-    for (const resultado of dados.resultados) {
-
-        const colocacoes = [
-            [resultado.ouro, 'ouro'],
-            [resultado.prata, 'prata'],
-            [resultado.bronze, 'bronze']
-        ];
-
-        for (const [duplaId, colocacao] of colocacoes) {
-
-            if (!ranking[duplaId]) {
-
-                ranking[duplaId] = {
-                    vitorias: 0,
-                    prata: 0,
-                    bronze: 0,
-                    desempate: 0
-                };
-            }
-
-            if (colocacao === 'ouro') {
-                ranking[duplaId].vitorias++;
-            }
-
-            if (colocacao === 'prata') {
-                ranking[duplaId].prata++;
-                ranking[duplaId].desempate += 3;
-            }
-
-            if (colocacao === 'bronze') {
-                ranking[duplaId].bronze++;
-                ranking[duplaId].desempate += 1;
-            }
-        }
-    }
-
-    return ranking;
-}
-
-
-// ========================================================================
-// RANKING DE PAÍSES
-// ========================================================================
-// Conta as medalhas conquistadas por cada país.
-// ========================================================================
-
-function rankingPaises(dados) {
-
-    const ranking = {};
-
-    for (const resultado of dados.resultados) {
-
-        const colocacoes = [
-            [resultado.ouro, '🥇'],
-            [resultado.prata, '🥈'],
-            [resultado.bronze, '🥉']
-        ];
-
-        for (const [duplaId, medalha] of colocacoes) {
-
-            const dupla = buscarDupla(
-                dados,
-                duplaId
-            );
-
-            if (!dupla) continue;
-
-            ranking[dupla.pais] ??= {
-                ouro: 0,
-                prata: 0,
-                bronze: 0,
-                total: 0
-            };
-
-            if (medalha === '🥇') ranking[dupla.pais].ouro++;
-            if (medalha === '🥈') ranking[dupla.pais].prata++;
-            if (medalha === '🥉') ranking[dupla.pais].bronze++;
-
-            ranking[dupla.pais].total++;
-        }
-    }
-
-    return Object.entries(ranking)
-        .map(([pais, dadosPais]) => ({
-            pais,
-            ...dadosPais
-        }))
-        .sort(
-            (a, b) =>
-                b.ouro - a.ouro ||
-                b.prata - a.prata ||
-                b.bronze - a.bronze
-        );
-}
-
-
-// ========================================================================
-// RANKING DE COMPETIDORES
-// ========================================================================
-// Cada integrante recebe as medalhas conquistadas pela sua dupla.
-// ========================================================================
-
-function rankingCompetidores(dados) {
-
-    const ranking = {};
-
-    for (const resultado of dados.resultados) {
-
-        const colocacoes = [
-            [resultado.ouro, 'ouro'],
-            [resultado.prata, 'prata'],
-            [resultado.bronze, 'bronze']
-        ];
-
-        for (const [duplaId, colocacao] of colocacoes) {
-
-            const dupla = buscarDupla(
-                dados,
-                duplaId
-            );
-
-            if (!dupla) continue;
-
-            for (const jogadorId of [
-                dupla.jogador1,
-                dupla.jogador2
-            ]) {
-
-                ranking[jogadorId] ??= {
-                    ouro: 0,
-                    prata: 0,
-                    bronze: 0,
-                    total: 0
-                };
-
-                ranking[jogadorId][colocacao]++;
-                ranking[jogadorId].total++;
-            }
-        }
-    }
-
-    return Object.entries(ranking)
-        .map(([id, dadosJogador]) => ({
-            id,
-            ...dadosJogador
-        }))
-        .sort(
-            (a, b) =>
-                b.ouro - a.ouro ||
-                b.prata - a.prata ||
-                b.bronze - a.bronze
-        );
-}
-
-
-// ========================================================================
-// MENU DE PAÍSES
-// ========================================================================
-// Mostra apenas países disponíveis.
-// País ocupado nunca aparece para outra dupla.
-// Discord aceita no máximo 25 opções por select menu.
-// ========================================================================
-
-function criarMenuPais(
-    dados,
-    customId,
-    placeholder,
-    excluir = []
-) {
-
-    const ocupados = new Set(
-        dados.duplas.map(
-            dupla => dupla.pais.toLowerCase()
-        )
+function criarPesquisa(dados, jogador1, jogador2, termo = '') {
+    const lista = paisesDisponiveis(dados).filter(pais =>
+        !termo || normalizar(pais).includes(normalizar(termo))
     );
 
-    const paises = (
-        CONFIG.paises || []
-    ).filter(pais => {
+    // Sem "_" no token para não quebrar o customId ao fazer split().
+    const token = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
-        if (ocupados.has(pais.toLowerCase())) {
-            return false;
-        }
-
-        return !excluir.some(
-            item =>
-                item.toLowerCase() ===
-                pais.toLowerCase()
-        );
+    pesquisas.set(token, {
+        jogador1,
+        jogador2,
+        paises: lista,
+        criadoEm: Date.now()
     });
+
+    setTimeout(() => pesquisas.delete(token), 5 * 60 * 1000).unref?.();
+    return token;
+}
+
+function menuPesquisaPais(token, pagina = 0) {
+    const pesquisa = pesquisas.get(token);
+    if (!pesquisa) return [];
+
+    const inicio = pagina * 25;
+    const lista = pesquisa.paises.slice(inicio, inicio + 25);
+    const total = Math.max(1, Math.ceil(pesquisa.paises.length / 25));
+
+    const menu = new StringSelectMenuBuilder()
+        .setCustomId(`olymp_pais_${token}_${pagina}`)
+        .setPlaceholder('🌎 Escolha um país da lista')
+        .addOptions(lista.map(pais => ({
+            label: pais.slice(0, 100),
+            value: pais,
+            emoji: '🌎'
+        })));
+
+    const rows = [new ActionRowBuilder().addComponents(menu)];
+
+    rows.push(new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+            .setCustomId(`olymp_buscar_${token}`)
+            .setLabel('Pesquisar país')
+            .setEmoji('🔎')
+            .setStyle(ButtonStyle.Primary),
+        new ButtonBuilder()
+            .setCustomId(`olymp_prev_${token}_${pagina}`)
+            .setLabel('Anterior')
+            .setEmoji('⬅️')
+            .setStyle(ButtonStyle.Secondary)
+            .setDisabled(pagina === 0),
+        new ButtonBuilder()
+            .setCustomId(`olymp_pag_${token}`)
+            .setLabel(`Página ${pagina + 1}/${total}`)
+            .setStyle(ButtonStyle.Secondary)
+            .setDisabled(true),
+        new ButtonBuilder()
+            .setCustomId(`olymp_next_${token}_${pagina}`)
+            .setLabel('Próxima')
+            .setEmoji('➡️')
+            .setStyle(ButtonStyle.Secondary)
+            .setDisabled(pagina >= total - 1)
+    ));
+
+    return rows;
+}
+
+function menuResultadoPais(dados, customId, placeholder, excluir = []) {
+    const paises = dados.duplas
+        .map(d => d.pais)
+        .filter(pais => !excluir.some(x => normalizar(x) === normalizar(pais)));
 
     if (!paises.length) return null;
 
     return new ActionRowBuilder().addComponents(
-
         new StringSelectMenuBuilder()
             .setCustomId(customId)
             .setPlaceholder(placeholder)
-            .addOptions(
-                paises.slice(0, 25).map(pais => ({
-                    label: pais,
-                    value: pais
-                }))
-            )
+            .addOptions(paises.slice(0, 25).map(pais => ({
+                label: pais.slice(0, 100),
+                value: pais,
+                emoji: '🌎'
+            })))
     );
 }
 
+/* ========================================================================
+   PAINEL PRINCIPAL
+   ======================================================================== */
 
-// ========================================================================
-// PAINEL PRINCIPAL
-// ========================================================================
-// Monta somente o Embed do evento.
-// A mensagem do comando continua privada para quem executou.
-// ========================================================================
-
-function criarPainel(dados) {
-
-    const cargo = CONFIG.cargoTeg
-        ? `<@&${CONFIG.cargoTeg}>`
-        : '*Cargo não configurado.*';
+function criarPainel(dados = carregarDados()) {
+    const cfg = config();
+    const cargo = cfg.cargoTeg ? `<@&${cfg.cargoTeg}>` : '@• Olímpico';
 
     return new EmbedBuilder()
-
         .setColor('#D4AF37')
-
-        .setTitle(
-            '🟨 OLIMPÍADAS DE DUPLAS'
-        )
-
-        .setDescription(
-            [
-                `**Vencedores: ${cargo}**`,
-                '',
-                '**Cada dupla escolherá um País para representar.**',
-                '',
-                '📅 **Contabilização somente nos dias pares de setembro.**',
-                '',
-                '🥇 Vitória = critério principal',
-                '🥈 2º = peso 3 somente no desempate',
-                '🥉 3º = peso 1 somente no desempate',
-                '',
-                `👥 Duplas: ${dados.duplas.length}`,
-                `📊 Resultados: ${dados.resultados.length}`,
-                '⏱️ Partida: 1h30min',
-                '',
-                '⚠️ **Apenas DOIS vencedores.**'
-            ].join('\n')
-        )
-
-        .setImage(CONFIG.imagem)
-
-        .setFooter({
-            text: 'WorldWarBR • Olimpíadas de Duplas'
-        })
-
-        .setTimestamp();
+        .setTitle('🟨 OLIMPÍADAS DE DUPLAS')
+        .setDescription([
+            `**Vencedores: ${cargo}**`,
+            '',
+            '**Cada dupla escolherá um País para representar.**',
+            '',
+            '📅 **Contabilização somente nos dias pares de setembro.**',
+            '',
+            '🥇 Vitória = critério principal',
+            '🥈 2º = peso 3 somente no desempate',
+            '🥉 3º = peso 1 somente no desempate',
+            '',
+            `👥 **Duplas:** ${dados.duplas.length}`,
+            `📊 **Resultados:** ${dados.resultados.length}`,
+            '⏱️ **Partida:** 1h30min',
+            '',
+            '⚠️ **Apenas DOIS vencedores!**'
+        ].join('\n'))
+        .setImage(cfg.imagem)
+        .setFooter({ text: 'WorldWarBR • Olimpíadas de Duplas' });
 }
 
-
-// ========================================================================
-// BOTÕES DO PAINEL
-// ========================================================================
-// Cada botão chama uma etapa específica do sistema.
-// ========================================================================
-
 function criarBotoes() {
-
     return new ActionRowBuilder().addComponents(
-
-        new ButtonBuilder()
-            .setCustomId('olymp_contabilizar')
-            .setLabel('Contabilizar')
-            .setEmoji('🏅')
-            .setStyle(ButtonStyle.Success),
-
-        new ButtonBuilder()
-            .setCustomId('olymp_duplas')
-            .setLabel('Ver duplas')
-            .setEmoji('👥')
-            .setStyle(ButtonStyle.Primary),
-
-        new ButtonBuilder()
-            .setCustomId('olymp_registrar')
-            .setLabel('Registrar dupla')
-            .setEmoji('📝')
-            .setStyle(ButtonStyle.Secondary),
-
-        new ButtonBuilder()
-            .setCustomId('olymp_ranking')
-            .setLabel('Ranking')
-            .setEmoji('🏆')
-            .setStyle(ButtonStyle.Secondary),
-
-        new ButtonBuilder()
-            .setCustomId('olymp_guia')
-            .setLabel('Guia')
-            .setEmoji('📖')
-            .setStyle(ButtonStyle.Secondary)
+        new ButtonBuilder().setCustomId('olymp_contabilizar').setLabel('Contabilizar').setEmoji('🏅').setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId('olymp_duplas').setLabel('Ver duplas').setEmoji('👥').setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId('olymp_registrar').setLabel('Registrar dupla').setEmoji('📝').setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId('olymp_ranking').setLabel('Ranking').setEmoji('🏆').setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId('olymp_guia').setLabel('Guia').setEmoji('📖').setStyle(ButtonStyle.Secondary)
     );
 }
 
-
-// ========================================================================
-// PUBLICAR PAINEL
-// ========================================================================
-// Publica o painel no canal configurado.
-// A confirmação do comando é EPHEMERAL e não polui o canal.
-// ========================================================================
-
 async function painel(interaction) {
-
-    const canal = await interaction.client.channels
-        .fetch(CONFIG.canalPainel)
-        .catch(() => null);
+    const cfg = config();
+    const canal = await interaction.client.channels.fetch(cfg.canalPainel).catch(() => null);
 
     if (!canal?.isTextBased()) {
-
         return interaction.reply({
             content: '❌ Canal do painel das Olimpíadas não encontrado.',
             flags: MessageFlags.Ephemeral
@@ -523,112 +251,77 @@ async function painel(interaction) {
     }
 
     await canal.send({
-        embeds: [criarPainel(carregarDados())],
+        embeds: [criarPainel()],
         components: [criarBotoes()]
     });
 
     return interaction.reply({
-        content: `✅ Painel publicado em <#${CONFIG.canalPainel}>.`,
+        content: '✅ Painel publicado.',
         flags: MessageFlags.Ephemeral
     });
 }
 
-
-// ========================================================================
-// REGISTRAR — ETAPA 1
-// ========================================================================
-// Registro é permitido em qualquer dia.
-// Primeiro escolhemos o integrante 1.
-// ========================================================================
+/* ========================================================================
+   REGISTRO
+   ======================================================================== */
 
 async function registrar(interaction) {
-
     return interaction.reply({
         content: '📝 **REGISTRO DE DUPLA**\n\nSelecione o primeiro integrante.',
-        components: [
-            new ActionRowBuilder().addComponents(
-                new UserSelectMenuBuilder()
-                    .setCustomId('olymp_reg_p1')
-                    .setPlaceholder('Selecione o jogador 1')
-            )
-        ],
+        components: [new ActionRowBuilder().addComponents(
+            new UserSelectMenuBuilder()
+                .setCustomId('olymp_reg_p1')
+                .setPlaceholder('Selecione o jogador 1')
+        )],
         flags: MessageFlags.Ephemeral
     });
 }
 
-
-// ========================================================================
-// REGISTRAR — ETAPA 2
-// ========================================================================
-// Depois escolhemos o integrante 2.
-// Não permite que a mesma pessoa forme dupla consigo mesma.
-// ========================================================================
-
 async function registrarJogador1(interaction) {
-
     const jogador1 = interaction.values[0];
+    const dados = carregarDados();
+
+    if (jogadorOcupado(dados, jogador1)) {
+        return interaction.reply({
+            content: '❌ Esse jogador já pertence a uma dupla.',
+            flags: MessageFlags.Ephemeral
+        });
+    }
 
     return interaction.update({
         content: '📝 **JOGADOR 2**\n\nSelecione o segundo integrante.',
-        components: [
-            new ActionRowBuilder().addComponents(
-                new UserSelectMenuBuilder()
-                    .setCustomId(`olymp_reg_p2_${jogador1}`)
-                    .setPlaceholder('Selecione o jogador 2')
-            )
-        ]
+        components: [new ActionRowBuilder().addComponents(
+            new UserSelectMenuBuilder()
+                .setCustomId(`olymp_reg_p2_${jogador1}`)
+                .setPlaceholder('Selecione o jogador 2')
+        )]
     });
 }
 
-
-// ========================================================================
-// REGISTRAR — ETAPA 3
-// ========================================================================
-// Verifica jogadores e mostra somente países livres.
-// ========================================================================
-
 async function registrarJogador2(interaction) {
-
-    const jogador1 = interaction.customId.replace(
-        'olymp_reg_p2_',
-        ''
-    );
-
+    const jogador1 = interaction.customId.replace('olymp_reg_p2_', '');
     const jogador2 = interaction.values[0];
     const dados = carregarDados();
 
     if (jogador1 === jogador2) {
-
         return interaction.reply({
-            content: '❌ Os dois integrantes precisam ser pessoas diferentes.',
+            content: '❌ Os dois integrantes precisam ser diferentes.',
             flags: MessageFlags.Ephemeral
         });
     }
 
-    const duplaExistente = dados.duplas.find(
-        dupla =>
-            [dupla.jogador1, dupla.jogador2]
-                .includes(jogador1) ||
-            [dupla.jogador1, dupla.jogador2]
-                .includes(jogador2)
-    );
-
-    if (duplaExistente) {
-
+    if (jogadorOcupado(dados, jogador1) || jogadorOcupado(dados, jogador2)) {
         return interaction.reply({
-            content: `❌ Um dos jogadores já pertence à dupla **${limparTexto(duplaExistente.nome)}**.`,
+            content: '❌ Um dos jogadores já pertence a uma dupla registrada.',
             flags: MessageFlags.Ephemeral
         });
     }
 
-    const menu = criarMenuPais(
-        dados,
-        `olymp_reg_pais_${jogador1}_${jogador2}`,
-        'Escolha o país que a dupla representará'
-    );
+    const token = criarPesquisa(dados, jogador1, jogador2);
+    const pesquisa = pesquisas.get(token);
 
-    if (!menu) {
-
+    if (!pesquisa.paises.length) {
+        pesquisas.delete(token);
         return interaction.reply({
             content: '❌ Todos os países disponíveis já foram escolhidos.',
             flags: MessageFlags.Ephemeral
@@ -636,101 +329,115 @@ async function registrarJogador2(interaction) {
     }
 
     return interaction.update({
-        content: '🌎 **PAÍS DA DUPLA**\n\nPaíses ocupados não aparecem no menu.',
-        components: [menu]
+        content: `🌎 **ESCOLHA O PAÍS**\n\n**${pesquisa.paises.length} países disponíveis.**\n\n📋 Escolha pela lista ou use **🔎 Pesquisar país** para digitar o nome.`,
+        components: menuPesquisaPais(token, 0)
     });
 }
 
+async function abrirPesquisa(interaction) {
+    const token = interaction.customId.replace('olymp_buscar_', '');
 
-// ========================================================================
-// REGISTRAR — ETAPA 4
-// ========================================================================
-// Depois de escolher o país, pedimos o nome da dupla.
-// ========================================================================
-
-async function registrarPais(interaction) {
-
-    const partes = interaction.customId.split('_');
-
-    const jogador1 = partes[3];
-    const jogador2 = partes[4];
-    const pais = interaction.values[0];
+    if (!pesquisas.has(token)) {
+        return interaction.reply({
+            content: '⌛ Esta pesquisa expirou. Faça o registro novamente.',
+            flags: MessageFlags.Ephemeral
+        });
+    }
 
     const modal = new ModalBuilder()
-        .setCustomId(
-            `olymp_reg_nome_${jogador1}_${jogador2}_${encodeURIComponent(pais)}`
-        )
-        .setTitle('Nome da dupla');
+        .setCustomId(`olymp_pesquisa_modal_${token}`)
+        .setTitle('Pesquisar país');
 
-    const nome = new TextInputBuilder()
-        .setCustomId('nome')
-        .setLabel('Nome da dupla')
-        .setPlaceholder('Ex.: Os Imperadores')
+    const campo = new TextInputBuilder()
+        .setCustomId('termo')
+        .setLabel('Digite o nome do país')
+        .setPlaceholder('Ex.: Brasil, Japão, Alemanha...')
         .setStyle(TextInputStyle.Short)
-        .setMinLength(2)
-        .setMaxLength(40)
+        .setMaxLength(50)
         .setRequired(true);
 
-    modal.addComponents(
-        new ActionRowBuilder().addComponents(nome)
-    );
-
+    modal.addComponents(new ActionRowBuilder().addComponents(campo));
     return interaction.showModal(modal);
 }
 
+async function pesquisarPais(interaction) {
+    const token = interaction.customId.replace('olymp_pesquisa_modal_', '');
+    const pesquisa = pesquisas.get(token);
 
-// ========================================================================
-// REGISTRAR — FINAL
-// ========================================================================
-// Salva a dupla e publica a inscrição na TEG.
-// ========================================================================
-
-async function finalizarRegistro(interaction) {
-
-    const partes = interaction.customId.split('_');
-
-    const jogador1 = partes[3];
-    const jogador2 = partes[4];
-    const pais = decodeURIComponent(
-        partes.slice(5).join('_')
-    );
-
-    const nome = interaction.fields
-        .getTextInputValue('nome')
-        .trim();
-
-    const dados = carregarDados();
-
-    if (paisOcupado(dados, pais)) {
-
+    if (!pesquisa) {
         return interaction.reply({
-            content: '❌ Esse país já foi escolhido por outra dupla.',
+            content: '⌛ Esta pesquisa expirou. Faça o registro novamente.',
             flags: MessageFlags.Ephemeral
         });
     }
 
-    const jogadorOcupado = dados.duplas.find(
-        dupla =>
-            [dupla.jogador1, dupla.jogador2]
-                .includes(jogador1) ||
-            [dupla.jogador1, dupla.jogador2]
-                .includes(jogador2)
+    const termo = interaction.fields.getTextInputValue('termo').trim();
+    const dados = carregarDados();
+
+    pesquisa.paises = paisesDisponiveis(dados).filter(pais =>
+        normalizar(pais).includes(normalizar(termo))
     );
 
-    if (jogadorOcupado) {
-
+    if (!pesquisa.paises.length) {
         return interaction.reply({
-            content: '❌ Um dos jogadores já está registrado em outra dupla.',
+            content: `❌ Nenhum país disponível encontrado para **${limparTexto(termo)}**.`,
             flags: MessageFlags.Ephemeral
         });
+    }
+
+    return interaction.reply({
+        content: `🔎 **RESULTADO DA PESQUISA:** ${limparTexto(termo)}\n\nSelecione o país.`,
+        components: menuPesquisaPais(token, 0),
+        flags: MessageFlags.Ephemeral
+    });
+}
+
+async function mudarPaginaPais(interaction, direcao) {
+    const partes = interaction.customId.split('_');
+    const token = partes[2];
+    const pagina = Number(partes[3]);
+    const pesquisa = pesquisas.get(token);
+
+    if (!pesquisa) {
+        return interaction.reply({ content: '⌛ Pesquisa expirada.', flags: MessageFlags.Ephemeral });
+    }
+
+    const total = Math.max(1, Math.ceil(pesquisa.paises.length / 25));
+    const nova = Math.max(0, Math.min(total - 1, pagina + direcao));
+
+    return interaction.update({
+        content: `🌎 **PAÍSES DISPONÍVEIS — PÁGINA ${nova + 1}/${total}**`,
+        components: menuPesquisaPais(token, nova)
+    });
+}
+
+async function selecionarPais(interaction) {
+    const partes = interaction.customId.split('_');
+    const token = partes[2];
+    const pesquisa = pesquisas.get(token);
+
+    if (!pesquisa) {
+        return interaction.reply({ content: '⌛ Pesquisa expirada.', flags: MessageFlags.Ephemeral });
+    }
+
+    const pais = interaction.values[0];
+    const dados = carregarDados();
+
+    if (jogadorOcupado(dados, pesquisa.jogador1) || jogadorOcupado(dados, pesquisa.jogador2)) {
+        pesquisas.delete(token);
+        return interaction.reply({ content: '❌ Um dos jogadores já pertence a outra dupla.', flags: MessageFlags.Ephemeral });
+    }
+
+    if (paisOcupado(dados, pais)) {
+        pesquisas.delete(token);
+        return interaction.reply({ content: '❌ Esse país acabou de ser escolhido por outra dupla.', flags: MessageFlags.Ephemeral });
     }
 
     const dupla = {
-        id: `dupla_${Date.now()}_${jogador1}`,
-        nome,
+        id: `dupla_${Date.now()}_${pesquisa.jogador1}`,
         pais,
-        jogador1,
-        jogador2,
+        jogador1: pesquisa.jogador1,
+        jogador2: pesquisa.jogador2,
         criadoPor: interaction.user.id,
         criadoEm: new Date().toISOString(),
         ativa: true
@@ -738,60 +445,47 @@ async function finalizarRegistro(interaction) {
 
     dados.duplas.push(dupla);
     dados.ranking = calcularRanking(dados);
-
     salvarDados(dados);
+    pesquisas.delete(token);
 
-    const canalTeg = await interaction.client.channels
-        .fetch(CONFIG.canalTeg)
-        .catch(() => null);
+    const cfg = config();
+    const canalTeg = await interaction.client.channels.fetch(cfg.canalTeg).catch(() => null);
 
     if (canalTeg?.isTextBased()) {
-
         await canalTeg.send({
-
-            content: CONFIG.cargoTeg
-                ? `<@&${CONFIG.cargoTeg}>`
-                : undefined,
-
-            embeds: [
-                new EmbedBuilder()
-                    .setColor('#D4AF37')
-                    .setTitle('📝 NOVA DUPLA REGISTRADA')
-                    .setDescription(
-                        [
-                            `**${limparTexto(nome)}**`,
-                            '',
-                            `🌎 **País:** ${limparTexto(pais)}`,
-                            `👥 **Dupla:** <@${jogador1}> + <@${jogador2}>`
-                        ].join('\n')
-                    )
-                    .setTimestamp()
-            ]
+            content: cfg.cargoTeg ? `<@&${cfg.cargoTeg}>` : undefined,
+            embeds: [new EmbedBuilder()
+                .setColor('#D4AF37')
+                .setTitle('📝 NOVA DUPLA REGISTRADA')
+                .setDescription([
+                    `🌎 **País:** ${limparTexto(pais)}`,
+                    `👥 **Jogadores:** <@${pesquisa.jogador1}> + <@${pesquisa.jogador2}>`
+                ].join('\n'))
+                .setTimestamp()]
         });
     }
 
-    return interaction.reply({
-        content: `✅ Dupla **${limparTexto(nome)}** registrada!\n🌎 País: **${limparTexto(pais)}**`,
-        flags: MessageFlags.Ephemeral
+    return interaction.update({
+        content: [
+            '✅ **DUPLA REGISTRADA COM SUCESSO!**',
+            '',
+            `🌎 **País:** ${limparTexto(pais)}`,
+            `👥 **Jogadores:** <@${pesquisa.jogador1}> + <@${pesquisa.jogador2}>`,
+            '',
+            '📋 A dupla já está disponível em **👥 Ver duplas**.'
+        ].join('\n'),
+        components: []
     });
 }
 
-
-// ========================================================================
-// CONTABILIZAR — INÍCIO
-// ========================================================================
-// Aqui está a regra de data:
-// SOMENTE dias pares de setembro de 2026.
-// O registro continua liberado normalmente.
-// ========================================================================
+/* ========================================================================
+   CONTABILIZAÇÃO
+   ======================================================================== */
 
 async function contabilizar(interaction) {
-
     if (!podeContabilizar()) {
-
         return interaction.reply({
-            content:
-                '🚫 **A contabilização só pode ser feita nos dias pares de setembro de 2026.**\n\n📝 O registro de duplas continua disponível normalmente.',
+            content: '🚫 **A contabilização só pode ser feita nos dias pares de setembro de 2026.**\n\n📝 O registro de duplas pode ser feito qualquer dia.',
             flags: MessageFlags.Ephemeral
         });
     }
@@ -799,172 +493,95 @@ async function contabilizar(interaction) {
     const dados = carregarDados();
 
     if (dados.duplas.length < 3) {
-
         return interaction.reply({
             content: '❌ É necessário ter pelo menos 3 duplas registradas.',
             flags: MessageFlags.Ephemeral
         });
     }
 
-    const menu = criarMenuPais(
-        dados,
-        'olymp_result_ouro',
-        '🥇 Selecione o país vencedor'
-    );
+    const menu = menuResultadoPais(dados, 'olymp_result_ouro', '🥇 Selecione o país vencedor');
 
     return interaction.reply({
-        content:
-            '🏅 **CONTABILIZAÇÃO DE PARTIDA**\n\n' +
-            'Escolha os países em ordem: 🥇 vencedor, 🥈 segundo e 🥉 terceiro.\n\n' +
-            '📸 **No final será obrigatório ANEXAR o print da vitória.**\n' +
-            '🚫 Links não são aceitos.',
+        content: '🏅 **CONTABILIZAÇÃO DE PARTIDA**\n\nSelecione 🥇 vencedor, 🥈 segundo e 🥉 terceiro.\n\n📸 No final será obrigatório enviar o **print anexado** da vitória. Links não são aceitos.',
         components: [menu],
         flags: MessageFlags.Ephemeral
     });
 }
 
-
-// ========================================================================
-// CONTABILIZAR — OURO
-// ========================================================================
-
 async function escolherOuro(interaction) {
-
     const ouro = interaction.values[0];
     const dados = carregarDados();
-
-    const menu = criarMenuPais(
-        dados,
-        `olymp_result_prata_${encodeURIComponent(ouro)}`,
-        '🥈 Selecione o país em 2º lugar',
-        [ouro]
-    );
+    const menu = menuResultadoPais(dados, `olymp_result_prata_${encodeURIComponent(ouro)}`, '🥈 Selecione o país em 2º lugar', [ouro]);
 
     return interaction.update({
-        content:
-            `🥇 **${limparTexto(ouro)}**\n\nSelecione agora o 🥈 segundo lugar.`,
+        content: `🥇 **${limparTexto(ouro)}**\n\nAgora escolha o 🥈 segundo lugar.`,
         components: [menu]
     });
 }
-
-
-// ========================================================================
-// CONTABILIZAR — PRATA
-// ========================================================================
 
 async function escolherPrata(interaction) {
-
-    const partes = interaction.customId
-        .replace('olymp_result_prata_', '')
-        .split('_');
-
-    const ouro = decodeURIComponent(
-        partes.join('_')
-    );
-
+    const ouro = decodeURIComponent(interaction.customId.replace('olymp_result_prata_', ''));
     const prata = interaction.values[0];
     const dados = carregarDados();
-
-    const menu = criarMenuPais(
-        dados,
-        `olymp_result_bronze_${encodeURIComponent(ouro)}_${encodeURIComponent(prata)}`,
-        '🥉 Selecione o país em 3º lugar',
-        [ouro, prata]
-    );
+    const menu = menuResultadoPais(dados, `olymp_result_bronze_${encodeURIComponent(ouro)}_${encodeURIComponent(prata)}`, '🥉 Selecione o país em 3º lugar', [ouro, prata]);
 
     return interaction.update({
-        content:
-            `🥇 **${limparTexto(ouro)}**\n` +
-            `🥈 **${limparTexto(prata)}**\n\n` +
-            'Selecione agora o 🥉 terceiro lugar.',
+        content: `🥇 **${limparTexto(ouro)}**\n🥈 **${limparTexto(prata)}**\n\nAgora escolha o 🥉 terceiro lugar.`,
         components: [menu]
     });
 }
 
-
-// ========================================================================
-// CONTABILIZAR — BRONZE + PEDIDO DO PRINT
-// ========================================================================
-// Discord não permite anexar arquivo dentro de Modal.
-// Por isso, depois de escolher o bronze, o bot pede uma mensagem com anexo.
-// O coletor aceita somente imagens.
-// ========================================================================
-
 async function escolherBronze(interaction) {
-
     if (!podeContabilizar()) {
-
         return interaction.reply({
             content: '🚫 A contabilização só pode ser feita nos dias pares de setembro de 2026.',
             flags: MessageFlags.Ephemeral
         });
     }
 
-    const partes = interaction.customId
-        .replace('olymp_result_bronze_', '')
-        .split('_');
-
-    const ouro = decodeURIComponent(partes[0]);
-    const prata = decodeURIComponent(partes[1]);
+    const valor = interaction.customId.replace('olymp_result_bronze_', '');
+    const separador = valor.lastIndexOf('_');
+    const ouro = decodeURIComponent(valor.slice(0, separador));
+    const prata = decodeURIComponent(valor.slice(separador + 1));
     const bronze = interaction.values[0];
 
     await interaction.reply({
-        content:
-            '📸 **ANEXE AGORA O PRINT DA VITÓRIA**\n\n' +
-            `🥇 ${limparTexto(ouro)}\n` +
-            `🥈 ${limparTexto(prata)}\n` +
-            `🥉 ${limparTexto(bronze)}\n\n` +
-            '⚠️ **Somente PNG, JPG, JPEG ou WEBP.**\n' +
-            '🚫 Links não são aceitos.\n' +
-            '⏳ Você tem 2 minutos.',
+        content: [
+            '📸 **ANEXE AGORA O PRINT DA VITÓRIA**',
+            '',
+            `🥇 ${limparTexto(ouro)}`,
+            `🥈 ${limparTexto(prata)}`,
+            `🥉 ${limparTexto(bronze)}`,
+            '',
+            '⚠️ Somente PNG, JPG, JPEG ou WEBP.',
+            '🚫 Links não são aceitos.',
+            '⏳ Você tem 2 minutos.'
+        ].join('\n'),
         flags: MessageFlags.Ephemeral
     });
 
     const coletor = interaction.channel.createMessageCollector({
-
-        filter: mensagem =>
-            mensagem.author.id === interaction.user.id &&
-            mensagem.attachments.size > 0,
-
+        filter: mensagem => mensagem.author.id === interaction.user.id && mensagem.attachments.size > 0,
         time: 120000
     });
 
     coletor.on('collect', async mensagem => {
-
-        const anexo = mensagem.attachments.find(
-            arquivo =>
-                (arquivo.contentType || '')
-                    .toLowerCase()
-                    .startsWith('image/') ||
-                /\.(png|jpe?g|webp)$/i.test(
-                    arquivo.name || ''
-                )
+        const anexo = mensagem.attachments.find(arquivo =>
+            (arquivo.contentType || '').toLowerCase().startsWith('image/') ||
+            /\.(png|jpe?g|webp)$/i.test(arquivo.name || '')
         );
 
         if (!anexo) {
-
-            await mensagem.reply(
-                '❌ Esse arquivo não é uma imagem válida. Envie PNG, JPG, JPEG ou WEBP.'
-            ).catch(() => {});
-
+            await mensagem.reply('❌ Envie uma imagem PNG, JPG, JPEG ou WEBP.').catch(() => {});
             return;
         }
 
         coletor.stop('imagem_recebida');
-
-        await finalizarContabilizacao(
-            interaction,
-            ouro,
-            prata,
-            bronze,
-            anexo
-        );
+        await finalizarContabilizacao(interaction, ouro, prata, bronze, anexo);
     });
 
     coletor.on('end', (_, motivo) => {
-
         if (motivo === 'time') {
-
             interaction.followUp({
                 content: '⌛ Tempo esgotado. A contabilização foi cancelada.',
                 flags: MessageFlags.Ephemeral
@@ -973,39 +590,15 @@ async function escolherBronze(interaction) {
     });
 }
 
-
-// ========================================================================
-// FINALIZAR CONTABILIZAÇÃO
-// ========================================================================
-// Salva o resultado e publica o print junto do resultado oficial.
-// ========================================================================
-
-async function finalizarContabilizacao(
-    interaction,
-    ouro,
-    prata,
-    bronze,
-    anexo
-) {
-
+async function finalizarContabilizacao(interaction, ouro, prata, bronze, anexo) {
     const dados = carregarDados();
-
-    const duplaOuro = dados.duplas.find(
-        dupla => dupla.pais === ouro
-    );
-
-    const duplaPrata = dados.duplas.find(
-        dupla => dupla.pais === prata
-    );
-
-    const duplaBronze = dados.duplas.find(
-        dupla => dupla.pais === bronze
-    );
+    const duplaOuro = buscarDuplaPorPais(dados, ouro);
+    const duplaPrata = buscarDuplaPorPais(dados, prata);
+    const duplaBronze = buscarDuplaPorPais(dados, bronze);
 
     if (!duplaOuro || !duplaPrata || !duplaBronze) {
-
         return interaction.followUp({
-            content: '❌ Não foi possível encontrar uma das duplas selecionadas.',
+            content: '❌ Uma das duplas selecionadas não foi encontrada.',
             flags: MessageFlags.Ephemeral
         });
     }
@@ -1024,285 +617,245 @@ async function finalizarContabilizacao(
 
     dados.resultados.push(resultado);
     dados.ranking = calcularRanking(dados);
-
     salvarDados(dados);
 
-    const canal = await interaction.client.channels
-        .fetch(CONFIG.canalResultados)
-        .catch(() => null);
+    const cfg = config();
+    const canal = await interaction.client.channels.fetch(cfg.canalResultados).catch(() => null);
 
     if (canal?.isTextBased()) {
-
         await canal.send({
-
-            embeds: [
-                new EmbedBuilder()
-                    .setColor('#D4AF37')
-                    .setTitle('🏅 RESULTADO — OLIMPÍADAS DE DUPLAS')
-                    .setDescription(
-                        [
-                            `🥇 **${limparTexto(duplaOuro.pais)}** — ${limparTexto(duplaOuro.nome)}`,
-                            `🥈 **${limparTexto(duplaPrata.pais)}** — ${limparTexto(duplaPrata.nome)}`,
-                            `🥉 **${limparTexto(duplaBronze.pais)}** — ${limparTexto(duplaBronze.nome)}`,
-                            '',
-                            '🥇 Vitória = critério principal',
-                            '🥈 Prata = peso 3 no desempate',
-                            '🥉 Bronze = peso 1 no desempate'
-                        ].join('\n')
-                    )
-                    .setImage(anexo.url)
-                    .setFooter({
-                        text: `Registrado por ${interaction.user.tag}`
-                    })
-                    .setTimestamp()
-            ]
+            embeds: [new EmbedBuilder()
+                .setColor('#D4AF37')
+                .setTitle('🏅 RESULTADO — OLIMPÍADAS DE DUPLAS')
+                .setDescription([
+                    `🥇 **${limparTexto(duplaOuro.pais)}** — <@${duplaOuro.jogador1}> + <@${duplaOuro.jogador2}>`,
+                    `🥈 **${limparTexto(duplaPrata.pais)}** — <@${duplaPrata.jogador1}> + <@${duplaPrata.jogador2}>`,
+                    `🥉 **${limparTexto(duplaBronze.pais)}** — <@${duplaBronze.jogador1}> + <@${duplaBronze.jogador2}>`,
+                    '',
+                    '🥇 Vitória = critério principal',
+                    '🥈 Prata = peso 3 no desempate',
+                    '🥉 Bronze = peso 1 no desempate'
+                ].join('\n'))
+                .setImage(anexo.url)
+                .setTimestamp()]
         });
     }
 
     return interaction.followUp({
-        content:
-            '✅ **Resultado contabilizado com sucesso!**\n' +
-            '📸 Print anexado e publicado.\n' +
-            '💾 Ranking atualizado.',
+        content: '✅ **Resultado contabilizado!**\n📸 Print salvo/publicado.\n💾 Ranking atualizado permanentemente.',
         flags: MessageFlags.Ephemeral
     });
 }
 
+/* ========================================================================
+   RANKINGS
+   ======================================================================== */
 
-// ========================================================================
-// VER DUPLAS
-// ========================================================================
+function calcularRanking(dados) {
+    const ranking = {};
+
+    for (const resultado of dados.resultados) {
+        for (const [id, colocacao] of [
+            [resultado.ouro, 'ouro'],
+            [resultado.prata, 'prata'],
+            [resultado.bronze, 'bronze']
+        ]) {
+            if (!ranking[id]) {
+                ranking[id] = { vitorias: 0, prata: 0, bronze: 0, desempate: 0 };
+            }
+
+            if (colocacao === 'ouro') ranking[id].vitorias++;
+            if (colocacao === 'prata') {
+                ranking[id].prata++;
+                ranking[id].desempate += 3;
+            }
+            if (colocacao === 'bronze') {
+                ranking[id].bronze++;
+                ranking[id].desempate += 1;
+            }
+        }
+    }
+
+    return ranking;
+}
+
+function rankingPaises(dados) {
+    const ranking = {};
+
+    for (const resultado of dados.resultados) {
+        for (const [id, medalha] of [
+            [resultado.ouro, 'ouro'],
+            [resultado.prata, 'prata'],
+            [resultado.bronze, 'bronze']
+        ]) {
+            const dupla = buscarDupla(dados, id);
+            if (!dupla) continue;
+
+            ranking[dupla.pais] ??= { ouro: 0, prata: 0, bronze: 0, total: 0 };
+            ranking[dupla.pais][medalha]++;
+            ranking[dupla.pais].total++;
+        }
+    }
+
+    return Object.entries(ranking)
+        .map(([pais, valores]) => ({ pais, ...valores }))
+        .sort((a, b) => b.ouro - a.ouro || b.prata - a.prata || b.bronze - a.bronze);
+}
+
+function rankingCompetidores(dados) {
+    const ranking = {};
+
+    for (const resultado of dados.resultados) {
+        for (const [id, medalha] of [
+            [resultado.ouro, 'ouro'],
+            [resultado.prata, 'prata'],
+            [resultado.bronze, 'bronze']
+        ]) {
+            const dupla = buscarDupla(dados, id);
+            if (!dupla) continue;
+
+            for (const jogador of [dupla.jogador1, dupla.jogador2]) {
+                ranking[jogador] ??= { ouro: 0, prata: 0, bronze: 0, total: 0 };
+                ranking[jogador][medalha]++;
+                ranking[jogador].total++;
+            }
+        }
+    }
+
+    return Object.entries(ranking)
+        .map(([id, valores]) => ({ id, ...valores }))
+        .sort((a, b) => b.ouro - a.ouro || b.prata - a.prata || b.bronze - a.bronze);
+}
 
 async function verDuplas(interaction) {
-
     const dados = carregarDados();
 
-    const texto = dados.duplas
-        .map(
-            (dupla, indice) =>
-                `**${indice + 1}. ${limparTexto(dupla.nome)}** — 🌎 ${limparTexto(dupla.pais)}\n` +
-                `👥 <@${dupla.jogador1}> + <@${dupla.jogador2}>`
-        )
-        .join('\n\n') ||
-        'Nenhuma dupla registrada ainda.';
+    if (!dados.duplas.length) {
+        return interaction.reply({
+            content: '👥 Nenhuma dupla registrada ainda.',
+            flags: MessageFlags.Ephemeral
+        });
+    }
+
+    const pagina = dados.duplas.slice(0, 10);
+    const texto = pagina.map((dupla, i) => [
+        `**${i + 1}. 🌎 ${limparTexto(dupla.pais)}**`,
+        `👥 <@${dupla.jogador1}> + <@${dupla.jogador2}>`
+    ].join('\n')).join('\n\n');
 
     return interaction.reply({
-        embeds: [
-            new EmbedBuilder()
-                .setColor('#D4AF37')
-                .setTitle('👥 DUPLAS DAS OLIMPÍADAS')
-                .setDescription(texto.slice(0, 4000))
-        ],
+        embeds: [new EmbedBuilder()
+            .setColor('#D4AF37')
+            .setTitle('👥 DUPLAS DAS OLIMPÍADAS')
+            .setDescription(texto)],
         flags: MessageFlags.Ephemeral
     });
 }
 
-
-// ========================================================================
-// RANKING
-// ========================================================================
-// Mostra:
-// 1. Ranking das duplas.
-// 2. Ranking dos países.
-// 3. Ranking dos competidores.
-// ========================================================================
-
 async function verRanking(interaction) {
-
     const dados = carregarDados();
     const ranking = calcularRanking(dados);
     const paises = rankingPaises(dados);
     const competidores = rankingCompetidores(dados);
 
     const duplasTexto = Object.entries(ranking)
-        .map(([id, posicao]) => ({
-            dupla: buscarDupla(dados, id),
-            ...posicao
-        }))
-        .filter(item => item.dupla)
-        .sort(
-            (a, b) =>
-                b.vitorias - a.vitorias ||
-                b.desempate - a.desempate
-        )
-        .map(
-            (item, indice) =>
-                `**${indice + 1}. ${limparTexto(item.dupla.nome)}** — ${limparTexto(item.dupla.pais)}\n` +
-                `🥇 ${item.vitorias} • 🥈 ${item.prata} • 🥉 ${item.bronze}`
-        )
-        .join('\n\n') ||
-        'Ainda não existem resultados.';
-
-    const paisesTexto = paises
+        .map(([id, r]) => ({ dupla: buscarDupla(dados, id), ...r }))
+        .filter(x => x.dupla)
+        .sort((a, b) => b.vitorias - a.vitorias || b.desempate - a.desempate)
         .slice(0, 10)
-        .map(
-            (item, indice) =>
-                `**${indice + 1}. ${limparTexto(item.pais)}** — 🥇 ${item.ouro} • 🥈 ${item.prata} • 🥉 ${item.bronze}`
-        )
-        .join('\n') ||
-        'Sem medalhas registradas.';
+        .map((x, i) => `**${i + 1}. ${limparTexto(x.dupla.pais)}** — 🥇 ${x.vitorias} • 🥈 ${x.prata} • 🥉 ${x.bronze}`)
+        .join('\n') || 'Sem resultados.';
 
-    const competidoresTexto = competidores
-        .slice(0, 10)
-        .map(
-            (item, indice) =>
-                `**${indice + 1}. <@${item.id}>** — 🥇 ${item.ouro} • 🥈 ${item.prata} • 🥉 ${item.bronze}`
-        )
-        .join('\n') ||
-        'Sem medalhas registradas.';
+    const paisesTexto = paises.slice(0, 10)
+        .map((x, i) => `**${i + 1}. ${limparTexto(x.pais)}** — 🥇 ${x.ouro} • 🥈 ${x.prata} • 🥉 ${x.bronze}`)
+        .join('\n') || 'Sem medalhas.';
+
+    const competidoresTexto = competidores.slice(0, 10)
+        .map((x, i) => `**${i + 1}. <@${x.id}>** — 🥇 ${x.ouro} • 🥈 ${x.prata} • 🥉 ${x.bronze}`)
+        .join('\n') || 'Sem medalhas.';
 
     return interaction.reply({
-
-        embeds: [
-            new EmbedBuilder()
-                .setColor('#D4AF37')
-                .setTitle('🏆 RANKING — OLIMPÍADAS DE DUPLAS')
-                .addFields(
-                    {
-                        name: '👥 DUPLAS',
-                        value: duplasTexto.slice(0, 1024),
-                        inline: false
-                    },
-                    {
-                        name: '🌎 PAÍSES POR MEDALHAS',
-                        value: paisesTexto.slice(0, 1024),
-                        inline: false
-                    },
-                    {
-                        name: '👤 COMPETIDORES POR MEDALHAS',
-                        value: competidoresTexto.slice(0, 1024),
-                        inline: false
-                    }
-                )
-        ],
-
+        embeds: [new EmbedBuilder()
+            .setColor('#D4AF37')
+            .setTitle('🏆 RANKING — OLIMPÍADAS DE DUPLAS')
+            .addFields(
+                { name: '👥 DUPLAS', value: duplasTexto, inline: false },
+                { name: '🌎 PAÍSES', value: paisesTexto, inline: false },
+                { name: '👤 COMPETIDORES', value: competidoresTexto, inline: false }
+            )],
         flags: MessageFlags.Ephemeral
     });
 }
 
-
-// ========================================================================
-// GUIA OFICIAL
-// ========================================================================
-// Texto mantido conforme as regras fornecidas pelo organizador.
-// ========================================================================
+/* ========================================================================
+   GUIA
+   ======================================================================== */
 
 async function guia(interaction) {
+    const cfg = config();
+    const cargo = cfg.cargoTeg ? `<@&${cfg.cargoTeg}>` : '@• Olímpico';
 
-    const cargo = CONFIG.cargoTeg
-        ? `<@&${CONFIG.cargoTeg}>`
-        : '@• Olímpico';
-
-    const texto =
-        `**🟨 Olimpíadas de Duplas:**\n\n` +
-        `**Vencedores: ${cargo}**\n` +
-        `**Cada dupla escolherá um País para representar**\n` +
-        `**Todos os dias pares do Mês de Setembro!**\n\n` +
-        `#️⃣ **Ranking de países por quantidade de medalhas**\n` +
-        `#️⃣ **Ranking de competidores por quantidade de medalhas**\n` +
-        `**Dupla vencedora:** 🥇\n` +
-        `**Critérios de desempate (apenas para os vivos):**\n` +
-        `**Dupla vice:** 🥈 **(peso: 3)**\n` +
-        `**Dupla lanterna:** 🥉 **(peso: 1)**\n\n` +
-        `***1h30min de partida***\n` +
-        `**🚫 Regras:**\n\n` +
-        `**1️⃣ Em caso de Briga, é possível a troca entre países com as medalhas individuais mantidas.**\n\n` +
-        `**2️⃣ Em caso de Ausência, é possível a substituição DEFINITIVA de um parceiro para outro. As medalhas do País serão mantidas intactas.**\n\n` +
-        `**3️⃣ Em caso de Anti-jogo, será tratado como qualquer outra partida do servidor.**\n\n` +
-        `**4️⃣ Em caso de disputa por um país, será feito um sorteio.**\n\n` +
-        `**⚠️ As Olímpiadas terão apenas DOIS vencedores!**`;
+    const texto = [
+        '**🟨 Olimpíadas de Duplas:**',
+        '',
+        `**Vencedores: ${cargo}**`,
+        '**Cada dupla escolherá um País para representar**',
+        '**Contabilização das partidas somente nos dias pares do Mês de Setembro!**',
+        '',
+        '#️⃣ **Ranking de países por quantidade de medalhas**',
+        '#️⃣ **Ranking de competidores por quantidade de medalhas**',
+        '**Dupla vencedora:** 🥇',
+        '**Critérios de desempate (apenas para os vivos):**',
+        '**Dupla vice:** 🥈 **(peso: 3)**',
+        '**Dupla lanterna:** 🥉 **(peso: 1)**',
+        '***1h30min de partida***',
+        '',
+        '**🚫 Regras:**',
+        '',
+        '**1️⃣ Em caso de Briga, é possível a troca entre países com as medalhas individuais mantidas.**',
+        '**2️⃣ Em caso de Ausência, é possível a substituição DEFINITIVA de um parceiro para outro. As medalhas do País serão mantidas intactas.**',
+        '**3️⃣ Em caso de Anti-jogo, será tratado como qualquer outra partida do servidor.**',
+        '**4️⃣ Em caso de disputa por um país, será feito um sorteio.**',
+        '',
+        '**⚠️ As Olimpíadas terão apenas DOIS vencedores!**'
+    ].join('\n');
 
     return interaction.reply({
-
-        embeds: [
-            new EmbedBuilder()
-                .setColor('#D4AF37')
-                .setTitle('📖 GUIA — OLIMPÍADAS DE DUPLAS')
-                .setDescription(texto)
-        ],
-
+        embeds: [new EmbedBuilder()
+            .setColor('#D4AF37')
+            .setTitle('📖 GUIA — OLIMPÍADAS DE DUPLAS')
+            .setDescription(texto)],
         flags: MessageFlags.Ephemeral
     });
 }
 
-
-// ========================================================================
-// ROTEADOR DAS OLIMPÍADAS
-// ========================================================================
-// O index.js chama esta função quando recebe um botão, menu ou modal.
-// ========================================================================
+/* ========================================================================
+   ROTEADOR
+   ======================================================================== */
 
 async function handle(interaction) {
+    const id = interaction.customId || '';
 
-    const customId = interaction.customId || '';
+    if (id === 'olymp_contabilizar') return contabilizar(interaction);
+    if (id === 'olymp_duplas') return verDuplas(interaction);
+    if (id === 'olymp_registrar') return registrar(interaction);
+    if (id === 'olymp_ranking') return verRanking(interaction);
+    if (id === 'olymp_guia') return guia(interaction);
 
-    // ------------------------------------------------------------
-    // BOTÕES PRINCIPAIS
-    // ------------------------------------------------------------
+    if (id === 'olymp_reg_p1') return registrarJogador1(interaction);
+    if (id.startsWith('olymp_reg_p2_')) return registrarJogador2(interaction);
+    if (id.startsWith('olymp_buscar_')) return abrirPesquisa(interaction);
+    if (id.startsWith('olymp_pesquisa_modal_')) return pesquisarPais(interaction);
+    if (id.startsWith('olymp_prev_')) return mudarPaginaPais(interaction, -1);
+    if (id.startsWith('olymp_next_')) return mudarPaginaPais(interaction, 1);
+    if (id.startsWith('olymp_pais_')) return selecionarPais(interaction);
 
-    if (customId === 'olymp_contabilizar') {
-        return contabilizar(interaction);
-    }
-
-    if (customId === 'olymp_duplas') {
-        return verDuplas(interaction);
-    }
-
-    if (customId === 'olymp_registrar') {
-        return registrar(interaction);
-    }
-
-    if (customId === 'olymp_ranking') {
-        return verRanking(interaction);
-    }
-
-    if (customId === 'olymp_guia') {
-        return guia(interaction);
-    }
-
-    // ------------------------------------------------------------
-    // REGISTRO
-    // ------------------------------------------------------------
-
-    if (customId === 'olymp_reg_p1') {
-        return registrarJogador1(interaction);
-    }
-
-    if (customId.startsWith('olymp_reg_p2_')) {
-        return registrarJogador2(interaction);
-    }
-
-    if (customId.startsWith('olymp_reg_pais_')) {
-        return registrarPais(interaction);
-    }
-
-    if (customId.startsWith('olymp_reg_nome_')) {
-        return finalizarRegistro(interaction);
-    }
-
-    // ------------------------------------------------------------
-    // CONTABILIZAÇÃO
-    // ------------------------------------------------------------
-
-    if (customId === 'olymp_result_ouro') {
-        return escolherOuro(interaction);
-    }
-
-    if (customId.startsWith('olymp_result_prata_')) {
-        return escolherPrata(interaction);
-    }
-
-    if (customId.startsWith('olymp_result_bronze_')) {
-        return escolherBronze(interaction);
-    }
+    if (id === 'olymp_result_ouro') return escolherOuro(interaction);
+    if (id.startsWith('olymp_result_prata_')) return escolherPrata(interaction);
+    if (id.startsWith('olymp_result_bronze_')) return escolherBronze(interaction);
 
     return false;
 }
-
-
-// ========================================================================
-// EXPORTAÇÕES
-// ========================================================================
 
 module.exports = {
     handle,

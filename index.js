@@ -2,129 +2,25 @@
    WORLDWARBR — MASTER
    ======================================================================== */
 const { Client, GatewayIntentBits, Collection, Events, MessageFlags, ActivityType } = require('discord.js');
-const fs = require('fs');
-const path = require('path');
-
-let config = {};
-try { config = require('./config.json'); } catch (erro) { console.error('❌ config.json não encontrado ou inválido.'); process.exit(1); }
-
-const TOKEN = config.token || config.DISCORD_TOKEN || config.botToken || process.env.DISCORD_TOKEN || process.env.BOT_TOKEN || process.env.TOKEN;
-const ID_SERVIDOR_AUTORIZADO = String(config.guildId || config.idServidor || config.servidorId || '849696655510863914');
-const handleReverter = require('./commands/liga/handlers/handleReverter.js');
-const pontuacaoPath = path.join(__dirname, 'commands', 'liga', 'pontuacao.json');
-const partidasPath = path.join(__dirname, 'commands', 'liga', 'partidas.json');
-
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildMessageReactions, GatewayIntentBits.GuildModeration, GatewayIntentBits.GuildVoiceStates] });
-client.commands = new Collection();
-const commandsPath = path.join(__dirname, 'commands');
-const ARQUIVOS_IGNORADOS = new Set(['testePeriodosLiga.js','testeEstatisticasLiga.js','testeEstatisticasV2.js','index.js','buttons.js','interactionPatch.js']);
-
-function readCommands(dir) {
-    if (!fs.existsSync(dir)) return;
-    for (const file of fs.readdirSync(dir)) {
-        const filePath = path.join(dir, file);
-        let stat; try { stat = fs.statSync(filePath); } catch { continue; }
-        if (stat.isDirectory()) { readCommands(filePath); continue; }
-        if (!file.endsWith('.js') || ARQUIVOS_IGNORADOS.has(file)) continue;
-        try {
-            delete require.cache[require.resolve(filePath)];
-            const command = require(filePath);
-            if (!command?.data || typeof command.data.toJSON !== 'function' || typeof command.execute !== 'function') continue;
-            const nome = command.data.name;
-            if (!nome || client.commands.has(nome)) { if (nome) console.warn('[CMD] Ignorado comando duplicado: ' + nome); continue; }
-            client.commands.set(nome, command);
-            console.log('[CMD] Carregado: ' + nome);
-        } catch (erro) { console.error(`[CMD] Erro ao carregar ${filePath}:`, erro); }
-    }
-}
-readCommands(commandsPath);
-
-client.once(Events.ClientReady, async c => {
-    console.log(`🤖 ${c.user.tag} está online!`);
-    try { c.user.setPresence({ activities: [{ name: config.presence || 'WAR', type: ActivityType.Playing }], status: 'online' }); } catch {}
-    try { const guilds = await c.guilds.fetch(); for (const [, guildData] of guilds) if (guildData.id !== ID_SERVIDOR_AUTORIZADO) { const guild = c.guilds.cache.get(guildData.id); if (guild) await guild.leave().catch(() => {}); } } catch (erro) { console.error('❌ Erro ao validar servidores:', erro); }
-    try { const guild = c.guilds.cache.get(ID_SERVIDOR_AUTORIZADO); if (guild) { await c.application.commands.set([]); await guild.commands.set(client.commands.map(command => command.data.toJSON())); console.log(`✅ ${client.commands.size} comandos sincronizados.`); } else console.error(`❌ Servidor autorizado ${ID_SERVIDOR_AUTORIZADO} não encontrado.`); } catch (erro) { console.error('❌ Erro ao sincronizar comandos:', erro); }
-    try { const promotion = require('./commands/promocao/promotionHandler.js'); if (typeof promotion === 'function') promotion(c); } catch (erro) { console.error('❌ Falha no PromotionHandler:', erro); }
-    try { const syncEngine = require('./commands/promocao/syncEngine.js'); if (typeof syncEngine.executarVarreduraCanal === 'function') { await syncEngine.executarVarreduraCanal(c); console.log('✅ Varredura e recuperação automática de prints concluída.'); } } catch (erro) { console.error('❌ Falha na varredura automática:', erro); }
-    const handlers = [
-        ['./commands/promocao/reactionAddHandler.js','Reaction Handler'], ['./commands/adm/adminLogHandler.js','Admin Log'], ['./commands/voz/voiceControlHandler.js','Voice Control'], ['./commands/adm/temporaryVoiceHandler.js','Temporary Voice'], ['./commands/adm/temporaryMuteHandler.js','Temporary Mute'], ['./commands/adm/weeklyReportHandler.js','Relatórios'], ['./commands/economy/economyTextHandler.js','Economy'], ['./commands/adm/autoResponseHandler.js','Auto Response'], ['./commands/adm/antiNukeHandler.js','Anti-Nuke'], ['./commands/adm/onboardingSyncHandler.js','Onboarding']
-    ];
-    for (const [arquivo, nome] of handlers) { try { const handler = require(arquivo); if (typeof handler === 'function') handler(c); } catch (erro) { console.error(`❌ Falha no ${nome}:`, erro); } }
-});
-
-client.on(Events.GuildCreate, async guild => { if (guild.id !== ID_SERVIDOR_AUTORIZADO) await guild.leave().catch(() => {}); });
-
-client.on(Events.InteractionCreate, async interaction => {
-    if (interaction.guildId !== ID_SERVIDOR_AUTORIZADO) {
-        if (interaction.isRepliable()) { const r = { content: '❌ Este bot é de uso exclusivo e restrito.', flags: MessageFlags.Ephemeral }; if (interaction.replied || interaction.deferred) return interaction.followUp(r).catch(() => {}); return interaction.reply(r).catch(() => {}); }
-        return;
-    }
-    const customId = interaction.customId || '';
-
-    if (interaction.isAutocomplete()) {
-        const command = client.commands.get(interaction.commandName);
-        if (!command || typeof command.autocomplete !== 'function') return interaction.respond([]).catch(() => {});
-        try { await command.autocomplete(interaction); } catch (erro) { console.error(`[AUTOCOMPLETE] Erro em /${interaction.commandName}:`, erro); await interaction.respond([]).catch(() => {}); }
-        return;
-    }
-
-    if (interaction.isChatInputCommand()) {
-        const command = client.commands.get(interaction.commandName);
-        if (!command) return;
-        try { await command.execute(interaction); } catch (erro) { console.error(`[CMD] Erro em /${interaction.commandName}:`, erro); const r = { content: '❌ Erro ao executar o comando.', flags: MessageFlags.Ephemeral }; if (interaction.replied || interaction.deferred) await interaction.followUp(r).catch(() => {}); else await interaction.reply(r).catch(() => {}); }
-        return;
-    }
-
-    if (interaction.isModalSubmit() && customId.startsWith('hall_modal_')) {
-        try { await require('./commands/promocao/historicoHandler.js')(interaction, client); } catch (erro) { console.error('[HALL] Erro no modal:', erro); }
-        return;
-    }
-
-    // ====================================================================
-    // OLIMPÍADAS DE DUPLAS
-    // LOCAL DO SISTEMA: commands/liga/olimpiadas/
-    // ====================================================================
-    if ((interaction.isButton() || interaction.isStringSelectMenu() || interaction.isUserSelectMenu()) && customId.startsWith('olymp_')) {
-        try {
-            return await require('./commands/liga/olimpiadas/olimpiadas-handler.js').handle(interaction);
-        } catch (erro) {
-            console.error('[OLIMPIADAS] Erro na interação:', erro);
-            if (interaction.isRepliable() && !interaction.replied && !interaction.deferred) {
-                await interaction.reply({ content: '❌ Erro ao processar esta ação das Olimpíadas.', flags: MessageFlags.Ephemeral }).catch(() => {});
-            }
-            return;
-        }
-    }
-
-    // Competition Engine: os painéis públicos usam estes botões.
-    if (interaction.isButton() && customId.startsWith('cmp_public_')) {
-        try { return await require('./commands/competicoes/competicao-painel.js').handle(interaction); }
-        catch (erro) { console.error('[COMPETICOES] Botão público:', erro); if (!interaction.replied && !interaction.deferred) await interaction.reply({ content: '❌ Erro ao processar a competição.', flags: MessageFlags.Ephemeral }).catch(() => {}); }
-        return;
-    }
-
-    const isSelect = interaction.isStringSelectMenu?.() || interaction.isUserSelectMenu?.() || interaction.isRoleSelectMenu?.() || interaction.isChannelSelectMenu?.() || interaction.isMentionableSelectMenu?.();
-    if (!interaction.isButton() && !isSelect) return;
-
-    try {
-        if (customId === 'estatisticas_selecionar' || customId === 'estatisticas_usuario' || customId === 'estatisticas_voltar' || customId === 'liga_estatisticas' || customId.startsWith('liga_estatisticas_prev_') || customId.startsWith('liga_estatisticas_next_') || customId.startsWith('liga_estatisticas_pagina_') || customId === 'liga_estatisticas_voltar') return await require('./commands/liga/estatisticasSelecionar.js')(interaction);
-        if (customId.startsWith('ver_ficha_')) { const userId = customId.slice('ver_ficha_'.length); if (!/^\d{15,22}$/.test(userId)) return interaction.reply({ content:'❌ Usuário inválido.', flags:MessageFlags.Ephemeral }); const { safeReadJson } = require('./commands/liga/utils/helpers.js'); const { criarFicha } = require('./commands/promocao/fichaBuilder.js'); const progressao = safeReadJson(path.join(__dirname,'commands','promocao','progressao.json')); const carreiras = safeReadJson(path.join(__dirname,'commands','promocao','carreiras.json')); const economy = safeReadJson(path.join(__dirname,'commands','economy','economy.json')); const member = await interaction.guild.members.fetch(userId).catch(() => null); if (!member) return interaction.reply({content:'❌ Não foi possível encontrar esse membro.',flags:MessageFlags.Ephemeral}); const ficha = criarFicha({progressao,carreiras,economy,userId,member,modo:'carreira'}); if (!ficha) return interaction.reply({content:'❌ A ficha desse usuário não está disponível.',flags:MessageFlags.Ephemeral}); return interaction.reply({embeds:[ficha],flags:MessageFlags.Ephemeral}); }
-        if (customId.startsWith('hist_') || customId.startsWith('hall_')) return await require('./commands/promocao/historicoHandler.js')(interaction, client);
-        if (customId.startsWith('edit_match_')) return await handleReverter(client, interaction, pontuacaoPath, partidasPath);
-        if (customId.startsWith('ticket_')) return await require('./commands/ticket/buttonRouter.js')(interaction, client);
-        if (customId.startsWith('stt_')) return await require('./commands/promocao/statusHandler.js')(interaction, client);
-        if (customId.startsWith('rank_')) return await require('./commands/promocao/rankingHandler.js')(interaction, client);
-        if (customId.startsWith('emb_') || customId.startsWith('mdl_') || customId.startsWith('eb_')) { const embedSystem = require('./commands/adm/embedSystem.js'); if (typeof embedSystem.handleInteraction === 'function') return await embedSystem.handleInteraction(interaction); if (typeof embedSystem === 'function') return await embedSystem(interaction, client); return; }
-        if (customId.startsWith('tvoice_')) return await require('./commands/adm/tempVoiceButtonHandler.js')(interaction, client);
-        if (customId.startsWith('vcall_select_')) { if (!interaction.values?.length) return interaction.reply({content:'❌ Nenhum usuário selecionado.',flags:MessageFlags.Ephemeral}); interaction.customId = `vcall_k_${interaction.values[0]}`; return await require('./commands/voz/voiceControlHandler.js')(interaction, client); }
-        if (customId.startsWith('liga_') || ['iniciar_contabilizacao','ver_ranking','ver_todos_competidores','registrar','add_abate','fim_abates','add_cont','fim_cont'].includes(customId) || customId.startsWith('sel_') || customId.startsWith('reset_')) return await require('./commands/liga/buttons.js')(client, interaction);
-    } catch (erro) {
-        console.error('[INTERACTION] Erro:', erro);
-        if (interaction.isRepliable()) { const r = { content:'❌ Erro ao processar esta ação.', flags:MessageFlags.Ephemeral }; if (interaction.replied || interaction.deferred) await interaction.followUp(r).catch(() => {}); else await interaction.reply(r).catch(() => {}); }
-    }
-});
-
-process.on('unhandledRejection', erro => console.error('[PROCESS] Unhandled Rejection:', erro));
-process.on('uncaughtException', erro => console.error('[PROCESS] Uncaught Exception:', erro));
-if (!TOKEN) { console.error('❌ TOKEN NÃO ENCONTRADO. Configure "token" no config.json ou DISCORD_TOKEN/BOT_TOKEN/TOKEN no ambiente.'); process.exit(1); }
-client.login(config.token || TOKEN);
+const fs = require('fs'); const path = require('path');
+let config={}; try{config=require('./config.json');}catch(e){console.error('❌ config.json não encontrado ou inválido.');process.exit(1);}
+const TOKEN=config.token||config.DISCORD_TOKEN||config.botToken||process.env.DISCORD_TOKEN||process.env.BOT_TOKEN||process.env.TOKEN;
+const ID_SERVIDOR_AUTORIZADO=String(config.guildId||config.idServidor||config.servidorId||'849696655510863914');
+const handleReverter=require('./commands/liga/handlers/handleReverter.js');
+const pontuacaoPath=path.join(__dirname,'commands','liga','pontuacao.json'); const partidasPath=path.join(__dirname,'commands','liga','partidas.json');
+const client=new Client({intents:[GatewayIntentBits.Guilds,GatewayIntentBits.GuildMessages,GatewayIntentBits.MessageContent,GatewayIntentBits.GuildMembers,GatewayIntentBits.GuildMessageReactions,GatewayIntentBits.GuildModeration,GatewayIntentBits.GuildVoiceStates]});
+client.commands=new Collection(); const commandsPath=path.join(__dirname,'commands'); const ARQUIVOS_IGNORADOS=new Set(['testePeriodosLiga.js','testeEstatisticasLiga.js','testeEstatisticasV2.js','index.js','buttons.js','interactionPatch.js']);
+function readCommands(dir){if(!fs.existsSync(dir))return;for(const file of fs.readdirSync(dir)){const fp=path.join(dir,file);let stat;try{stat=fs.statSync(fp);}catch{continue;}if(stat.isDirectory()){readCommands(fp);continue;}if(!file.endsWith('.js')||ARQUIVOS_IGNORADOS.has(file))continue;try{delete require.cache[require.resolve(fp)];const cmd=require(fp);if(!cmd?.data||typeof cmd.data.toJSON!=='function'||typeof cmd.execute!=='function')continue;const nome=cmd.data.name;if(!nome||client.commands.has(nome)){if(nome)console.warn('[CMD] Ignorado comando duplicado: '+nome);continue;}client.commands.set(nome,cmd);console.log('[CMD] Carregado: '+nome);}catch(e){console.error(`[CMD] Erro ao carregar ${fp}:`,e);}}}readCommands(commandsPath);
+client.once(Events.ClientReady,async c=>{console.log(`🤖 ${c.user.tag} está online!`);try{c.user.setPresence({activities:[{name:config.presence||'WAR',type:ActivityType.Playing}],status:'online'});}catch{}try{const guilds=await c.guilds.fetch();for(const[,gd]of guilds)if(gd.id!==ID_SERVIDOR_AUTORIZADO){const g=c.guilds.cache.get(gd.id);if(g)await g.leave().catch(()=>{});}}catch(e){console.error('❌ Erro ao validar servidores:',e);}try{const guild=c.guilds.cache.get(ID_SERVIDOR_AUTORIZADO);if(guild){await c.application.commands.set([]);await guild.commands.set(client.commands.map(x=>x.data.toJSON()));console.log(`✅ ${client.commands.size} comandos sincronizados.`);}else console.error(`❌ Servidor autorizado ${ID_SERVIDOR_AUTORIZADO} não encontrado.`);}catch(e){console.error('❌ Erro ao sincronizar comandos:',e);}try{const promotion=require('./commands/promocao/promotionHandler.js');if(typeof promotion==='function')promotion(c);}catch(e){console.error('❌ Falha no PromotionHandler:',e);}try{const sync=require('./commands/promocao/syncEngine.js');if(typeof sync.executarVarreduraCanal==='function')await sync.executarVarreduraCanal(c);}catch(e){console.error('❌ Falha na varredura automática:',e);}const hs=[['./commands/promocao/reactionAddHandler.js','Reaction Handler'],['./commands/adm/adminLogHandler.js','Admin Log'],['./commands/voz/voiceControlHandler.js','Voice Control'],['./commands/adm/temporaryVoiceHandler.js','Temporary Voice'],['./commands/adm/temporaryMuteHandler.js','Temporary Mute'],['./commands/adm/weeklyReportHandler.js','Relatórios'],['./commands/economy/economyTextHandler.js','Economy'],['./commands/adm/autoResponseHandler.js','Auto Response'],['./commands/adm/antiNukeHandler.js','Anti-Nuke'],['./commands/adm/onboardingSyncHandler.js','Onboarding']];for(const[a,n]of hs)try{const h=require(a);if(typeof h==='function')h(c);}catch(e){console.error(`❌ Falha no ${n}:`,e);}});
+client.on(Events.GuildCreate,async g=>{if(g.id!==ID_SERVIDOR_AUTORIZADO)await g.leave().catch(()=>{});});
+client.on(Events.InteractionCreate,async i=>{if(i.guildId!==ID_SERVIDOR_AUTORIZADO){if(i.isRepliable()){const r={content:'❌ Este bot é de uso exclusivo e restrito.',flags:MessageFlags.Ephemeral};if(i.replied||i.deferred)return i.followUp(r).catch(()=>{});return i.reply(r).catch(()=>{});}return;}const id=i.customId||'';
+if(i.isAutocomplete()){const cmd=client.commands.get(i.commandName);if(!cmd||typeof cmd.autocomplete!=='function')return i.respond([]).catch(()=>{});try{await cmd.autocomplete(i);}catch(e){console.error(`[AUTOCOMPLETE] Erro em /${i.commandName}:`,e);await i.respond([]).catch(()=>{});}return;}
+if(i.isChatInputCommand()){const cmd=client.commands.get(i.commandName);if(!cmd)return;try{await cmd.execute(i);}catch(e){console.error(`[CMD] Erro em /${i.commandName}:`,e);const r={content:'❌ Erro ao executar o comando.',flags:MessageFlags.Ephemeral};if(i.replied||i.deferred)await i.followUp(r).catch(()=>{});else await i.reply(r).catch(()=>{});}return;}
+// ========================================================================
+// OLIMPÍADAS — SISTEMA INDEPENDENTE DE commands/liga
+// ========================================================================
+if((i.isButton()||i.isStringSelectMenu()||i.isUserSelectMenu())&&id.startsWith('olymp_')){try{return await require('./commands/olimpiadas/olimpiadas-handler.js').handle(i);}catch(e){console.error('[OLIMPIADAS] Erro:',e);if(i.isRepliable()&&!i.replied&&!i.deferred)await i.reply({content:'❌ Erro ao processar esta ação das Olimpíadas.',flags:MessageFlags.Ephemeral}).catch(()=>{});}return;}
+if(i.isModalSubmit()&&id.startsWith('hall_modal_')){try{await require('./commands/promocao/historicoHandler.js')(i,client);}catch(e){console.error('[HALL] Erro no modal:',e);}return;}
+const isSelect=i.isStringSelectMenu?.()||i.isUserSelectMenu?.()||i.isRoleSelectMenu?.()||i.isChannelSelectMenu?.()||i.isMentionableSelectMenu?.();if(!i.isButton()&&!isSelect)return;
+try{if(id==='estatisticas_selecionar'||id==='estatisticas_usuario'||id==='estatisticas_voltar'||id==='liga_estatisticas'||id.startsWith('liga_estatisticas_prev_')||id.startsWith('liga_estatisticas_next_')||id.startsWith('liga_estatisticas_pagina_')||id==='liga_estatisticas_voltar')return await require('./commands/liga/estatisticasSelecionar.js')(i);if(id.startsWith('ver_ficha_')){const userId=id.slice('ver_ficha_'.length);if(!/^\d{15,22}$/.test(userId))return i.reply({content:'❌ Usuário inválido.',flags:MessageFlags.Ephemeral});const{safeReadJson}=require('./commands/liga/utils/helpers.js');const{criarFicha}=require('./commands/promocao/fichaBuilder.js');const progressao=safeReadJson(path.join(__dirname,'commands','promocao','progressao.json'));const carreiras=safeReadJson(path.join(__dirname,'commands','promocao','carreiras.json'));const economy=safeReadJson(path.join(__dirname,'commands','economy','economy.json'));const member=await i.guild.members.fetch(userId).catch(()=>null);if(!member)return i.reply({content:'❌ Não foi possível encontrar esse membro.',flags:MessageFlags.Ephemeral});const ficha=criarFicha({progressao,carreiras,economy,userId,member,modo:'carreira'});if(!ficha)return i.reply({content:'❌ A ficha desse usuário não está disponível.',flags:MessageFlags.Ephemeral});return i.reply({embeds:[ficha],flags:MessageFlags.Ephemeral});}if(id.startsWith('hist_')||id.startsWith('hall_'))return await require('./commands/promocao/historicoHandler.js')(i,client);if(id.startsWith('edit_match_'))return await handleReverter(client,i,pontuacaoPath,partidasPath);if(id.startsWith('ticket_'))return await require('./commands/ticket/buttonRouter.js')(i,client);if(id.startsWith('stt_'))return await require('./commands/promocao/statusHandler.js')(i,client);if(id.startsWith('rank_'))return await require('./commands/promocao/rankingHandler.js')(i,client);if(id.startsWith('emb_')||id.startsWith('mdl_')||id.startsWith('eb_')){const es=require('./commands/adm/embedSystem.js');if(typeof es.handleInteraction==='function')return await es.handleInteraction(i);if(typeof es==='function')return await es(i,client);return;}if(id.startsWith('tvoice_'))return await require('./commands/adm/tempVoiceButtonHandler.js')(i,client);if(id.startsWith('vcall_select_')){if(!i.values?.length)return i.reply({content:'❌ Nenhum usuário selecionado.',flags:MessageFlags.Ephemeral});i.customId=`vcall_k_${i.values[0]}`;return await require('./commands/voz/voiceControlHandler.js')(i,client);}if(id.startsWith('liga_')||['iniciar_contabilizacao','ver_ranking','ver_todos_competidores','registrar','add_abate','fim_abates','add_cont','fim_cont'].includes(id)||id.startsWith('sel_')||id.startsWith('reset_'))return await require('./commands/liga/buttons.js')(client,i);}catch(e){console.error('[INTERACTION] Erro:',e);if(i.isRepliable()){const r={content:'❌ Erro ao processar esta ação.',flags:MessageFlags.Ephemeral};if(i.replied||i.deferred)await i.followUp(r).catch(()=>{});else await i.reply(r).catch(()=>{});}}});
+process.on('unhandledRejection',e=>console.error('[PROCESS] Unhandled Rejection:',e));process.on('uncaughtException',e=>console.error('[PROCESS] Uncaught Exception:',e));if(!TOKEN){console.error('❌ TOKEN NÃO ENCONTRADO.');process.exit(1);}client.login(config.token||TOKEN);

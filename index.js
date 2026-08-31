@@ -80,6 +80,22 @@ client.on(Events.InteractionCreate, async interaction => {
         return;
     }
 
+    // ====================================================================
+    // OLIMPÍADAS DE DUPLAS
+    // LOCAL DO SISTEMA: commands/liga/olimpiadas/
+    // ====================================================================
+    if ((interaction.isButton() || interaction.isStringSelectMenu() || interaction.isUserSelectMenu()) && customId.startsWith('olymp_')) {
+        try {
+            return await require('./commands/liga/olimpiadas/olimpiadas-handler.js').handle(interaction);
+        } catch (erro) {
+            console.error('[OLIMPIADAS] Erro na interação:', erro);
+            if (interaction.isRepliable() && !interaction.replied && !interaction.deferred) {
+                await interaction.reply({ content: '❌ Erro ao processar esta ação das Olimpíadas.', flags: MessageFlags.Ephemeral }).catch(() => {});
+            }
+            return;
+        }
+    }
+
     // Competition Engine: os painéis públicos usam estes botões.
     if (interaction.isButton() && customId.startsWith('cmp_public_')) {
         try { return await require('./commands/competicoes/competicao-painel.js').handle(interaction); }

@@ -3,6 +3,8 @@
 
    SISTEMA:
    - 🟨 Olimpíadas de Duplas
+   - 📝 Publicação do painel oficial
+   - 🔎 Registro com pesquisa de país
 
    LOCALIZAÇÃO:
    commands/olimpiadas/
@@ -10,15 +12,15 @@
    COMANDO:
    /olimpiadas-painel
 
-   O QUE ELE FAZ:
-   Publica o painel oficial das Olimpíadas no canal definido em
-   commands/olimpiadas/olimpiadas.json.
+   O QUE ESTE COMANDO FAZ:
+   Publica o painel oficial no canal configurado.
+   A versão nova usa o fluxo de registro que permite digitar o nome do país.
 
    COMO USAR:
    1. Execute /olimpiadas-painel.
    2. O bot publica o painel no canal configurado.
-   3. A confirmação do comando aparece somente para quem executou.
-   4. O canal não fica com uma mensagem dizendo que o comando foi usado.
+   3. A confirmação aparece somente para quem executou o comando.
+   4. Para registrar, escolha os dois jogadores e pesquise o país.
 
    PERMISSÃO:
    - Administrador.
@@ -31,37 +33,21 @@ const {
 } = require('discord.js');
 
 const {
-    painel
-} = require('./olimpiadas-handler.js');
-
-
-// ========================================================================
-// COMANDO SLASH
-// ========================================================================
+    publicarPainel,
+    instalar
+} = require('./olimpiadas-patch.js');
 
 module.exports = {
 
     data: new SlashCommandBuilder()
-
         .setName('olimpiadas-painel')
-
-        .setDescription(
-            '🏅 Publica o painel das Olimpíadas de Duplas.'
-        )
-
+        .setDescription('🏅 Publica o painel das Olimpíadas de Duplas.')
         .setDefaultMemberPermissions(
             PermissionFlagsBits.Administrator
         ),
 
-
-    // ====================================================================
-    // EXECUÇÃO
-    // ====================================================================
-    // Entrega a execução ao handler principal das Olimpíadas.
-    // ====================================================================
-
     async execute(interaction) {
-
-        return painel(interaction);
+        instalar(interaction.client);
+        return publicarPainel(interaction);
     }
 };

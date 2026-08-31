@@ -3,28 +3,20 @@
 
    SISTEMA:
    - 🟨 Olimpíadas de Duplas
-   - 📝 Publicação do painel oficial
-   - 🔎 Registro com pesquisa de país
-
-   LOCALIZAÇÃO:
-   commands/olimpiadas/
+   - 📝 Publicação do único painel oficial
 
    COMANDO:
    /olimpiadas-painel
 
-   O QUE ESTE COMANDO FAZ:
-   Publica o painel oficial no canal configurado.
-   A versão nova usa o fluxo de registro que permite digitar o nome do país.
+   O QUE FAZ:
+   Publica o painel no canal configurado em olimpiadas.json.
+   O painel usa diretamente o handler principal.
 
-   COMO USAR:
-   1. Execute /olimpiadas-painel.
-   2. O bot publica o painel no canal configurado.
-   3. A confirmação aparece somente para quem executou o comando.
-   4. Para registrar, escolha os dois jogadores e pesquise o país.
-
-   PERMISSÃO:
-   - Administrador.
-
+   IMPORTANTE:
+   - Não existe segundo painel.
+   - Não utiliza olimpiadas-patch.js.
+   - O registro permite lista de países + pesquisa por nome.
+   - A confirmação do comando é privada.
    ======================================================================== */
 
 const {
@@ -32,10 +24,7 @@ const {
     PermissionFlagsBits
 } = require('discord.js');
 
-const {
-    publicarPainel,
-    instalar
-} = require('./olimpiadas-patch.js');
+const { painel } = require('./olimpiadas-handler.js');
 
 module.exports = {
 
@@ -47,7 +36,6 @@ module.exports = {
         ),
 
     async execute(interaction) {
-        instalar(interaction.client);
-        return publicarPainel(interaction);
+        return painel(interaction);
     }
 };

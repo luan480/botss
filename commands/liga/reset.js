@@ -14,9 +14,11 @@ const {
 const path = require('path');
 const { safeReadJson, safeWriteJson, isStaff } = require('./utils/helpers.js');
 const { calcular: calcularEstatisticasTemporada } = require('./utils/temporadaStats.js');
+const pontuacaoLiga = require('./utils/pontuacaoLiga.js');
 const careerHistory = require('../promocao/careerHistory.js');
 
 const pontosPath = path.join(__dirname, 'pontuacao.json');
+const partidasPath = path.join(__dirname, 'partidas.json');
 const historicoPath = path.join(__dirname, '..', 'promocao', 'historico.json');
 const temporadaPath = path.join(__dirname, 'temporada.json');
 
@@ -35,7 +37,9 @@ function ordenarRanking(estatisticas) {
             partidas: numero(j.partidas),
             kills: numero(j.kills),
             mortes: numero(j.mortes),
-            continentes: numero(j.continentes)
+            continentes: numero(j.continentes),
+            terceiroLugar: numero(j.terceiroLugar),
+            maisTropas: numero(j.maisTropas)
         }))
         .filter(j =>
             j.pontos !== 0 || j.vitorias > 0 || j.partidas > 0 ||
@@ -104,10 +108,39 @@ module.exports = {
             const inicioTemporada = controle.inicio || new Date().toISOString();
             const fimTemporada = new Date().toISOString();
 
-            // CORREÇÃO: usar temporadaStats.calcular com a assinatura correta.
-            // pontuacao.json é a fonte do saldo atual; partidas.json fornece os
-            // indicadores registrados na temporada.
+            // Saldo atual da temporada + estatísticas registradas nas partidas.
             const estatisticas = calcularEstatisticasTemporada(inicioTemporada, pontuacao);
+
+            // Complementa os indicadores que o motor da partida já registra,
+            // incluindo 3º lugar, mais tropas e os 6 continentes.
+            const indicadores = pontuacaoLiga.calcularEstatisticasTemporada(
+                partidasPath,
+                temporadaPath
+            );
+
+            for (const [id, extra] of Object.entries(indicadores || {})) {
+                if (!estatisticas[id]) {
+                    estatisticas[id] = {
+                        id: String(id),
+                        nome: extra.nome || 'Desconhecido',
+                        pontos: numero(pontuacao[id]),
+                        vitorias: 0,
+                        partidas: 0,
+                        kills: 0,
+                        mortes: 0,
+                        continentes: 0
+                    };
+                }
+
+                estatisticas[id].nome = estatisticas[id].nome || extra.nome || 'Desconhecido';
+                estatisticas[id].terceiroLugar = numero(extra.terceiroLugar);
+                estatisticas[id].maisTropas = numero(extra.maisTropas);
+                estatisticas[id].continentes = Math.max(
+                    numero(estatisticas[id].continentes),
+                    numero(extra.continentes)
+                );
+                estatisticas[id].continentesDetalhes = extra.continentesDetalhes || {};
+            }
 
             const ranking = ordenarRanking(estatisticas);
 
@@ -155,7 +188,7 @@ module.exports = {
                 throw new Error('Não foi possível criar a nova temporada.');
             }
 
-            // A pontuação corrente é zerada. O histórico das partidas continua.
+            // Somente o estado corrente da pontuação é zerado.
             if (!safeWriteJson(pontosPath, {})) {
                 throw new Error('Não foi possível zerar a pontuação atual da Liga.');
             }

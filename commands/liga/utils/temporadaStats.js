@@ -8,7 +8,7 @@
    ======================================================================== */
 
 const path = require('path');
-const { calcularPeriodo } = require('./periodosLiga.js');
+const { calcularPeriodo, inicioDaTemporada } = require('./periodosLiga.js');
 
 const PARTIDAS_PATH = path.join(__dirname, '..', 'partidas.json');
 
@@ -19,7 +19,8 @@ function normalizarData(valor, fallback) {
 
 function calcular(inicioIso, pontuacaoAtual = null) {
     const fim = new Date();
-    const inicio = normalizarData(inicioIso, new Date().toISOString());
+    const inicioPadrao = inicioDaTemporada(fim);
+    const inicio = normalizarData(inicioIso, inicioPadrao);
     const periodo = calcularPeriodo(inicio, fim);
 
     // O histórico é responsável pelas estatísticas. O saldo atual continua

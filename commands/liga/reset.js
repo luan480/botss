@@ -11,14 +11,69 @@ const careerHistory = require('../promocao/careerHistory.js');
 const pontosPath = path.join(__dirname, 'pontuacao.json');
 const historicoPath = path.join(__dirname, '..', 'promocao', 'historico.json');
 const temporadaPath = path.join(__dirname, 'temporada.json');
+const progressaoPath = path.join(__dirname, '..', 'promocao', 'progressao.json');
+const carreirasPath = path.join(__dirname, '..', 'promocao', 'carreiras.json');
 
 function numero(valor) { const n = Number(valor); return Number.isFinite(n) ? n : 0; }
 function normalizarNome(nome) { return String(nome || '').trim().replace(/\s+/g, ' ').toLowerCase(); }
 function ordenarRanking(estatisticas) {
     return Object.values(estatisticas || {})
         .map(j => ({ ...j, pontos: numero(j.pontos) }))
+        .filter(j => j.pontos !== 0 || numero(j.vitorias) > 0 || numero(j.kills) > 0 || numero(j.partidas) > 0)
         .sort((a, b) => b.pontos - a.pontos || b.vitorias - a.vitorias || b.kills - a.kills || String(a.id).localeCompare(String(b.id)))
         .map((j, i) => ({ ...j, posicao: i + 1 }));
+}
+
+function resetarCicloLiga(progressao) {
+    const camposNumericos = [
+        'totalWins',
+        'vitoriasSemanais',
+        'partidasSemanais',
+        'killsSemanais',
+        'mortesSemanais',
+        'asiaSemanal',
+        'europaSemanal',
+        'oceaniaSemanal',
+        'amsulSemanal',
+        'amnorteSemanal',
+        'africaSemanal'
+    ];
+
+    for (const jogador of Object.values(progressao || {})) {
+        if (!jogador || typeof jogador !== 'object') continue;
+        for (const campo of camposNumericos) jogador[campo] = 0;
+
+        const faccao = carreirasCache?.faccoes?.[jogador.factionId];
+        const primeiroRank = Array.isArray(faccao?.caminho) ? faccao.caminho[0] : null;
+        jogador.currentRankId = primeiroRank?.id || jogador.currentRankId || null;
+    }
+
+    return progressao;
+}
+
+let carreirasCache = {};
+
+async function sincronizarPatentes(interaction, progressao) {
+    for (const [uid, jogador] of Object.entries(progressao || {})) {
+        if (!jogador || typeof jogador !== 'object') continue;
+        const faccao = carreirasCache?.faccoes?.[jogador.factionId];
+        const caminho = Array.isArray(faccao?.caminho) ? faccao.caminho : [];
+        if (!caminho.length) continue;
+
+        const primeiro = caminho[0];
+        jogador.currentRankId = primeiro.id;
+
+        const membro = await interaction.guild.members.fetch(uid).catch(() => null);
+        if (!membro) continue;
+
+        for (const rank of caminho) {
+            if (rank.id === primeiro.id) {
+                await membro.roles.add(rank.id).catch(() => {});
+            } else if (membro.roles.cache.has(rank.id)) {
+                await membro.roles.remove(rank.id).catch(() => {});
+            }
+        }
+    }
 }
 
 module.exports = {
@@ -51,6 +106,8 @@ module.exports = {
             const pontuacao = safeReadJson(pontosPath) || {};
             const historico = safeReadJson(historicoPath) || {};
             const controle = safeReadJson(temporadaPath) || {};
+            const progressao = safeReadJson(progressaoPath) || {};
+            carreirasCache = safeReadJson(carreirasPath) || {};
             if (!Array.isArray(historico.liga)) historico.liga = [];
 
             const inicioTemporada = controle.inicio || new Date().toISOString();
@@ -71,7 +128,6 @@ module.exports = {
                 registradoPor: { id: interaction.user.id, username: interaction.user.username }
             };
 
-            // Primeiro arquiva tudo. Se o histórico não puder ser salvo, NÃO zera a Liga.
             historico.liga.push(registro);
             if (!safeWriteJson(historicoPath, historico)) throw new Error('Não foi possível salvar o histórico da temporada.');
 
@@ -80,12 +136,15 @@ module.exports = {
                 jogadores: ranking, campeao: ranking[0] || null, top10: ranking.slice(0, 10)
             });
 
-            // Só depois do arquivamento bem-sucedido inicia o próximo ciclo.
+            resetarCicloLiga(progressao);
+            await sincronizarPatentes(interaction, progressao);
+
+            if (!safeWriteJson(progressaoPath, progressao)) throw new Error('Não foi possível zerar as estatísticas atuais da Liga.');
             if (!safeWriteJson(temporadaPath, { inicio: fimTemporada, numero: (numero(controle.numero) || 1) + 1 })) throw new Error('Não foi possível criar a nova temporada.');
             if (!safeWriteJson(pontosPath, {})) throw new Error('Não foi possível zerar a pontuação atual.');
 
             await confirmation.update({
-                content: `✅ **${nomeTemporada} encerrada!**\n\n🏆 Campeão: ${registro.vencedor || 'Nenhum'}\n🥈 2º: ${registro.segundo || 'Nenhum'}\n🥉 3º: ${registro.terceiro || 'Nenhum'}\n👥 Competidores: **${ranking.length}**\n\n📊 **Estatísticas arquivadas.**\n🏛️ **Hall da Fama atualizado.**\n📚 **Carreira permanente preservada.**\n🔄 **Nova temporada iniciada limpa.**`,
+                content: `✅ **${nomeTemporada} encerrada!**\n\n🏆 Campeão: ${registro.vencedor || 'Nenhum'}\n🥈 2º: ${registro.segundo || 'Nenhum'}\n🥉 3º: ${registro.terceiro || 'Nenhum'}\n👥 Competidores: **${ranking.length}**\n\n📊 **Estatísticas arquivadas.**\n🏛️ **Hall da Fama atualizado.**\n📚 **Carreira permanente preservada.**\n🧹 **Vitórias, partidas, kills, mortes e continentes do ciclo foram zerados.**\n🔄 **Nova temporada iniciada limpa.**`,
                 components: []
             });
         } catch (erro) {

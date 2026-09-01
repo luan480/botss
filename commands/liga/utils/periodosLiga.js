@@ -1,7 +1,5 @@
 /* ========================================================================
    SISTEMA DE PERÍODOS DA LIGA
-   A temporada atual começa em commands/liga/temporada.json.inicio.
-   O histórico de partidas continua permanente em partidas.json.
    ======================================================================== */
 
 const path = require('path');
@@ -10,6 +8,7 @@ const { carregarPartidas } = require('./estatisticasLiga.js');
 
 const DISCORD_EPOCH = 1420070400000;
 const temporadaPath = path.join(__dirname, '..', 'temporada.json');
+const numero = v => Number.isFinite(Number(v)) ? Number(v) : 0;
 
 function lerTemporada() {
     try {
@@ -17,81 +16,56 @@ function lerTemporada() {
         const dados = JSON.parse(fs.readFileSync(temporadaPath, 'utf8'));
         return dados && typeof dados === 'object' ? dados : {};
     } catch (erro) {
-        console.error('[LIGA] Erro ao ler temporada.json:', erro);
+        console.error('[LIGA] Erro ao ler temporada.json:', erro.message);
         return {};
     }
 }
 
 function dataValida(valor) {
-    if (valor instanceof Date) return Number.isFinite(valor.getTime()) ? valor : null;
+    if (valor instanceof Date) return Number.isFinite(valor.getTime()) ? new Date(valor) : null;
     if (valor === null || valor === undefined || valor === '') return null;
-    const data = new Date(valor);
-    return Number.isFinite(data.getTime()) ? data : null;
+    const d = new Date(valor);
+    return Number.isFinite(d.getTime()) ? d : null;
 }
 
 function idDiscordParaData(valor) {
-    if (valor === null || valor === undefined) return null;
-    const id = String(valor).replace(/^<@!?(\d+)>$/, '$1');
+    const id = String(valor || '').replace(/^<@!?(\d+)>$/, '$1');
     if (!/^\d{17,20}$/.test(id)) return null;
     try {
-        const timestamp = Number((BigInt(id) >> 22n) + BigInt(DISCORD_EPOCH));
-        const data = new Date(timestamp);
-        return Number.isNaN(data.getTime()) ? null : data;
-    } catch {
-        return null;
-    }
+        return new Date(Number((BigInt(id) >> 22n) + BigInt(DISCORD_EPOCH)));
+    } catch { return null; }
 }
 
 function dataDaPartida(registro) {
-    if (!registro) return null;
-
-    // Primeiro tenta os campos explícitos de data/hora do registro.
+    const partida = registro?.partida || {};
     const candidatos = [
+        partida.meta?.registradaEm,
+        partida.meta?.createdAt,
         registro.data,
         registro.dataPartida,
         registro.createdAt,
         registro.timestamp,
         registro.date,
-        registro.created_at,
-        registro.partida?.data,
-        registro.partida?.dataPartida,
-        registro.partida?.createdAt,
-        registro.partida?.timestamp,
-        registro.partida?.date,
-        registro.partida?.created_at
+        partida.data,
+        partida.dataPartida,
+        partida.createdAt,
+        partida.timestamp,
+        partida.date
     ];
-
-    for (const candidato of candidatos) {
-        const data = dataValida(candidato);
+    for (const valor of candidatos) {
+        const data = dataValida(valor);
         if (data) return data;
     }
-
-    // Depois tenta IDs Discord reais. Nunca usa o índice do array.
-    const ids = [
-        registro.id,
-        registro.messageId,
-        registro.messageID,
-        registro.partidaId,
-        registro.idPartida,
-        registro.partida?.id,
-        registro.partida?.messageId,
-        registro.partida?.partidaId,
-        registro.partida?.idPartida
-    ];
-
-    for (const candidato of ids) {
-        const data = idDiscordParaData(candidato);
+    for (const valor of [registro.id, registro.messageId, partida.id, partida.messageId]) {
+        const data = idDiscordParaData(valor);
         if (data) return data;
     }
-
     return null;
 }
 
 function estaNoPeriodo(data, inicio, fim) {
     if (!data) return false;
-    if (inicio && data < inicio) return false;
-    if (fim && data >= fim) return false;
-    return true;
+    return (!inicio || data >= inicio) && (!fim || data < fim);
 }
 
 function inicioDaSemana(data = new Date()) {
@@ -109,35 +83,22 @@ function fimDaSemana(data = new Date()) {
     return fim;
 }
 
-function inicioDoMes(data = new Date()) {
-    return new Date(data.getFullYear(), data.getMonth(), 1, 0, 0, 0, 0);
-}
-
-function fimDoMes(data = new Date()) {
-    return new Date(data.getFullYear(), data.getMonth() + 1, 1, 0, 0, 0, 0);
-}
+function inicioDoMes(data = new Date()) { return new Date(data.getFullYear(), data.getMonth(), 1); }
+function fimDoMes(data = new Date()) { return new Date(data.getFullYear(), data.getMonth() + 1, 1); }
 
 function inicioDaTemporada(data = new Date()) {
     const temporada = lerTemporada();
-    if (temporada.inicio) {
-        const inicio = dataValida(temporada.inicio);
-        if (inicio) return inicio;
-    }
-    return inicioDoMes(data);
+    const inicio = dataValida(temporada.inicio || temporada.dataInicio);
+    return inicio || inicioDoMes(data);
 }
 
-function fimDaTemporada(data = new Date()) {
-    return new Date(data);
-}
+function fimDaTemporada(data = new Date()) { return new Date(data); }
 
 function normalizarId(valor) {
     if (valor === null || valor === undefined) return null;
-    const texto = String(valor);
-    const mencao = texto.match(/^<@!?(\d+)>$/);
-    if (mencao) return mencao[1];
-    return /^\d+$/.test(texto) ? texto : null;
+    const texto = String(valor).replace(/^<@!?(\d+)>$/, '$1');
+    return /^\d{17,20}$/.test(texto) ? texto : null;
 }
-
 function extrairId(valor) {
     if (!valor) return null;
     if (typeof valor === 'string' || typeof valor === 'number') return normalizarId(valor);
@@ -145,168 +106,78 @@ function extrairId(valor) {
     return null;
 }
 
-function numero(valor) {
-    const n = Number(valor);
-    return Number.isFinite(n) ? n : 0;
-}
-
 function garantirJogador(mapa, id) {
     if (!id) return null;
     const jogadorId = String(id);
-    if (!mapa[jogadorId]) {
-        mapa[jogadorId] = { id: jogadorId, partidas: 0, vitorias: 0, derrotas: 0, pontos: 0, pontosGanhos: 0, pontosPerdidos: 0, kills: 0, mortes: 0, continentes: 0, europa: 0, asia: 0, africa: 0, amnorte: 0, amsul: 0, oceania: 0, warCoins: 0, primeiroLugar: 0, segundoLugar: 0 };
-    }
+    mapa[jogadorId] ||= { id: jogadorId, partidas: 0, vitorias: 0, derrotas: 0, pontos: 0, pontosGanhos: 0, pontosPerdidos: 0, kills: 0, mortes: 0, continentes: 0, europa: 0, asia: 0, africa: 0, amnorte: 0, amsul: 0, oceania: 0, warCoins: 0, primeiroLugar: 0, segundoLugar: 0 };
     return mapa[jogadorId];
 }
 
 function participantes(partida) {
     const ids = new Set();
-    for (const jogador of Array.isArray(partida?.jogadoresBrutos) ? partida.jogadoresBrutos : []) {
-        const id = extrairId(jogador); if (id) ids.add(id);
-    }
-    for (const idOriginal of Object.keys(partida?.pontos || {})) {
-        const id = extrairId(idOriginal); if (id) ids.add(id);
-    }
-    for (const chave of ['vencedor', 'segundo', 'segundoLugar', 'runnerUp']) {
-        const id = extrairId(partida?.respostas?.[chave]); if (id) ids.add(id);
-    }
+    for (const jogador of Array.isArray(partida?.jogadoresBrutos) ? partida.jogadoresBrutos : []) { const id = extrairId(jogador); if (id) ids.add(id); }
+    for (const idOriginal of Object.keys(partida?.pontos || {})) { const id = extrairId(idOriginal); if (id) ids.add(id); }
+    for (const chave of ['vencedor', 'segundo', 'segundoLugar', 'runnerUp']) { const id = extrairId(partida?.respostas?.[chave]); if (id) ids.add(id); }
     return [...ids];
 }
 
 function processarPartida(jogadores, registro) {
     const partida = registro?.partida;
-    if (!partida || typeof partida !== 'object') return;
-    if (partida.anulada === true || partida.anulado === true || partida.cancelada === true || partida.cancelado === true) return;
+    if (!partida || partida.anulada || partida.anulado || partida.cancelada || partida.cancelado) return;
     for (const id of participantes(partida)) garantirJogador(jogadores, id).partidas++;
     const vencedor = extrairId(partida?.respostas?.vencedor);
     if (vencedor) garantirJogador(jogadores, vencedor).primeiroLugar++;
     const segundo = extrairId(partida?.respostas?.segundo || partida?.respostas?.segundoLugar || partida?.respostas?.runnerUp);
     if (segundo) garantirJogador(jogadores, segundo).segundoLugar++;
-    const abates = partida?.respostas?.abates;
-    if (Array.isArray(abates)) for (const kill of abates) {
+    for (const kill of Array.isArray(partida?.respostas?.abates) ? partida.respostas.abates : []) {
         const matador = extrairId(kill?.matador || kill?.killer || kill?.atacante || kill?.quemMatou);
         const vitima = extrairId(kill?.vitima || kill?.victim || kill?.morto || kill?.quemMorreu);
         if (matador) garantirJogador(jogadores, matador).kills++;
         if (vitima) garantirJogador(jogadores, vitima).mortes++;
     }
-    const continentes = partida?.respostas?.continentes;
-    if (Array.isArray(continentes)) for (const continente of continentes) {
-        const id = extrairId(continente?.dono || continente?.jogador || continente?.jogadorId || continente?.userId || continente?.conquistador);
+    for (const cont of Array.isArray(partida?.respostas?.continentes) ? partida.respostas.continentes : []) {
+        const id = extrairId(cont?.dono || cont?.jogador || cont?.jogadorId || cont?.userId || cont?.conquistador);
         if (!id) continue;
-        const jogador = garantirJogador(jogadores, id); jogador.continentes++;
-        const nome = String(continente?.cont || continente?.continente || continente?.territorio || '').toLowerCase().trim();
-        if (nome === 'europa' || nome === 'europe') jogador.europa++;
-        else if (nome === 'asia' || nome === 'ásia') jogador.asia++;
-        else if (nome === 'africa' || nome === 'áfrica') jogador.africa++;
-        else if (['amnorte', 'am_norte', 'america_do_norte', 'américa_do_norte'].includes(nome)) jogador.amnorte++;
-        else if (['amsul', 'am_sul', 'america_do_sul', 'américa_do_sul'].includes(nome)) jogador.amsul++;
-        else if (nome === 'oceania' || nome === 'oceânia') jogador.oceania++;
+        const j = garantirJogador(jogadores, id); j.continentes++;
+        const codigo = String(cont?.cont || cont?.continente || cont?.territorio || '').toLowerCase().trim();
+        if (codigo === 'europa' || codigo === 'europe') j.europa++;
+        else if (codigo === 'asia' || codigo === 'ásia') j.asia++;
+        else if (codigo === 'africa' || codigo === 'áfrica') j.africa++;
+        else if (['amnorte', 'am_norte', 'america_do_norte', 'américa_do_norte'].includes(codigo)) j.amnorte++;
+        else if (['amsul', 'am_sul', 'america_do_sul', 'américa_do_sul'].includes(codigo)) j.amsul++;
+        else if (codigo === 'oceania' || codigo === 'oceânia') j.oceania++;
     }
     for (const [idOriginal, dados] of Object.entries(partida.pontos || {})) {
         const id = extrairId(idOriginal); if (!id) continue;
-        const jogador = garantirJogador(jogadores, id);
-        let pontos = 0, wc = 0;
-        if (dados && typeof dados === 'object' && !Array.isArray(dados)) {
-            pontos = numero(dados.ptsLiga ?? dados.pontos ?? dados.pontuacao);
-            wc = numero(dados.wcRecebido ?? dados.warCoins ?? dados.wc);
-        } else pontos = numero(dados);
-        jogador.pontosGanhos += Math.max(0, pontos);
-        jogador.pontosPerdidos += Math.max(0, -pontos);
-        jogador.warCoins += wc;
+        const j = garantirJogador(jogadores, id);
+        const pontos = dados && typeof dados === 'object' ? numero(dados.ptsLiga ?? dados.pontos ?? dados.pontuacao) : numero(dados);
+        const wc = dados && typeof dados === 'object' ? numero(dados.wcRecebido ?? dados.warCoins ?? dados.wc) : 0;
+        j.pontosGanhos += Math.max(0, pontos); j.pontosPerdidos += Math.max(0, -pontos); j.warCoins += wc;
     }
 }
 
 function filtrarRegistros(inicio, fim) {
-    return carregarPartidas()
-        .map(registro => ({ registro, data: dataDaPartida(registro) }))
-        .filter(item => estaNoPeriodo(item.data, inicio, fim))
-        .sort((a, b) => a.data.getTime() - b.data.getTime());
+    return carregarPartidas().map(registro => ({ registro, data: dataDaPartida(registro) })).filter(x => estaNoPeriodo(x.data, inicio, fim)).sort((a, b) => a.data - b.data);
 }
 
 function calcularPeriodo(inicio, fim) {
-    const jogadores = {};
-    const registros = filtrarRegistros(inicio, fim);
+    const jogadores = {}; const registros = filtrarRegistros(inicio, fim);
     for (const item of registros) processarPartida(jogadores, item.registro);
-    for (const jogador of Object.values(jogadores)) {
-        jogador.vitorias = jogador.primeiroLugar;
-        jogador.derrotas = Math.max(0, jogador.partidas - jogador.vitorias);
-        jogador.pontos = jogador.pontosGanhos - jogador.pontosPerdidos;
-        jogador.winrate = jogador.partidas ? Number(((jogador.vitorias / jogador.partidas) * 100).toFixed(2)) : 0;
-    }
+    for (const j of Object.values(jogadores)) { j.vitorias = j.primeiroLugar; j.derrotas = Math.max(0, j.partidas - j.vitorias); j.pontos = j.pontosGanhos - j.pontosPerdidos; j.winrate = j.partidas ? Number(((j.vitorias / j.partidas) * 100).toFixed(2)) : 0; }
     return { inicio, fim, partidas: registros.length, jogadores, registros };
 }
 
 function calcularSemanaAtual(data = new Date()) { return calcularPeriodo(inicioDaSemana(data), fimDaSemana(data)); }
 function calcularMesAtual(data = new Date()) { return calcularPeriodo(inicioDoMes(data), fimDoMes(data)); }
 function calcularTemporadaAtual(data = new Date()) { return calcularPeriodo(inicioDaTemporada(data), fimDaTemporada(data)); }
+function calcularTemporadaAnterior(data = new Date()) { const inicio = new Date(data.getFullYear(), data.getMonth() - 1, 1); const fim = new Date(data.getFullYear(), data.getMonth(), 1); return calcularPeriodo(inicio, fim); }
+function ordenar(periodo, campo, limite = 10) { return Object.values(periodo?.jogadores || {}).sort((a, b) => numero(b[campo]) - numero(a[campo]) || numero(b.pontos) - numero(a.pontos)).slice(0, limite); }
+function melhorJogador(periodo, campo) { return ordenar(periodo, campo, 1)[0] || null; }
+function rankingContinente(periodo, continente, limite = 10) { return Object.values(periodo?.jogadores || {}).filter(j => numero(j[continente]) > 0).sort((a,b) => numero(b[continente])-numero(a[continente]) || numero(b.pontos)-numero(a.pontos)).slice(0, limite); }
+function rankingStreak(periodo, limite = 10) { const atual = {}; for (const item of periodo?.registros || []) { const p = item.registro; const vencedor = extrairId(p?.respostas?.vencedor); for (const id of participantes(p)) { atual[id] ||= { id, streakAtual: 0, maiorStreak: 0, vitorias: 0 }; if (id === vencedor) { atual[id].streakAtual++; atual[id].vitorias++; atual[id].maiorStreak = Math.max(atual[id].maiorStreak, atual[id].streakAtual); } else atual[id].streakAtual = 0; } } return Object.values(atual).sort((a,b)=>b.maiorStreak-a.maiorStreak).slice(0,limite); }
+function calcularEvolucao(atual, anterior) { const ids = new Set([...Object.keys(atual?.jogadores || {}), ...Object.keys(anterior?.jogadores || {})]); return [...ids].map(id => ({ id, pontosAtual: numero(atual?.jogadores?.[id]?.pontos), pontosAnterior: numero(anterior?.jogadores?.[id]?.pontos), variacao: numero(atual?.jogadores?.[id]?.pontos)-numero(anterior?.jogadores?.[id]?.pontos) })).sort((a,b)=>b.variacao-a.variacao); }
+function calcularEvolucaoSemanal(data = new Date()) { const i = inicioDaSemana(data), f = fimDaSemana(data), ai = new Date(i); ai.setDate(ai.getDate()-7); return calcularEvolucao(calcularPeriodo(i,f), calcularPeriodo(ai,i)); }
+function calcularEvolucaoMensal(data = new Date()) { const i = inicioDoMes(data), f = fimDoMes(data), ai = new Date(data.getFullYear(),data.getMonth()-1,1); return calcularEvolucao(calcularPeriodo(i,f), calcularPeriodo(ai,i)); }
+function resumoPeriodo(periodo) { const js = Object.values(periodo?.jogadores || {}); return { partidas: numero(periodo?.partidas), jogadores: js.length, vitorias: js.reduce((s,j)=>s+numero(j.vitorias),0), kills: js.reduce((s,j)=>s+numero(j.kills),0), mortes: js.reduce((s,j)=>s+numero(j.mortes),0), continentes: js.reduce((s,j)=>s+numero(j.continentes),0) }; }
 
-function calcularTemporadaAnterior(data = new Date()) {
-    const inicio = new Date(data.getFullYear(), data.getMonth() - 1, 1, 0, 0, 0, 0);
-    const fim = new Date(data.getFullYear(), data.getMonth(), 1, 0, 0, 0, 0);
-    return calcularPeriodo(inicio, fim);
-}
-
-function ordenar(periodo, propriedade, limite = 10) { return Object.values(periodo?.jogadores || {}).sort((a, b) => numero(b[propriedade]) - numero(a[propriedade])).slice(0, limite); }
-function melhorJogador(periodo, propriedade) { return ordenar(periodo, propriedade, 1)[0] || null; }
-function rankingContinente(periodo, continente, limite = 10) { return ordenar(periodo, continente, limite).filter(j => numero(j[continente]) > 0); }
-
-function calcularStreaks(registros) {
-    const porJogador = {};
-    for (const item of registros || []) {
-        const partida = item.registro?.partida; if (!partida) continue;
-        const vencedor = extrairId(partida?.respostas?.vencedor);
-        for (const id of participantes(partida)) {
-            porJogador[id] ||= { atual: 0, maior: 0, vitorias: 0 };
-            if (id === vencedor) {
-                porJogador[id].atual++; porJogador[id].vitorias++;
-                porJogador[id].maior = Math.max(porJogador[id].maior, porJogador[id].atual);
-            } else porJogador[id].atual = 0;
-        }
-    }
-    return porJogador;
-}
-
-function rankingStreak(periodo, limite = 10) {
-    const streaks = calcularStreaks(periodo?.registros || []);
-    return Object.entries(streaks).map(([id, dados]) => ({ id, streakAtual: dados.atual, maiorStreak: dados.maior, vitorias: dados.vitorias })).sort((a, b) => b.maiorStreak - a.maiorStreak).slice(0, limite);
-}
-
-function calcularEvolucao(atual, anterior) {
-    const ids = new Set([...Object.keys(atual?.jogadores || {}), ...Object.keys(anterior?.jogadores || {})]);
-    return [...ids].map(id => {
-        const pontosAtual = numero(atual?.jogadores?.[id]?.pontos);
-        const pontosAnterior = numero(anterior?.jogadores?.[id]?.pontos);
-        return { id, pontosAtual, pontosAnterior, variacao: pontosAtual - pontosAnterior };
-    }).sort((a, b) => b.variacao - a.variacao);
-}
-
-function calcularEvolucaoSemanal(data = new Date()) {
-    const atualInicio = inicioDaSemana(data), atualFim = fimDaSemana(data);
-    const anteriorInicio = new Date(atualInicio); anteriorInicio.setDate(anteriorInicio.getDate() - 7);
-    return calcularEvolucao(calcularPeriodo(atualInicio, atualFim), calcularPeriodo(anteriorInicio, atualInicio));
-}
-
-function calcularEvolucaoMensal(data = new Date()) {
-    const atualInicio = inicioDoMes(data), atualFim = fimDoMes(data);
-    const anteriorInicio = new Date(data.getFullYear(), data.getMonth() - 1, 1, 0, 0, 0, 0);
-    return calcularEvolucao(calcularPeriodo(atualInicio, atualFim), calcularPeriodo(anteriorInicio, atualInicio));
-}
-
-function resumoPeriodo(periodo) {
-    const jogadores = Object.values(periodo?.jogadores || {});
-    return {
-        partidas: numero(periodo?.partidas), jogadores: jogadores.length,
-        vitorias: jogadores.reduce((t, j) => t + numero(j.vitorias), 0),
-        kills: jogadores.reduce((t, j) => t + numero(j.kills), 0),
-        mortes: jogadores.reduce((t, j) => t + numero(j.mortes), 0),
-        continentes: jogadores.reduce((t, j) => t + numero(j.continentes), 0)
-    };
-}
-
-module.exports = {
-    dataDaPartida, inicioDaSemana, fimDaSemana, inicioDoMes, fimDoMes,
-    inicioDaTemporada, fimDaTemporada, calcularSemanaAtual, calcularMesAtual,
-    calcularTemporadaAtual, calcularTemporadaAnterior, ordenar, melhorJogador,
-    rankingContinente, rankingStreak, calcularEvolucao, calcularEvolucaoSemanal,
-    calcularEvolucaoMensal, resumoPeriodo
-};
+module.exports = { dataDaPartida, inicioDaSemana, fimDaSemana, inicioDoMes, fimDoMes, inicioDaTemporada, fimDaTemporada, calcularSemanaAtual, calcularMesAtual, calcularTemporadaAtual, calcularTemporadaAnterior, ordenar, melhorJogador, rankingContinente, rankingStreak, calcularEvolucao, calcularEvolucaoSemanal, calcularEvolucaoMensal, resumoPeriodo };

@@ -9,6 +9,8 @@ module.exports = {
         territorios: 20
     },
     segundoLugar: 10,
+    terceiroLugar: 5,
+    maisTropas: 5,
     sobrevivencia: 5,
     combate: {
         kill: 10,

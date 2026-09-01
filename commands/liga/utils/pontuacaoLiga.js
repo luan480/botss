@@ -57,6 +57,7 @@ function ehPerfil(valor) {
 
 function carregar(caminho) {
     try {
+        if (typeof caminho !== 'string' || !caminho.trim()) return {};
         if (!fs.existsSync(caminho)) return {};
         const bruto = fs.readFileSync(caminho, 'utf8');
         if (!bruto.trim()) return {};
@@ -70,6 +71,12 @@ function carregar(caminho) {
 
 function salvar(caminho, dados) {
     try {
+        if (typeof caminho !== 'string' || !caminho.trim()) {
+            console.error('[LIGA] Caminho inválido para salvar JSON.');
+            return false;
+        }
+        const diretorio = path.dirname(caminho);
+        fs.mkdirSync(diretorio, { recursive: true });
         fs.writeFileSync(caminho, JSON.stringify(dados, null, 2) + '\n', 'utf8');
         return true;
     } catch (erro) {
@@ -352,6 +359,8 @@ module.exports = {
     salvar,
     paraFormatoAntigo,
     prepararFormatoAntigo,
+    normalizarPerfil,
+    normalizarTodos,
     paraFormatoEstruturado,
     sincronizarArquivo,
     calcularEstatisticasTemporada

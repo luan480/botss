@@ -1,13 +1,12 @@
 /* ========================================================================
-   LIGA DAS NAÇÕES — ESTADO DA PONTUAÇÃO DA TEMPORADA
+   WORLDWARBR — LIGA DAS NAÇÕES
+   ESTADO / NORMALIZAÇÃO DA PONTUAÇÃO
 
-   Fonte de verdade:
-   - partidas.json = histórico completo das partidas e estatísticas
-   - pontuacao.json = saldo de pontos + perfil da temporada
-   - temporada.json = período da temporada atual
-
-   Este módulo também mantém compatibilidade com o motor legado, que usa
-   o formato { "discordId": pontos } durante o processamento da partida.
+   REGRA PRINCIPAL:
+   - partidas.json é a fonte de verdade para partidas, vitórias, kills,
+     mortes, continentes e pontos de partidas.
+   - pontuacao.json guarda o saldo atual da temporada e pode ser reconstruído.
+   - Nenhuma função de leitura converte o arquivo no disco entre formatos.
    ======================================================================== */
 
 const fs = require('fs');
@@ -16,6 +15,7 @@ const path = require('path');
 const PONTUACAO_PADRAO = path.join(__dirname, '..', 'pontuacao.json');
 const PARTIDAS_PADRAO = path.join(__dirname, '..', 'partidas.json');
 const TEMPORADA_PADRAO = path.join(__dirname, '..', 'temporada.json');
+const configPontos = require('./configPontos.js');
 
 function numero(valor) {
     const n = Number(valor);
@@ -80,29 +80,28 @@ function ehPerfil(valor) {
 
 function carregar(caminho) {
     try {
-        if (typeof caminho !== 'string' || !caminho.trim()) return {};
+        if (!caminho || typeof caminho !== 'string') return {};
         if (!fs.existsSync(caminho)) return {};
         const bruto = fs.readFileSync(caminho, 'utf8');
         if (!bruto.trim()) return {};
         const dados = JSON.parse(bruto);
         return dados && typeof dados === 'object' ? dados : {};
     } catch (erro) {
-        console.error('[LIGA] Erro ao ler JSON:', caminho, erro);
+        console.error('[LIGA] Erro ao ler JSON:', caminho, erro.message);
         return {};
     }
 }
 
 function salvar(caminho, dados) {
     try {
-        if (typeof caminho !== 'string' || !caminho.trim()) {
-            console.error('[LIGA] Caminho inválido para salvar JSON.');
-            return false;
-        }
+        if (!caminho || typeof caminho !== 'string') return false;
         fs.mkdirSync(path.dirname(caminho), { recursive: true });
-        fs.writeFileSync(caminho, JSON.stringify(dados, null, 2) + '\n', 'utf8');
+        const tmp = `${caminho}.tmp`;
+        fs.writeFileSync(tmp, `${JSON.stringify(dados, null, 2)}\n`, 'utf8');
+        fs.renameSync(tmp, caminho);
         return true;
     } catch (erro) {
-        console.error('[LIGA] Erro ao salvar JSON:', caminho, erro);
+        console.error('[LIGA] Erro ao salvar JSON:', caminho, erro.message);
         return false;
     }
 }
@@ -114,9 +113,11 @@ function estaEstruturado(dados) {
 function paraFormatoAntigo(dados) {
     const antigo = {};
     for (const [idOriginal, valor] of Object.entries(dados || {})) {
-        const id = idDe(idOriginal) || String(idOriginal);
-        if (!idValido(id)) continue;
-        antigo[id] = ehPerfil(valor) ? numero(valor.pontos) : numero(valor);
+        const id = idDe(idOriginal);
+        if (!id) continue;
+        antigo[id] = ehPerfil(valor)
+            ? numero(valor.pontos ?? valor.ptsLiga ?? valor.pontuacao)
+            : numero(valor);
     }
     return antigo;
 }
@@ -160,8 +161,12 @@ function normalizarPerfil(id, perfil, nomeFallback) {
 
 function lerPartidas(partidasPath = PARTIDAS_PADRAO) {
     const dados = carregar(partidasPath);
-    if (Array.isArray(dados)) return dados.map((partida, i) => ({ id: String(i), partida }));
-    if (Array.isArray(dados?.partidas)) return dados.partidas.map((partida, i) => ({ id: String(i), partida }));
+    if (Array.isArray(dados)) {
+        return dados.map((partida, i) => ({ id: String(i), partida }));
+    }
+    if (Array.isArray(dados?.partidas)) {
+        return dados.partidas.map((partida, i) => ({ id: String(i), partida }));
+    }
     return Object.entries(dados || {}).map(([id, partida]) => ({ id: String(id), partida }));
 }
 
@@ -199,8 +204,19 @@ function dataDaPartida(registro) {
 
 function inicioTemporada(temporadaPath = TEMPORADA_PADRAO) {
     const temporada = carregar(temporadaPath);
-    const ms = new Date(temporada.inicio || 0).getTime();
-    return Number.isFinite(ms) && ms > 0 ? ms : 0;
+    const inicio = new Date(temporada.inicio || temporada.dataInicio || 0).getTime();
+    return Number.isFinite(inicio) && inicio > 0 ? inicio : 0;
+}
+
+function temporadaIdAtual(temporadaPath = TEMPORADA_PADRAO) {
+    const temporada = carregar(temporadaPath);
+    return String(
+        temporada.id ||
+        temporada.nome ||
+        temporada.codigo ||
+        temporada.inicio ||
+        'temporada-atual'
+    );
 }
 
 function estaNaTemporada(registro, inicioMs) {
@@ -209,41 +225,123 @@ function estaNaTemporada(registro, inicioMs) {
     return ts === null || ts >= inicioMs;
 }
 
+function anulada(partida) {
+    return Boolean(
+        partida?.anulada ||
+        partida?.anulado ||
+        partida?.cancelada ||
+        partida?.cancelado
+    );
+}
+
 function nomeDosJogadores(registros) {
     const nomes = {};
     for (const { partida } of registros) {
-        for (const jogador of partida?.jogadoresBrutos || []) {
+        for (const jogador of partida?.jogadoresBrutos || partida?.jogadores || []) {
             const id = idDe(jogador);
-            if (id && jogador?.username) nomes[id] = jogador.username;
+            if (id && (jogador?.username || jogador?.nome)) {
+                nomes[id] = jogador.username || jogador.nome;
+            }
         }
     }
     return nomes;
 }
 
-function perfilTemporada(id, nome) {
-    return criarPerfil(id, nome);
-}
-
 function garantir(perfis, id, nome) {
     if (!idValido(id)) return null;
-    if (!perfis[id]) perfis[id] = perfilTemporada(id, nome);
+    if (!perfis[id]) perfis[id] = criarPerfil(id, nome);
     if (nome && perfis[id].nome === 'Desconhecido') perfis[id].nome = String(nome);
     return perfis[id];
 }
 
+function jogadoresDaPartida(partida) {
+    if (Array.isArray(partida?.jogadoresBrutos)) return partida.jogadoresBrutos;
+    if (Array.isArray(partida?.jogadores)) return partida.jogadores;
+    return [];
+}
+
+function obterRespostas(partida) {
+    return partida?.respostas || partida?.resultado || {};
+}
+
+function pontuacaoPersistida(partida, id) {
+    const dados = partida?.pontos?.[id] ?? partida?.pontos?.[String(id)];
+    if (dados === undefined) return null;
+    if (dados && typeof dados === 'object') {
+        return numero(dados.ptsLiga ?? dados.pontos ?? dados.pontuacao);
+    }
+    return numero(dados);
+}
+
+function calcularPontosDaPartida(partida) {
+    const respostas = obterRespostas(partida);
+    const jogadores = jogadoresDaPartida(partida)
+        .map(j => idDe(j))
+        .filter(Boolean);
+    const tabela = Object.fromEntries(jogadores.map(id => [id, 0]));
+
+    const vencedor = idDe(respostas.vencedor || respostas.winner || respostas.ganhador);
+    const segundo = idDe(respostas.segundo || respostas.segundoLugar || respostas.runnerUp);
+    const terceiro = idDe(respostas.terceiro || respostas.terceiroLugar);
+    const maisTropas = idDe(respostas.maisTropas || respostas.maiorTropas || respostas.tropas);
+
+    if (vencedor && tabela[vencedor] !== undefined) {
+        tabela[vencedor] += respostas.modo === 'objetivo'
+            ? numero(configPontos.vitoria.objetivo)
+            : numero(configPontos.vitoria.territorios);
+    }
+    if (segundo && tabela[segundo] !== undefined) tabela[segundo] += numero(configPontos.segundoLugar);
+    if (terceiro && tabela[terceiro] !== undefined) tabela[terceiro] += numero(configPontos.terceiroLugar);
+    if (maisTropas && tabela[maisTropas] !== undefined) tabela[maisTropas] += numero(configPontos.maisTropas);
+
+    const continentes = Array.isArray(respostas.continentes)
+        ? respostas.continentes
+        : (Array.isArray(respostas.territorios) ? respostas.territorios : []);
+    for (const continente of continentes) {
+        const dono = idDe(continente?.dono || continente?.jogador || continente?.jogadorId || continente?.userId);
+        const codigo = String(continente?.cont || continente?.continente || '').toLowerCase();
+        if (!dono || tabela[dono] === undefined) continue;
+        const cfg = configPontos.continentes?.[codigo];
+        if (cfg) tabela[dono] += numero(cfg.pontos);
+    }
+
+    const abates = Array.isArray(respostas.abates) ? respostas.abates : [];
+    const mortos = new Set();
+    for (const abate of abates) {
+        const matador = idDe(abate?.matador || abate?.killer || abate?.atacante);
+        const vitima = idDe(abate?.vitima || abate?.victim || abate?.morto);
+        if (matador && tabela[matador] !== undefined) tabela[matador] += numero(configPontos.combate.kill);
+        if (vitima && tabela[vitima] !== undefined) {
+            tabela[vitima] += numero(configPontos.combate.morte);
+            mortos.add(vitima);
+        }
+    }
+
+    for (const id of jogadores) {
+        if (!mortos.has(id)) tabela[id] += numero(configPontos.sobrevivencia);
+    }
+
+    return tabela;
+}
+
+function pontosDaPartida(partida, id) {
+    const persistido = pontuacaoPersistida(partida, id);
+    if (persistido !== null) return persistido;
+    return numero(calcularPontosDaPartida(partida)[id]);
+}
+
 function adicionarParticipantes(perfis, partida, nomes) {
-    for (const jogador of partida?.jogadoresBrutos || []) {
+    for (const jogador of jogadoresDaPartida(partida)) {
         const id = idDe(jogador);
         if (!id) continue;
-        const perfil = garantir(perfis, id, jogador.username || nomes[id]);
-        if (perfil) perfil.partidas++;
+        garantir(perfis, id, jogador.username || jogador.nome || nomes[id]);
+        perfis[id].partidas++;
     }
 }
 
 function adicionarResultado(perfis, partida, nomes) {
-    const respostas = partida?.respostas || {};
+    const respostas = obterRespostas(partida);
     const vencedor = idDe(respostas.vencedor || respostas.winner || respostas.ganhador);
-    const segundo = idDe(respostas.segundo || respostas.segundoLugar || respostas.runnerUp);
     const terceiro = idDe(respostas.terceiro || respostas.terceiroLugar);
     const tropas = idDe(respostas.maisTropas || respostas.maiorTropas || respostas.tropas);
 
@@ -251,27 +349,21 @@ function adicionarResultado(perfis, partida, nomes) {
     if (terceiro) garantir(perfis, terceiro, nomes[terceiro]).terceiroLugar++;
     if (tropas) garantir(perfis, tropas, nomes[tropas]).maisTropas++;
 
-    const abates = Array.isArray(respostas.abates)
-        ? respostas.abates
-        : (Array.isArray(respostas.kills) ? respostas.kills : []);
-
+    const abates = Array.isArray(respostas.abates) ? respostas.abates : [];
     for (const kill of abates) {
-        const matador = idDe(kill?.matador || kill?.killer || kill?.atacante || kill?.quemMatou);
-        const vitima = idDe(kill?.vitima || kill?.victim || kill?.morto || kill?.quemMorreu);
+        const matador = idDe(kill?.matador || kill?.killer || kill?.atacante);
+        const vitima = idDe(kill?.vitima || kill?.victim || kill?.morto);
         if (matador) garantir(perfis, matador, nomes[matador]).kills++;
         if (vitima) garantir(perfis, vitima, nomes[vitima]).mortes++;
     }
 
-    const continentes = Array.isArray(respostas.continentes)
-        ? respostas.continentes
-        : (Array.isArray(respostas.territorios) ? respostas.territorios : []);
-
+    const continentes = Array.isArray(respostas.continentes) ? respostas.continentes : [];
     for (const continente of continentes) {
-        const id = idDe(continente?.dono || continente?.jogador || continente?.jogadorId || continente?.userId || continente?.conquistador);
+        const id = idDe(continente?.dono || continente?.jogador || continente?.jogadorId || continente?.userId);
         if (!id) continue;
         const perfil = garantir(perfis, id, nomes[id]);
         perfil.continentes++;
-        const codigo = String(continente?.cont || continente?.continente || continente?.territorio || '').toLowerCase().trim();
+        const codigo = String(continente?.cont || continente?.continente || '').toLowerCase().trim();
         if (codigo === 'europa' || codigo === 'europe') perfil.continentesDetalhes.europa++;
         else if (codigo === 'asia' || codigo === 'ásia') perfil.continentesDetalhes.asia++;
         else if (codigo === 'africa' || codigo === 'áfrica') perfil.continentesDetalhes.africa++;
@@ -280,31 +372,34 @@ function adicionarResultado(perfis, partida, nomes) {
         else if (codigo === 'oceania' || codigo === 'oceânia') perfil.continentesDetalhes.oceania++;
     }
 
-    for (const [idOriginal, dados] of Object.entries(partida?.pontos || {})) {
-        const id = idDe(idOriginal);
+    for (const jogador of jogadoresDaPartida(partida)) {
+        const id = idDe(jogador);
         if (!id) continue;
         const perfil = garantir(perfis, id, nomes[id]);
-        const pontos = dados && typeof dados === 'object' && !Array.isArray(dados)
-            ? numero(dados.ptsLiga ?? dados.pontos ?? dados.pontuacao)
-            : numero(dados);
-        const wc = dados && typeof dados === 'object' && !Array.isArray(dados)
-            ? numero(dados.wcRecebido ?? dados.warCoins ?? dados.wc)
-            : 0;
-        perfil.pontosGanhos += Math.max(0, pontos);
-        perfil.pontosPerdidos += Math.max(0, -pontos);
-        perfil.warCoins += wc;
+        const pontos = pontosDaPartida(partida, id);
+        perfil.pontos += pontos;
+        if (pontos >= 0) perfil.pontosGanhos += pontos;
+        else perfil.pontosPerdidos += Math.abs(pontos);
+
+        const dadosPersistidos = partida?.pontos?.[id];
+        if (dadosPersistidos && typeof dadosPersistidos === 'object') {
+            perfil.warCoins += numero(dadosPersistidos.wcRecebido ?? dadosPersistidos.warCoins ?? dadosPersistidos.wc);
+        } else if (pontos > 0) {
+            perfil.warCoins += pontos * 100;
+        }
     }
 }
 
 function calcularEstatisticasTemporada(partidasPath = PARTIDAS_PADRAO, temporadaPath = TEMPORADA_PADRAO) {
-    const registros = lerPartidas(partidasPath)
-        .filter(r => !r.partida?.anulada && !r.partida?.anulado && !r.partida?.cancelada && !r.partida?.cancelado);
     const inicioMs = inicioTemporada(temporadaPath);
-    const atuais = registros.filter(r => estaNaTemporada(r, inicioMs));
-    const nomes = nomeDosJogadores(atuais);
+    const registros = lerPartidas(partidasPath)
+        .filter(r => r.partida && !anulada(r.partida))
+        .filter(r => estaNaTemporada(r, inicioMs));
+
+    const nomes = nomeDosJogadores(registros);
     const perfis = {};
 
-    for (const registro of atuais) {
+    for (const registro of registros) {
         adicionarParticipantes(perfis, registro.partida, nomes);
         adicionarResultado(perfis, registro.partida, nomes);
     }
@@ -319,105 +414,64 @@ function calcularEstatisticasTemporada(partidasPath = PARTIDAS_PADRAO, temporada
     return perfis;
 }
 
-/*
- * Normaliza perfis e, quando existe o histórico, reconstrói as estatísticas
- * da temporada. Assim um pontuacao.json antigo/stale não consegue esconder
- * partidas, kills, mortes, continentes ou WarCoins no painel.
- */
 function normalizarTodos(dados, partidasPath = PARTIDAS_PADRAO, temporadaPath = TEMPORADA_PADRAO) {
-    const atuais = calcularEstatisticasTemporada(partidasPath, temporadaPath);
+    const historico = calcularEstatisticasTemporada(partidasPath, temporadaPath);
     const resultado = {};
 
     for (const [idOriginal, valor] of Object.entries(dados || {})) {
         const id = idDe(idOriginal);
         if (!id) continue;
-        const perfilSalvo = normalizarPerfil(id, valor, valor?.nome);
-        const historico = atuais[id];
+        const salvo = normalizarPerfil(id, valor, valor?.nome);
+        const h = historico[id];
 
-        if (historico) {
-            resultado[id] = {
-                ...perfilSalvo,
-                nome: historico.nome !== 'Desconhecido' ? historico.nome : perfilSalvo.nome,
-                vitorias: historico.vitorias,
-                derrotas: historico.derrotas,
-                partidas: historico.partidas,
-                kills: historico.kills,
-                mortes: historico.mortes,
-                continentes: historico.continentes,
-                continentesDetalhes: historico.continentesDetalhes,
-                terceiroLugar: historico.terceiroLugar,
-                maisTropas: historico.maisTropas,
-                warCoins: historico.warCoins,
-                pontosGanhos: historico.pontosGanhos,
-                pontosPerdidos: historico.pontosPerdidos,
-                winrate: historico.winrate
-            };
-        } else {
-            resultado[id] = perfilSalvo;
-        }
+        resultado[id] = h
+            ? { ...salvo, ...h, id, pontos: h.pontos }
+            : salvo;
     }
 
-    // Inclui jogadores que aparecem no histórico mesmo que o perfil antigo
-    // tenha sido apagado/zerado.
-    for (const [id, historico] of Object.entries(atuais)) {
-        if (!resultado[id]) {
-            resultado[id] = {
-                ...historico,
-                pontos: 0
-            };
-        }
+    for (const [id, h] of Object.entries(historico)) {
+        if (!resultado[id]) resultado[id] = { ...h, id, pontos: h.pontos };
     }
 
     return resultado;
 }
 
 function paraFormatoEstruturado(legacy, partidasPath = PARTIDAS_PADRAO, temporadaPath = TEMPORADA_PADRAO) {
-    const perfis = calcularEstatisticasTemporada(partidasPath, temporadaPath);
+    const historico = calcularEstatisticasTemporada(partidasPath, temporadaPath);
+    const ids = new Set([
+        ...Object.keys(historico),
+        ...Object.keys(legacy || {}).map(id => idDe(id)).filter(Boolean)
+    ]);
 
-    for (const [idOriginal, valor] of Object.entries(legacy || {})) {
-        const id = idDe(idOriginal);
-        if (!id) continue;
-        const perfil = perfis[id] ||= criarPerfil(id);
-        perfil.pontos = numero(valor);
-    }
-
-    return Object.fromEntries(Object.entries(perfis).map(([id, perfil]) => [id, {
-        id,
-        nome: perfil.nome || 'Desconhecido',
-        pontos: numero(perfil.pontos),
-        pontosGanhos: numero(perfil.pontosGanhos),
-        pontosPerdidos: numero(perfil.pontosPerdidos),
-        vitorias: numero(perfil.vitorias),
-        derrotas: numero(perfil.derrotas),
-        partidas: numero(perfil.partidas),
-        kills: numero(perfil.kills),
-        mortes: numero(perfil.mortes),
-        continentes: numero(perfil.continentes),
-        continentesDetalhes: normalizarContinentes(perfil),
-        terceiroLugar: numero(perfil.terceiroLugar),
-        maisTropas: numero(perfil.maisTropas),
-        warCoins: numero(perfil.warCoins),
-        winrate: numero(perfil.winrate)
-    }]));
+    return Object.fromEntries([...ids].map(id => {
+        const h = historico[id] || criarPerfil(id);
+        const salvo = legacy?.[id];
+        return [id, {
+            ...criarPerfil(id, h.nome),
+            ...h,
+            id,
+            nome: h.nome || (ehPerfil(salvo) ? salvo.nome : 'Desconhecido'),
+            pontos: historico[id] ? h.pontos : numero(ehPerfil(salvo) ? salvo.pontos : salvo)
+        }];
+    }));
 }
 
+/* Compatibilidade: NÃO grava nada no disco. */
 function prepararFormatoAntigo(pontuacaoPath = PONTUACAO_PADRAO) {
-    const dados = carregar(pontuacaoPath);
-    if (!estaEstruturado(dados)) return dados;
-    const antigo = paraFormatoAntigo(dados);
-    salvar(pontuacaoPath, antigo);
-    return antigo;
+    return paraFormatoAntigo(carregar(pontuacaoPath));
 }
 
+/* Reconstrói e grava explicitamente. Use somente em comandos de manutenção. */
 function sincronizarArquivo(
     pontuacaoPath = PONTUACAO_PADRAO,
     partidasPath = PARTIDAS_PADRAO,
     temporadaPath = TEMPORADA_PADRAO
 ) {
     const atual = carregar(pontuacaoPath);
-    const legacy = estaEstruturado(atual) ? paraFormatoAntigo(atual) : atual;
-    const estruturado = paraFormatoEstruturado(legacy, partidasPath, temporadaPath);
-    salvar(pontuacaoPath, estruturado);
+    const estruturado = paraFormatoEstruturado(atual, partidasPath, temporadaPath);
+    if (!salvar(pontuacaoPath, estruturado)) {
+        throw new Error('Não foi possível sincronizar pontuacao.json.');
+    }
     return estruturado;
 }
 
@@ -436,5 +490,9 @@ module.exports = {
     normalizarTodos,
     paraFormatoEstruturado,
     sincronizarArquivo,
-    calcularEstatisticasTemporada
+    calcularEstatisticasTemporada,
+    calcularPontosDaPartida,
+    pontosDaPartida,
+    temporadaIdAtual,
+    dataDaPartida
 };

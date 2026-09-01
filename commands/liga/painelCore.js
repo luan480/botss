@@ -1,8 +1,5 @@
 /* ========================================================================
    PAINEL PRINCIPAL DA LIGA DAS NAÇÕES
-
-   Fonte da pontuação: pontuacao.json da temporada atual.
-   Nunca usa progressao.json como fonte do ranking da temporada.
    ======================================================================== */
 
 const {
@@ -20,16 +17,19 @@ const {
 
 const fs = require('fs');
 const path = require('path');
-const { safeReadJson } = require('./utils/helpers.js');
+const { safeReadJson, safeWriteJson } = require('./utils/helpers.js');
 const pontuacaoLiga = require('./utils/pontuacaoLiga.js');
 
-const pontuacaoPath = path.join(__dirname, 'pontuacao.json');
-const painelPath = path.join(__dirname, 'painel.json');
+const base = __dirname;
+const pontuacaoPath = path.join(base, 'pontuacao.json');
+const partidasPath = path.join(base, 'partidas.json');
+const temporadaPath = path.join(base, 'temporada.json');
+const painelPath = path.join(base, 'painel.json');
 const CANAL_PAINEL_LIGA = '1543636868682354748';
 
 function rankingAtual() {
     const dados = safeReadJson(pontuacaoPath) || {};
-    const perfis = pontuacaoLiga.normalizarTodos(dados);
+    const perfis = pontuacaoLiga.normalizarTodos(dados, partidasPath, temporadaPath);
 
     return Object.values(perfis)
         .map(j => ({
@@ -39,15 +39,12 @@ function rankingAtual() {
             vitorias: Number(j.vitorias) || 0,
             partidas: Number(j.partidas) || 0
         }))
-        .filter(j =>
-            j.pontos !== 0 ||
-            j.vitorias > 0 ||
-            j.partidas > 0
-        )
+        .filter(j => j.partidas > 0 || j.pontos !== 0 || j.vitorias > 0)
         .sort((a, b) =>
             b.pontos - a.pontos ||
             b.vitorias - a.vitorias ||
-            b.partidas - a.partidas
+            b.partidas - a.partidas ||
+            String(a.id).localeCompare(String(b.id))
         );
 }
 
@@ -56,33 +53,25 @@ module.exports = async function criarPainelDashboard(guild, canalId) {
 
     const canalFinal = String(canalId || CANAL_PAINEL_LIGA);
     const canal = await guild.channels.fetch(canalFinal).catch(() => null);
-
     if (!canal) throw new Error(`Canal ${canalFinal} não encontrado.`);
     if (!canal.isTextBased()) throw new Error('O canal informado não é de texto.');
 
     const ranking = rankingAtual();
-
     const linha = (j, emoji, posicao) =>
-        j
-            ? `${emoji} **${posicao}º** <@${j.id}> — **${j.pontos} pts**`
-            : `${emoji} **${posicao}º** ⏳ *Vago*`;
+        j ? `${emoji} **${posicao}º** <@${j.id}> — **${j.pontos} pts**` : `${emoji} **${posicao}º** ⏳ *Vago*`;
 
     const containerPainel = new ContainerBuilder()
         .setAccentColor(0x9B59B6)
         .addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(
-                `### 🏆 LIGA DAS NAÇÕES 🏆\n🔥 **A Liga War Grow está ativa!**`
-            )
+            new TextDisplayBuilder().setContent('### 🏆 LIGA DAS NAÇÕES 🏆\n🔥 **A Liga War Grow está ativa!**')
         )
         .addSeparatorComponents(
-            new SeparatorBuilder()
-                .setDivider(true)
-                .setSpacing(SeparatorSpacingSize.Small)
+            new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small)
         )
         .addTextDisplayComponents(
             new TextDisplayBuilder().setContent(
                 `📆 **Temporada atual**\n` +
-                `⚔️ **Somente pontuação da temporada atual é exibida.**\n\n` +
+                `⚔️ **Pontuação calculada pelo histórico válido da temporada.**\n\n` +
                 `__**PREMIAÇÃO:**__\n` +
                 `🥇 **1º Lugar:** R$ 30,00 + <@&1429934221216186458>\n` +
                 `🥈 **2º Lugar:** R$ 20,00 + <@&938174095470772305>\n` +
@@ -90,9 +79,7 @@ module.exports = async function criarPainelDashboard(guild, canalId) {
             )
         )
         .addSeparatorComponents(
-            new SeparatorBuilder()
-                .setDivider(true)
-                .setSpacing(SeparatorSpacingSize.Small)
+            new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small)
         )
         .addTextDisplayComponents(
             new TextDisplayBuilder().setContent(
@@ -103,72 +90,36 @@ module.exports = async function criarPainelDashboard(guild, canalId) {
             )
         )
         .addSeparatorComponents(
-            new SeparatorBuilder()
-                .setDivider(true)
-                .setSpacing(SeparatorSpacingSize.Small)
+            new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small)
         )
         .addMediaGalleryComponents(
             new MediaGalleryBuilder().addItems(
-                new MediaGalleryItemBuilder().setURL(
-                    'https://cdn.discordapp.com/attachments/1082774011676729365/1283426407313182803/WAR.gif'
-                )
+                new MediaGalleryItemBuilder().setURL('https://cdn.discordapp.com/attachments/1082774011676729365/1283426407313182803/WAR.gif')
             )
         )
         .addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(
-                `📖 **GUIA DA LIGA:** regras, registro de partidas e pontuação.`
-            )
+            new TextDisplayBuilder().setContent('📖 **GUIA DA LIGA:** regras, registro de partidas e pontuação.')
         );
 
     const row = new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-            .setCustomId('iniciar_contabilizacao')
-            .setLabel('Contabilizar')
-            .setEmoji('▶️')
-            .setStyle(ButtonStyle.Primary),
-        new ButtonBuilder()
-            .setCustomId('ver_ranking')
-            .setLabel('Ver Ranking')
-            .setEmoji('🏆')
-            .setStyle(ButtonStyle.Success),
-        new ButtonBuilder()
-            .setCustomId('estatisticas_selecionar')
-            .setLabel('Estatísticas')
-            .setEmoji('📊')
-            .setStyle(ButtonStyle.Primary),
-        new ButtonBuilder()
-            .setCustomId('liga_guia')
-            .setLabel('Guia da Liga')
-            .setEmoji('📖')
-            .setStyle(ButtonStyle.Secondary)
+        new ButtonBuilder().setCustomId('iniciar_contabilizacao').setLabel('Contabilizar').setEmoji('▶️').setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId('ver_ranking').setLabel('Ver Ranking').setEmoji('🏆').setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId('estatisticas_selecionar').setLabel('Estatísticas').setEmoji('📊').setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId('liga_guia').setLabel('Guia da Liga').setEmoji('📖').setStyle(ButtonStyle.Secondary)
     );
 
     const painelData = safeReadJson(painelPath) || {};
     let painelMsg = null;
+    if (painelData.messageId) painelMsg = await canal.messages.fetch(painelData.messageId).catch(() => null);
 
-    if (painelData.messageId) {
-        painelMsg = await canal.messages.fetch(painelData.messageId).catch(() => null);
-    }
-
-    const payload = {
-        flags: MessageFlags.IsComponentsV2,
-        components: [containerPainel, row]
-    };
+    const payload = { flags: MessageFlags.IsComponentsV2, components: [containerPainel, row] };
 
     if (painelMsg) {
         await painelMsg.edit(payload);
-        console.log('[Painel] Painel da Liga atualizado.');
         return painelMsg;
     }
 
     const novaMensagem = await canal.send(payload);
-
-    fs.writeFileSync(
-        painelPath,
-        JSON.stringify({ messageId: novaMensagem.id }, null, 2) + '\n',
-        'utf8'
-    );
-
-    console.log('[Painel] Novo painel da Liga criado.');
+    safeWriteJson(painelPath, { messageId: novaMensagem.id });
     return novaMensagem;
 };

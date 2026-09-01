@@ -10,11 +10,39 @@ const {
     StringSelectMenuBuilder
 } = require('discord.js');
 
+const fs = require('fs');
+const path = require('path');
+
+const PONTUACAO_PATH = path.join(__dirname, '..', 'pontuacao.json');
+
+function lerPontuacaoAtual() {
+    try {
+        if (!fs.existsSync(PONTUACAO_PATH)) return {};
+        const conteudo = fs.readFileSync(PONTUACAO_PATH, 'utf8').trim();
+        if (!conteudo) return {};
+        const dados = JSON.parse(conteudo);
+        return dados && typeof dados === 'object' ? dados : {};
+    } catch (erro) {
+        console.error('[LIGA] Erro lendo pontuacao.json para os menus:', erro.message);
+        return {};
+    }
+}
+
+// Mostra a pontuação ATUAL da Liga diretamente de pontuacao.json.
+// Assim, depois de um reset, a seleção passa a mostrar 0 pts sem reutilizar
+// vitórias antigas do sistema de promoção.
+function labelJogador(jogador, pontuacao = lerPontuacaoAtual()) {
+    const pontos = Number(pontuacao[jogador.id]) || 0;
+    return `${jogador.username} 🏆 ${pontos} pts`.slice(0, 100);
+}
+
 module.exports = {
     // ==========================================
     // ⚡ FASE 1: MODO + VENCEDOR + 2º LUGAR
     // ==========================================
     criarPainelFase1: (jogadoresInfo, respostas) => {
+        const pontuacao = lerPontuacaoAtual();
+
         const rowModo = new ActionRowBuilder().addComponents(
             new StringSelectMenuBuilder()
                 .setCustomId('sel_modo')
@@ -43,7 +71,7 @@ module.exports = {
                 .setPlaceholder('🥇 2. Selecione o Vencedor...')
                 .addOptions(
                     jogadoresInfo.map(j => ({
-                        label: j.label,
+                        label: labelJogador(j, pontuacao),
                         value: j.id,
                         default: respostas.vencedor === j.id
                     }))
@@ -61,7 +89,7 @@ module.exports = {
         jogadoresInfo.forEach(j => {
             if (j.id !== respostas.vencedor) {
                 opcoesSegundo.push({
-                    label: j.label,
+                    label: labelJogador(j, pontuacao),
                     value: j.id,
                     default: respostas.segundo === j.id
                 });
@@ -94,10 +122,12 @@ module.exports = {
     // 🏅 FASE 1B: 3º LUGAR + MAIS TROPAS
     // ==========================================
     criarPainelFase1Extras: (jogadoresInfo, respostas) => {
+        const pontuacao = lerPontuacaoAtual();
+
         const opcoesTerceiro = jogadoresInfo
             .filter(j => j.id !== respostas.vencedor && j.id !== respostas.segundo)
             .map(j => ({
-                label: j.label,
+                label: labelJogador(j, pontuacao),
                 value: j.id,
                 default: respostas.terceiro === j.id
             }));
@@ -115,7 +145,7 @@ module.exports = {
                 .setPlaceholder('⚔️ 5. Quem terminou com mais tropas?')
                 .addOptions(
                     jogadoresInfo.map(j => ({
-                        label: j.label,
+                        label: labelJogador(j, pontuacao),
                         value: j.id,
                         default: respostas.maisTropas === j.id
                     }))
@@ -161,13 +191,15 @@ module.exports = {
     },
 
     criarMenuMatador: jogadoresInfo => {
+        const pontuacao = lerPontuacaoAtual();
+
         return new ActionRowBuilder().addComponents(
             new StringSelectMenuBuilder()
                 .setCustomId('sel_matador_lote')
                 .setPlaceholder('🔫 Selecione QUEM MATOU...')
                 .addOptions(
                     jogadoresInfo.map(j => ({
-                        label: j.label,
+                        label: labelJogador(j, pontuacao),
                         value: j.id
                     }))
                 )
@@ -175,10 +207,12 @@ module.exports = {
     },
 
     criarMenuMultiplasVitimas: (jogadoresValidosInfo, matadorId) => {
+        const pontuacao = lerPontuacaoAtual();
+
         const opcoes = jogadoresValidosInfo
             .filter(j => j.id !== matadorId)
             .map(j => ({
-                label: j.label,
+                label: labelJogador(j, pontuacao),
                 value: j.id,
                 description: 'Marcar como eliminado na partida'
             }));
@@ -221,13 +255,15 @@ module.exports = {
     },
 
     criarMenuDonoContinente: jogadoresVivosInfo => {
+        const pontuacao = lerPontuacaoAtual();
+
         return new ActionRowBuilder().addComponents(
             new StringSelectMenuBuilder()
                 .setCustomId('sel_dono_cont_lote')
                 .setPlaceholder('🚩 Selecione quem dominou...')
                 .addOptions(
                     jogadoresVivosInfo.map(j => ({
-                        label: j.label,
+                        label: labelJogador(j, pontuacao),
                         value: j.id,
                         description: 'Apenas jogadores vivos aparecem aqui'
                     }))

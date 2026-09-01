@@ -40,7 +40,7 @@ module.exports = {
         const temporadaPath = path.join(__dirname, 'temporada.json');
 
         const dados = pontuacaoLiga.carregar(pontuacaoPath);
-        const ranking = pontuacaoLiga.normalizarTodos(dados);
+        const ranking = pontuacaoLiga.normalizarTodos(dados, partidasPath, temporadaPath);
         const subcommand = interaction.options.getSubcommand();
         const targetUser = interaction.options.getUser('jogador');
         const quantidade = interaction.options.getInteger('quantidade');
@@ -54,16 +54,14 @@ module.exports = {
         const pontosAtuais = Number(ranking[idJogador].pontos) || 0;
 
         let novoTotal = pontosAtuais;
-        if (subcommand === 'adicionar') {
-            novoTotal = pontosAtuais + quantidade;
-        } else if (subcommand === 'remover') {
-            // Mantém o comportamento antigo: /remover nunca força a pontuação abaixo de 0.
-            novoTotal = Math.max(0, pontosAtuais - quantidade);
-        } else if (subcommand === 'definir') {
-            novoTotal = quantidade;
-        }
+        if (subcommand === 'adicionar') novoTotal = pontosAtuais + quantidade;
+        if (subcommand === 'remover') novoTotal = Math.max(0, pontosAtuais - quantidade);
+        if (subcommand === 'definir') novoTotal = quantidade;
 
         ranking[idJogador].pontos = novoTotal;
+        ranking[idJogador].ajusteManual = true;
+        ranking[idJogador].ajusteManualEm = Date.now();
+        ranking[idJogador].ajusteManualPor = interaction.user.id;
 
         if (!pontuacaoLiga.salvar(pontuacaoPath, ranking)) {
             return interaction.reply({
@@ -71,13 +69,6 @@ module.exports = {
                 flags: MessageFlags.Ephemeral
             });
         }
-
-        // Mantém partidas/vitórias/kills/mortes/continentes sincronizados.
-        pontuacaoLiga.sincronizarArquivo(
-            pontuacaoPath,
-            partidasPath,
-            temporadaPath
-        );
 
         return interaction.reply({
             content: `✅ Pontuação de **${targetUser.username}** atualizada para **${novoTotal} pts**.`

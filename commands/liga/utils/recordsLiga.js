@@ -1,833 +1,147 @@
 /* ========================================================================
-   ARQUIVO: commands/liga/utils/recordsLiga.js
-
-   SISTEMA DE RECORDES HISTÓRICOS DA LIGA
-
-   Mantém os recordes dentro do historico.json existente.
-
-   Recordes preparados:
-   - 🏆 Maior pontuação em uma temporada
-   - ✅ Mais vitórias em uma temporada
-   - 💀 Mais kills em uma temporada
-   - ⚔️ Mais partidas em uma temporada
-   - 👑 Mais títulos da Liga
-
-   IMPORTANTE:
-   Não cria outro arquivo de Hall da Fama.
+   LIGA — RECORDES HISTÓRICOS
    ======================================================================== */
 
 const path = require('path');
+const { safeReadJson, safeWriteJson } = require('./helpers.js');
 
-const {
-    safeReadJson,
-    safeWriteJson
-} = require('./helpers.js');
-
-
-// ========================================================================
-// CAMINHO DO HISTÓRICO EXISTENTE
-// ========================================================================
-
-const HISTORICO_PATH = path.join(
-    __dirname,
-    '..',
-    '..',
-    'promocao',
-    'historico.json'
-);
-
-
-// ========================================================================
-// CARREGAR HISTÓRICO
-// ========================================================================
+const HISTORICO_PATH = path.join(__dirname, '..', '..', 'promocao', 'historico.json');
+const numero = v => Number.isFinite(Number(v)) ? Number(v) : 0;
 
 function carregarHistorico() {
-
-    const dados =
-        safeReadJson(
-            HISTORICO_PATH
-        );
-
-
-    if (
-        !dados ||
-        typeof dados !== 'object'
-    ) {
-
-        return {
-
-            destaque: '',
-
-            liga: [],
-
-            imperador: [],
-
-            eventos: [],
-
-            records: []
-
-        };
-
-    }
-
-
-    if (
-        !Array.isArray(
-            dados.liga
-        )
-    ) {
-
-        dados.liga = [];
-
-    }
-
-
-    if (
-        !Array.isArray(
-            dados.imperador
-        )
-    ) {
-
-        dados.imperador = [];
-
-    }
-
-
-    if (
-        !Array.isArray(
-            dados.eventos
-        )
-    ) {
-
-        dados.eventos = [];
-
-    }
-
-
-    if (
-        !Array.isArray(
-            dados.records
-        )
-    ) {
-
-        dados.records = [];
-
-    }
-
-
+    const dados = safeReadJson(HISTORICO_PATH) || {};
+    if (!Array.isArray(dados.liga)) dados.liga = [];
+    if (!Array.isArray(dados.imperador)) dados.imperador = [];
+    if (!Array.isArray(dados.eventos)) dados.eventos = [];
+    if (!Array.isArray(dados.records)) dados.records = [];
     return dados;
-
 }
 
-
-// ========================================================================
-// SALVAR HISTÓRICO
-// ========================================================================
-
-function salvarHistorico(
-    historico
-) {
-
-    safeWriteJson(
-        HISTORICO_PATH,
-        historico
-    );
-
+function salvarHistorico(historico) {
+    return safeWriteJson(HISTORICO_PATH, historico);
 }
 
-
-// ========================================================================
-// CRIAR ESTRUTURA DOS RECORDES
-// ========================================================================
-
-function criarEstruturaRecordes() {
-
+function estrutura() {
     return {
-
-        maiorPontuacao: {
-
-            valor: 0,
-
-            jogadorId: null,
-
-            temporada: null
-
-        },
-
-        maisVitorias: {
-
-            valor: 0,
-
-            jogadorId: null,
-
-            temporada: null
-
-        },
-
-        maisKills: {
-
-            valor: 0,
-
-            jogadorId: null,
-
-            temporada: null
-
-        },
-
-        maisPartidas: {
-
-            valor: 0,
-
-            jogadorId: null,
-
-            temporada: null
-
-        },
-
-        maisTitulos: {
-
-            valor: 0,
-
-            jogadorId: null
-
-        }
-
+        maiorPontuacao: { valor: 0, jogadorId: null, temporada: null },
+        maisVitorias: { valor: 0, jogadorId: null, temporada: null },
+        maisKills: { valor: 0, jogadorId: null, temporada: null },
+        maisPartidas: { valor: 0, jogadorId: null, temporada: null },
+        maisTitulos: { valor: 0, jogadorId: null, temporada: null, jogadorId: null }
     };
-
 }
 
-
-// ========================================================================
-// GARANTIR ESTRUTURA
-// ========================================================================
-
-function garantirEstrutura(
-    historico
-) {
-
-    if (
-        !historico.recordsLiga ||
-        typeof historico.recordsLiga !== 'object'
-    ) {
-
-        historico.recordsLiga =
-            criarEstruturaRecordes();
-
-    }
-
-
-    const padrao =
-        criarEstruturaRecordes();
-
-
-    for (
-        const chave
-        of Object.keys(padrao)
-    ) {
-
-        if (
-            !historico.recordsLiga[chave] ||
-            typeof historico.recordsLiga[chave] !== 'object'
-        ) {
-
-            historico.recordsLiga[chave] =
-                padrao[chave];
-
-        }
-
-    }
-
-
-    return historico;
-
+function normalizarCampeao(valor) {
+    if (!valor) return null;
+    if (typeof valor === 'object') return String(valor.id || valor.jogadorId || '').replace(/^<@!?(\d+)>$/, '$1') || null;
+    return String(valor).match(/<@!?(\d+)>/)?.[1] || (/^\d{17,20}$/.test(String(valor)) ? String(valor) : null);
 }
 
-
-// ========================================================================
-// ATUALIZAR UM RECORD
-// ========================================================================
-
-function atualizarRecord(
-    record,
-    valor,
-    jogadorId,
-    temporada
-) {
-
-    const numeroAtual =
-        Number(valor) || 0;
-
-
-    const numeroRecorde =
-        Number(record.valor) || 0;
-
-
-    if (
-        numeroAtual <=
-        numeroRecorde
-    ) {
-
-        return false;
-
-    }
-
-
-    record.valor =
-        numeroAtual;
-
-
-    record.jogadorId =
-        jogadorId
-            ? String(jogadorId)
-            : null;
-
-
-    record.temporada =
-        temporada || null;
-
-
-    return true;
-
+function listaTemporadas(historico) {
+    return historico.liga.filter(r => r && typeof r === 'object');
 }
 
-
-// ========================================================================
-// REGISTRAR TEMPORADA
-// ========================================================================
-
-function registrarTemporada({
-    temporada,
-    campeao,
-    pontuacaoCampeao,
-    topVitorias,
-    topKills,
-    topPartidas
-}) {
-
-    const historico =
-        garantirEstrutura(
-            carregarHistorico()
-        );
-
-
-    let houveAlteracao =
-        false;
-
-
-    // --------------------------------------------------------------------
-    // MAIOR PONTUAÇÃO
-    // --------------------------------------------------------------------
-
-    if (
-        campeao
-    ) {
-
-        const alterou =
-            atualizarRecord(
-
-                historico
-                    .recordsLiga
-                    .maiorPontuacao,
-
-                pontuacaoCampeao,
-
-                campeao,
-
-                temporada
-
-            );
-
-
-        if (
-            alterou
-        ) {
-
-            houveAlteracao =
-                true;
-
-        }
-
-    }
-
-
-    // --------------------------------------------------------------------
-    // MAIS VITÓRIAS
-    // --------------------------------------------------------------------
-
-    if (
-        topVitorias
-    ) {
-
-        const alterou =
-            atualizarRecord(
-
-                historico
-                    .recordsLiga
-                    .maisVitorias,
-
-                topVitorias.valor,
-
-                topVitorias.jogadorId,
-
-                temporada
-
-            );
-
-
-        if (
-            alterou
-        ) {
-
-            houveAlteracao =
-                true;
-
-        }
-
-    }
-
-
-    // --------------------------------------------------------------------
-    // MAIS KILLS
-    // --------------------------------------------------------------------
-
-    if (
-        topKills
-    ) {
-
-        const alterou =
-            atualizarRecord(
-
-                historico
-                    .recordsLiga
-                    .maisKills,
-
-                topKills.valor,
-
-                topKills.jogadorId,
-
-                temporada
-
-            );
-
-
-        if (
-            alterou
-        ) {
-
-            houveAlteracao =
-                true;
-
-        }
-
-    }
-
-
-    // --------------------------------------------------------------------
-    // MAIS PARTIDAS
-    // --------------------------------------------------------------------
-
-    if (
-        topPartidas
-    ) {
-
-        const alterou =
-            atualizarRecord(
-
-                historico
-                    .recordsLiga
-                    .maisPartidas,
-
-                topPartidas.valor,
-
-                topPartidas.jogadorId,
-
-                temporada
-
-            );
-
-
-        if (
-            alterou
-        ) {
-
-            houveAlteracao =
-                true;
-
-        }
-
-    }
-
-
-    // --------------------------------------------------------------------
-    // MAIS TÍTULOS
-    //
-    // Conta quantas vezes o jogador aparece como campeão.
-    // --------------------------------------------------------------------
-
-    const contagemTitulos = {};
-
-
-    for (
-        const registro
-        of historico.liga
-    ) {
-
-        if (
-            typeof registro !== 'string'
-        ) {
-
-            continue;
-
-        }
-
-
-        const mencoes =
-            registro.match(
-                /🥇 1º:\s*<@!?(\d+)>/g
-            );
-
-
-        if (!mencoes) {
-
-            continue;
-
-        }
-
-
-        for (
-            const mencao
-            of mencoes
-        ) {
-
-            const id =
-                mencao.match(
-                    /<@!?(\d+)>/
-                )?.[1];
-
-
-            if (!id) {
-
-                continue;
-
+function maiorPor(temporadas, campo) {
+    let melhor = null;
+    for (const registro of temporadas) {
+        const candidatos = Array.isArray(registro.rankingCompleto) ? registro.rankingCompleto : (Array.isArray(registro.estatisticas) ? registro.estatisticas : []);
+        for (const jogador of candidatos) {
+            const valor = numero(jogador?.[campo]);
+            if (!melhor || valor > melhor.valor) {
+                melhor = { valor, jogadorId: normalizarCampeao(jogador?.id || jogador?.jogadorId), temporada: registro.temporada || registro.nome || null };
             }
-
-
-            contagemTitulos[id] =
-                (
-                    contagemTitulos[id] ||
-                    0
-                ) + 1;
-
         }
-
     }
-
-
-    // Inclui a temporada atual.
-    if (
-        campeao
-    ) {
-
-        const id =
-            String(
-                campeao
-            );
-
-
-        contagemTitulos[id] =
-            (
-                contagemTitulos[id] ||
-                0
-            ) + 1;
-
-    }
-
-
-    const maiorTitulo =
-        Object.entries(
-            contagemTitulos
-        )
-            .sort(
-                (
-                    [, a],
-                    [, b]
-                ) =>
-                    b - a
-            )[0];
-
-
-    if (
-        maiorTitulo
-    ) {
-
-        const [jogadorId, titulos] =
-            maiorTitulo;
-
-
-        if (
-            titulos >
-            Number(
-                historico
-                    .recordsLiga
-                    .maisTitulos
-                    .valor || 0
-            )
-        ) {
-
-            historico
-                .recordsLiga
-                .maisTitulos
-                .valor =
-                titulos;
-
-
-            historico
-                .recordsLiga
-                .maisTitulos
-                .jogadorId =
-                jogadorId;
-
-
-            historico
-                .recordsLiga
-                .maisTitulos
-                .temporada =
-                temporada;
-
-
-            houveAlteracao =
-                true;
-
-        }
-
-    }
-
-
-    // --------------------------------------------------------------------
-    // SALVAR
-    // --------------------------------------------------------------------
-
-    if (
-        houveAlteracao
-    ) {
-
-        salvarHistorico(
-            historico
-        );
-
-    }
-
-
-    return {
-
-        houveAlteracao,
-
-        records:
-            historico.recordsLiga
-
-    };
-
+    return melhor || { valor: 0, jogadorId: null, temporada: null };
 }
 
+function calcularRecords(historico) {
+    const temporadas = listaTemporadas(historico);
+    const records = estrutura();
 
-// ========================================================================
-// PEGAR RECORDES
-// ========================================================================
+    for (const registro of temporadas) {
+        const ranking = Array.isArray(registro.rankingCompleto) ? registro.rankingCompleto : (Array.isArray(registro.estatisticas) ? registro.estatisticas : []);
+        if (!ranking.length) continue;
+
+        const maiorPontos = ranking.reduce((a, b) => numero(b.pontos) > numero(a.pontos) ? b : a, ranking[0]);
+        const maiorVitorias = ranking.reduce((a, b) => numero(b.vitorias) > numero(a.vitorias) ? b : a, ranking[0]);
+        const maiorKills = ranking.reduce((a, b) => numero(b.kills) > numero(a.kills) ? b : a, ranking[0]);
+        const maiorPartidas = ranking.reduce((a, b) => numero(b.partidas) > numero(a.partidas) ? b : a, ranking[0]);
+        const temporada = registro.temporada || registro.nome || null;
+
+        const itens = [
+            ['maiorPontuacao', maiorPontos, 'pontos'],
+            ['maisVitorias', maiorVitorias, 'vitorias'],
+            ['maisKills', maiorKills, 'kills'],
+            ['maisPartidas', maiorPartidas, 'partidas']
+        ];
+
+        for (const [chave, jogador, campo] of itens) {
+            const valor = numero(jogador?.[campo]);
+            if (valor > numero(records[chave].valor)) {
+                records[chave] = { valor, jogadorId: normalizarCampeao(jogador?.id), temporada };
+            }
+        }
+    }
+
+    const titulos = {};
+    for (const registro of temporadas) {
+        const id = normalizarCampeao(registro.vencedor || registro.campeao || registro.rankingCompleto?.[0]?.id);
+        if (!id) continue;
+        titulos[id] ||= { valor: 0, ultimaTemporada: null };
+        titulos[id].valor++;
+        titulos[id].ultimaTemporada = registro.temporada || registro.nome || null;
+    }
+
+    const maiorTitulo = Object.entries(titulos).sort((a, b) => b[1].valor - a[1].valor)[0];
+    if (maiorTitulo) {
+        records.maisTitulos = {
+            valor: maiorTitulo[1].valor,
+            jogadorId: maiorTitulo[0],
+            temporada: maiorTitulo[1].ultimaTemporada
+        };
+    }
+
+    return records;
+}
+
+function registrarTemporada({ temporada, campeao, pontuacaoCampeao, topVitorias, topKills, topPartidas }) {
+    const historico = carregarHistorico();
+    const recalculados = calcularRecords(historico);
+    const records = recalculados;
+
+    const considerar = (chave, valor, jogadorId) => {
+        if (numero(valor) > numero(records[chave].valor)) {
+            records[chave] = { valor: numero(valor), jogadorId: normalizarCampeao(jogadorId), temporada: temporada || null };
+        }
+    };
+
+    considerar('maiorPontuacao', pontuacaoCampeao, campeao);
+    if (topVitorias) considerar('maisVitorias', topVitorias.valor, topVitorias.jogadorId);
+    if (topKills) considerar('maisKills', topKills.valor, topKills.jogadorId);
+    if (topPartidas) considerar('maisPartidas', topPartidas.valor, topPartidas.jogadorId);
+
+    historico.recordsLiga = records;
+    salvarHistorico(historico);
+    return { houveAlteracao: true, records };
+}
 
 function obterRecords() {
-
-    const historico =
-        garantirEstrutura(
-            carregarHistorico()
-        );
-
-
-    return historico.recordsLiga;
-
+    const historico = carregarHistorico();
+    const records = calcularRecords(historico);
+    historico.recordsLiga = records;
+    return records;
 }
-
-
-// ========================================================================
-// GERAR TEXTO PARA O PAINEL
-// ========================================================================
 
 function gerarTextoRecords() {
-
-    const records =
-        obterRecords();
-
-
+    const r = obterRecords();
     const linhas = [];
-
-
-    // --------------------------------------------------------------------
-    // PONTUAÇÃO
-    // --------------------------------------------------------------------
-
-    if (
-        records.maiorPontuacao.valor > 0 &&
-        records.maiorPontuacao.jogadorId
-    ) {
-
-        linhas.push(
-
-            `🏆 **Maior Pontuação:** ` +
-            `<@${records.maiorPontuacao.jogadorId}> — ` +
-            `**${records.maiorPontuacao.valor} pts**` +
-
-            (
-
-                records.maiorPontuacao.temporada
-
-                    ? ` (${records.maiorPontuacao.temporada})`
-
-                    : ''
-
-            )
-
-        );
-
-    }
-
-
-    // --------------------------------------------------------------------
-    // VITÓRIAS
-    // --------------------------------------------------------------------
-
-    if (
-        records.maisVitorias.valor > 0 &&
-        records.maisVitorias.jogadorId
-    ) {
-
-        linhas.push(
-
-            `✅ **Mais Vitórias:** ` +
-            `<@${records.maisVitorias.jogadorId}> — ` +
-            `**${records.maisVitorias.valor} vitórias**` +
-
-            (
-
-                records.maisVitorias.temporada
-
-                    ? ` (${records.maisVitorias.temporada})`
-
-                    : ''
-
-            )
-
-        );
-
-    }
-
-
-    // --------------------------------------------------------------------
-    // KILLS
-    // --------------------------------------------------------------------
-
-    if (
-        records.maisKills.valor > 0 &&
-        records.maisKills.jogadorId
-    ) {
-
-        linhas.push(
-
-            `💀 **Mais Kills:** ` +
-            `<@${records.maisKills.jogadorId}> — ` +
-            `**${records.maisKills.valor} kills**` +
-
-            (
-
-                records.maisKills.temporada
-
-                    ? ` (${records.maisKills.temporada})`
-
-                    : ''
-
-            )
-
-        );
-
-    }
-
-
-    // --------------------------------------------------------------------
-    // PARTIDAS
-    // --------------------------------------------------------------------
-
-    if (
-        records.maisPartidas.valor > 0 &&
-        records.maisPartidas.jogadorId
-    ) {
-
-        linhas.push(
-
-            `⚔️ **Mais Partidas:** ` +
-            `<@${records.maisPartidas.jogadorId}> — ` +
-            `**${records.maisPartidas.valor} partidas**` +
-
-            (
-
-                records.maisPartidas.temporada
-
-                    ? ` (${records.maisPartidas.temporada})`
-
-                    : ''
-
-            )
-
-        );
-
-    }
-
-
-    // --------------------------------------------------------------------
-    // TÍTULOS
-    // --------------------------------------------------------------------
-
-    if (
-        records.maisTitulos.valor > 0 &&
-        records.maisTitulos.jogadorId
-    ) {
-
-        linhas.push(
-
-            `👑 **Mais Títulos:** ` +
-            `<@${records.maisTitulos.jogadorId}> — ` +
-            `**${records.maisTitulos.valor} títulos**`
-
-        );
-
-    }
-
-
-    if (
-        linhas.length === 0
-    ) {
-
-        return '*Ainda não existem records registrados pela nova Liga.*';
-
-    }
-
-
-    return linhas.join('\n');
-
+    if (r.maiorPontuacao.jogadorId) linhas.push(`🏆 **Maior Pontuação:** <@${r.maiorPontuacao.jogadorId}> — **${r.maiorPontuacao.valor} pts**`);
+    if (r.maisVitorias.jogadorId) linhas.push(`✅ **Mais Vitórias:** <@${r.maisVitorias.jogadorId}> — **${r.maisVitorias.valor} vitórias**`);
+    if (r.maisKills.jogadorId) linhas.push(`💀 **Mais Kills:** <@${r.maisKills.jogadorId}> — **${r.maisKills.valor} kills**`);
+    if (r.maisPartidas.jogadorId) linhas.push(`⚔️ **Mais Partidas:** <@${r.maisPartidas.jogadorId}> — **${r.maisPartidas.valor} partidas**`);
+    if (r.maisTitulos.jogadorId) linhas.push(`👑 **Mais Títulos:** <@${r.maisTitulos.jogadorId}> — **${r.maisTitulos.valor} títulos**`);
+    return linhas.join('\n') || '*Ainda não existem records registrados.*';
 }
 
-
-// ========================================================================
-// EXPORTAR
-// ========================================================================
-
-module.exports = {
-
-    carregarHistorico,
-
-    salvarHistorico,
-
-    registrarTemporada,
-
-    obterRecords,
-
-    gerarTextoRecords
-
-};
+module.exports = { carregarHistorico, salvarHistorico, registrarTemporada, obterRecords, gerarTextoRecords };

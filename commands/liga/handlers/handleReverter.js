@@ -13,7 +13,6 @@ const PARTIDAS = path.join(__dirname, '..', 'partidas.json');
 const TEMPORADA = path.join(__dirname, '..', 'temporada.json');
 const ECONOMY = path.join(__dirname, '..', '..', 'economy', 'economy.json');
 const PROGRESSAO = path.join(__dirname, '..', '..', 'promocao', 'progressao.json');
-const CARREIRAS = path.join(__dirname, '..', '..', 'promocao', 'carreiras.json');
 
 const numero = v => Number.isFinite(Number(v)) ? Number(v) : 0;
 const clone = v => JSON.parse(JSON.stringify(v ?? {}));
@@ -53,6 +52,20 @@ function obterPontos(partida) {
     return saida;
 }
 
+function obterJogadores(partida, pontos) {
+    const ids = new Set(Object.keys(pontos || {}));
+    for (const jogador of Array.isArray(partida?.jogadoresBrutos) ? partida.jogadoresBrutos : []) {
+        const id = idDe(jogador);
+        if (id) ids.add(id);
+    }
+    const respostas = partida?.respostas || partida?.resultado || {};
+    for (const chave of ['vencedor', 'segundo', 'segundoLugar', 'runnerUp', 'terceiro', 'terceiroLugar', 'maisTropas', 'maiorTropas']) {
+        const id = idDe(respostas?.[chave]);
+        if (id) ids.add(id);
+    }
+    return ids;
+}
+
 module.exports = async function handleReverter(client, interaction, pontuacaoPath = PONTOS, partidasPath = PARTIDAS) {
     if (!interaction?.customId?.startsWith('edit_match_')) return;
 
@@ -65,7 +78,9 @@ module.exports = async function handleReverter(client, interaction, pontuacaoPat
     const partida = partidas[matchId];
 
     if (!partida) return interaction.editReply({ content: `❌ Partida não encontrada: \`${matchId}\`` });
-    if (partida.anulada === true) return interaction.editReply({ content: '⚠️ Esta partida já está anulada.' });
+    if (partida.anulada === true || partida.anulado === true || partida.cancelada === true || partida.cancelado === true) {
+        return interaction.editReply({ content: '⚠️ Esta partida já está anulada.' });
+    }
 
     const autorizado = Boolean(
         interaction.member?.permissions?.has?.(PermissionFlagsBits.Administrator) ||
@@ -83,22 +98,21 @@ module.exports = async function handleReverter(client, interaction, pontuacaoPat
 
     try {
         const pontos = obterPontos(partida);
-        const respostas = partida.respostas || {};
-        const vencedor = idDe(respostas.vencedor);
-        const jogadores = new Set(Object.keys(pontos));
+        const respostas = partida.respostas || partida.resultado || {};
+        const vencedor = idDe(respostas.vencedor || respostas.winner || respostas.ganhador);
+        const jogadores = obterJogadores(partida, pontos);
 
-        for (const jogador of partida.jogadoresBrutos || []) {
-            const id = idDe(jogador);
-            if (id) jogadores.add(id);
-        }
+        // Reverte o saldo atual exatamente pelo delta registrado na partida.
+        // Pontuação negativa é válida: nunca usamos Math.max() aqui.
+        for (const uid of jogadores) {
+            const pts = numero(pontos[uid]);
+            if (pontos[uid] !== undefined) estornarSaldo(antes.pontuacao, uid, pts);
 
-        for (const [uid, pts] of Object.entries(pontos)) {
-            estornarSaldo(antes.pontuacao, uid, pts);
             const salvo = partida.pontos?.[uid];
             const wc = salvo && typeof salvo === 'object' && salvo.wcRecebido !== undefined
                 ? numero(salvo.wcRecebido)
-                : Math.max(0, numero(pts)) * 100;
-            estornarSaldo(antes.economy, uid, wc);
+                : Math.max(0, pts) * 100;
+            if (wc !== 0) estornarSaldo(antes.economy, uid, wc);
 
             if (antes.progressao[uid]) {
                 if (uid === vencedor) {
@@ -113,19 +127,26 @@ module.exports = async function handleReverter(client, interaction, pontuacaoPat
         }
 
         for (const abate of Array.isArray(respostas.abates) ? respostas.abates : []) {
-            const matador = idDe(abate.matador || abate.killer || abate.atacante);
-            const vitima = idDe(abate.vitima || abate.victim || abate.morto);
+            const matador = idDe(abate.matador || abate.killer || abate.atacante || abate.quemMatou);
+            const vitima = idDe(abate.vitima || abate.victim || abate.morto || abate.quemMorreu);
             if (matador && antes.progressao[matador]) diminuir(antes.progressao[matador], 'killsSemanais');
             if (vitima && antes.progressao[vitima]) diminuir(antes.progressao[vitima], 'mortesSemanais');
         }
 
         for (const cont of Array.isArray(respostas.continentes) ? respostas.continentes : []) {
-            const dono = idDe(cont.dono || cont.jogador || cont.jogadorId || cont.userId);
-            const codigo = String(cont.cont || cont.continente || '').trim();
-            if (dono && codigo && antes.progressao[dono]) diminuir(antes.progressao[dono], `${codigo}Semanal`);
+            const dono = idDe(cont.dono || cont.jogador || cont.jogadorId || cont.userId || cont.conquistador);
+            const codigo = String(cont.cont || cont.continente || cont.territorio || '').trim();
+            if (dono && codigo && antes.progressao[dono]) {
+                const chaves = [
+                    `${codigo}Semanal`,
+                    `${codigo.toLowerCase()}Semanal`,
+                    `${codigo.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()}Semanal`
+                ];
+                for (const chave of new Set(chaves)) diminuir(antes.progressao[dono], chave);
+            }
         }
 
-        // Mantém o registro para auditoria em vez de apagá-lo.
+        // Preserva a partida para auditoria. Ela deixa de participar dos cálculos.
         partidas[matchId] = {
             ...partida,
             anulada: true,
@@ -139,11 +160,10 @@ module.exports = async function handleReverter(client, interaction, pontuacaoPat
         if (!safeWriteJson(ECONOMY, antes.economy)) throw new Error('Falha ao salvar WarCoins.');
         if (!safeWriteJson(PROGRESSAO, antes.progressao)) throw new Error('Falha ao salvar progressão.');
 
-        // Recalcula a visão estruturada sem apagar a partida anulada.
+        // Recalcula estatísticas sem incluir a partida anulada e preserva o saldo atual.
         pontuacaoLiga.sincronizarArquivo(pontuacaoPath, partidasPath, TEMPORADA);
 
         await interaction.editReply({ content: '✅ **Partida anulada.** O registro foi preservado para auditoria e deixou de contar nas estatísticas.' });
-
         await painelLiga(interaction.guild, '1543636868682354748').catch(erro => console.error('[LIGA] Painel pós-anulação:', erro));
     } catch (erro) {
         console.error('[LIGA] Erro ao anular:', erro);

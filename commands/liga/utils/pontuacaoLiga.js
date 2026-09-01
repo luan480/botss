@@ -5,7 +5,8 @@
    REGRA PRINCIPAL:
    - partidas.json é a fonte de verdade para partidas, vitórias, kills,
      mortes, continentes e pontos de partidas.
-   - pontuacao.json guarda o saldo atual da temporada e pode ser reconstruído.
+   - pontuacao.json guarda o saldo ATUAL da temporada, incluindo ajustes
+     administrativos/punições, e nunca deve ser sobrescrito pelo histórico.
    - Nenhuma função de leitura converte o arquivo no disco entre formatos.
    ======================================================================== */
 
@@ -222,7 +223,9 @@ function temporadaIdAtual(temporadaPath = TEMPORADA_PADRAO) {
 function estaNaTemporada(registro, inicioMs) {
     if (!inicioMs) return true;
     const ts = dataDaPartida(registro);
-    return ts === null || ts >= inicioMs;
+    // Com uma temporada explicitamente iniciada, registro sem data confiável
+    // é histórico legado e NÃO pode contaminar a temporada nova.
+    return ts !== null && ts >= inicioMs;
 }
 
 function anulada(partida) {
@@ -414,23 +417,42 @@ function calcularEstatisticasTemporada(partidasPath = PARTIDAS_PADRAO, temporada
     return perfis;
 }
 
+function pontosAtuais(dados, id) {
+    const salvo = dados?.[id];
+    if (salvo === undefined) return null;
+    return ehPerfil(salvo)
+        ? numero(salvo.pontos ?? salvo.ptsLiga ?? salvo.pontuacao)
+        : numero(salvo);
+}
+
 function normalizarTodos(dados, partidasPath = PARTIDAS_PADRAO, temporadaPath = TEMPORADA_PADRAO) {
     const historico = calcularEstatisticasTemporada(partidasPath, temporadaPath);
     const resultado = {};
 
+    // O histórico fornece as estatísticas. O arquivo atual fornece o saldo
+    // de pontos, pois ele também contém punições e ajustes administrativos.
     for (const [idOriginal, valor] of Object.entries(dados || {})) {
         const id = idDe(idOriginal);
         if (!id) continue;
         const salvo = normalizarPerfil(id, valor, valor?.nome);
         const h = historico[id];
+        const saldoAtual = pontosAtuais(dados, id);
 
         resultado[id] = h
-            ? { ...salvo, ...h, id, pontos: h.pontos }
+            ? {
+                ...salvo,
+                ...h,
+                id,
+                nome: h.nome || salvo.nome,
+                pontos: saldoAtual !== null ? saldoAtual : h.pontos
+            }
             : salvo;
     }
 
     for (const [id, h] of Object.entries(historico)) {
-        if (!resultado[id]) resultado[id] = { ...h, id, pontos: h.pontos };
+        if (!resultado[id]) {
+            resultado[id] = { ...h, id, pontos: h.pontos };
+        }
     }
 
     return resultado;
@@ -446,12 +468,16 @@ function paraFormatoEstruturado(legacy, partidasPath = PARTIDAS_PADRAO, temporad
     return Object.fromEntries([...ids].map(id => {
         const h = historico[id] || criarPerfil(id);
         const salvo = legacy?.[id];
+        const saldoAtual = pontosAtuais(legacy, id);
+
         return [id, {
             ...criarPerfil(id, h.nome),
             ...h,
             id,
             nome: h.nome || (ehPerfil(salvo) ? salvo.nome : 'Desconhecido'),
-            pontos: historico[id] ? h.pontos : numero(ehPerfil(salvo) ? salvo.pontos : salvo)
+            // Migração/sincronização preserva o saldo atual. Isso impede que
+            // uma punição negativa seja apagada pelo recálculo do histórico.
+            pontos: saldoAtual !== null ? saldoAtual : h.pontos
         }];
     }));
 }

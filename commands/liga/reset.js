@@ -12,7 +12,6 @@ const pontosPath = path.join(__dirname, 'pontuacao.json');
 const partidasPath = path.join(__dirname, 'partidas.json');
 const historicoPath = path.join(__dirname, '..', 'promocao', 'historico.json');
 const temporadaPath = path.join(__dirname, 'temporada.json');
-
 const numero = valor => Number.isFinite(Number(valor)) ? Number(valor) : 0;
 
 function ordenarRanking(perfis) {
@@ -23,9 +22,7 @@ function ordenarRanking(perfis) {
         .map((j, i) => ({ ...j, posicao: i + 1 }));
 }
 
-function clonar(valor) {
-    return JSON.parse(JSON.stringify(valor ?? {}));
-}
+const clonar = valor => JSON.parse(JSON.stringify(valor ?? {}));
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -52,6 +49,10 @@ module.exports = {
             flags: MessageFlags.Ephemeral
         });
 
+        let pontuacaoAntes = null;
+        let historicoAntes = null;
+        let temporadaAntes = null;
+
         try {
             const confirmation = await msg.awaitMessageComponent({ filter: i => i.user.id === interaction.user.id, time: 15000 });
             if (confirmation.customId === 'cancelar_reset') {
@@ -59,20 +60,14 @@ module.exports = {
             }
             if (confirmation.customId !== 'confirmar_reset') return;
 
-            const pontuacaoAntes = clonar(safeReadJson(pontosPath) || {});
-            const historicoAntes = clonar(safeReadJson(historicoPath) || {});
-            const temporadaAntes = clonar(safeReadJson(temporadaPath) || {});
+            pontuacaoAntes = clonar(safeReadJson(pontosPath) || {});
+            historicoAntes = clonar(safeReadJson(historicoPath) || {});
+            temporadaAntes = clonar(safeReadJson(temporadaPath) || {});
 
             const temporadaAtual = safeReadJson(temporadaPath) || {};
             const inicioTemporada = temporadaAtual.inicio || new Date().toISOString();
             const fimTemporada = new Date().toISOString();
-
-            // A mesma engine usada pelo painel/ranking calcula o fechamento.
-            const perfis = pontuacaoLiga.normalizarTodos(
-                pontuacaoAntes,
-                partidasPath,
-                temporadaPath
-            );
+            const perfis = pontuacaoLiga.normalizarTodos(pontuacaoAntes, partidasPath, temporadaPath);
             const ranking = ordenarRanking(perfis);
 
             const registro = {
@@ -97,7 +92,6 @@ module.exports = {
             if (!Array.isArray(historicoNovo.liga)) historicoNovo.liga = [];
             historicoNovo.liga.push(registro);
 
-            // Commit dos arquivos críticos. Em caso de falha, restaura os três.
             if (!safeWriteJson(historicoPath, historicoNovo)) throw new Error('Falha ao salvar histórico da Liga.');
             if (!safeWriteJson(temporadaPath, { ...temporadaAtual, inicio: fimTemporada, numero: (numero(temporadaAtual.numero) || 1) + 1 })) throw new Error('Falha ao iniciar nova temporada.');
             if (!safeWriteJson(pontosPath, {})) throw new Error('Falha ao zerar pontuação da temporada.');
@@ -120,14 +114,9 @@ module.exports = {
             });
         } catch (erro) {
             console.error('[LIGA RESET]', erro);
-            // Restaura o snapshot se o commit falhou em qualquer etapa.
-            // A restauração é best-effort e também fica registrada no log.
-            const pontuacao = safeReadJson(pontosPath);
-            const historico = safeReadJson(historicoPath);
-            const temporada = safeReadJson(temporadaPath);
-            if (JSON.stringify(pontuacao) !== JSON.stringify(pontuacaoAntes)) safeWriteJson(pontosPath, pontuacaoAntes);
-            if (JSON.stringify(historico) !== JSON.stringify(historicoAntes)) safeWriteJson(historicoPath, historicoAntes);
-            if (JSON.stringify(temporada) !== JSON.stringify(temporadaAntes)) safeWriteJson(temporadaPath, temporadaAntes);
+            if (pontuacaoAntes !== null) safeWriteJson(pontosPath, pontuacaoAntes);
+            if (historicoAntes !== null) safeWriteJson(historicoPath, historicoAntes);
+            if (temporadaAntes !== null) safeWriteJson(temporadaPath, temporadaAntes);
             await interaction.editReply({ content: `❌ **Reset não concluído.**\n${erro.message}`, components: [] }).catch(() => {});
         }
     }

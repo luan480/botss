@@ -1,58 +1,75 @@
 const { EmbedBuilder } = require('discord.js');
-const path = require('path');
-// Importa as funções de ajuda do novo arquivo de helpers
-const { safeReadJson, capitalize } = require('../utils/helpers.js');
+const { safeReadJson } = require('../utils/helpers.js');
+const pontuacaoLiga = require('../utils/pontuacaoLiga.js');
 
-/**
- * Manipulador para os botões 'ver_ranking' e 'ver_todos_competidores'.
- * @param {import('discord.js').ButtonInteraction} interaction - A interação do botão.
- * @param {string} pontuacaoPath - O caminho para o arquivo pontuacao.json.
- */
+function ordenar(perfis) {
+    return Object.values(perfis || {})
+        .map(perfil => ({
+            ...perfil,
+            id: String(perfil.id),
+            pontos: Number(perfil.pontos) || 0,
+            vitorias: Number(perfil.vitorias) || 0,
+            partidas: Number(perfil.partidas) || 0,
+            kills: Number(perfil.kills) || 0,
+            mortes: Number(perfil.mortes) || 0,
+            continentes: Number(perfil.continentes) || 0
+        }))
+        .filter(j =>
+            j.pontos !== 0 ||
+            j.vitorias > 0 ||
+            j.partidas > 0 ||
+            j.kills > 0 ||
+            j.mortes > 0 ||
+            j.continentes > 0
+        )
+        .sort((a, b) =>
+            b.pontos - a.pontos ||
+            b.vitorias - a.vitorias ||
+            b.kills - a.kills ||
+            String(a.nome || a.id).localeCompare(String(b.nome || b.id))
+        );
+}
+
 module.exports = async (interaction, pontuacaoPath) => {
-    // Responde ao usuário (apenas ele verá a resposta)
     await interaction.deferReply({ ephemeral: true });
 
-    // Lê o ranking do arquivo JSON
-    const ranking = safeReadJson(pontuacaoPath);
-    const rankingArray = Object.entries(ranking); // Transforma { "id": 10 } em [ ["id", 10] ]
+    const dados = safeReadJson(pontuacaoPath) || {};
+    const perfis = pontuacaoLiga.normalizarTodos(dados);
+    const ranking = ordenar(perfis);
 
-    // Lógica do 'ver_ranking' (TOP 10)
     if (interaction.customId === 'ver_ranking') {
-        // Ordena o array do maior para o menor ponto
-        const sorted = rankingArray.sort(([, a], [, b]) => b - a);
-        
-        // Mapeia o array para uma string formatada, transformando em menção <@ID> se for número
-        const top10 = sorted.slice(0, 10)
-            .map(([name, p], i) => {
-                // Se a chave for um ID numérico do Discord, transforma em menção @, senão exibe normal
-                const formatoNome = /^\d+$/.test(name) ? `<@${name}>` : capitalize(name);
-                return `**${i + 1}.** ${formatoNome} — ${p} pts`;
-            })
+        const top10 = ranking.slice(0, 10)
+            .map((j, i) =>
+                `**${i + 1}.** <@${j.id}> — **${j.pontos} pts**` +
+                ` | 🥇 ${j.vitorias} | 🎮 ${j.partidas}`
+            )
             .join('\n');
 
         const embed = new EmbedBuilder()
-            .setTitle('🏆 Top 10 do Ranking')
-            .setDescription(top10 || 'Nenhum competidor.') // '||' caso o ranking esteja vazio
-            .setColor('Gold');
-            
+            .setTitle('🏆 Ranking da Liga — Temporada Atual')
+            .setDescription(top10 || 'Nenhum competidor na temporada atual.')
+            .setColor('Gold')
+            .setFooter({ text: 'Somente dados da temporada atual' });
+
         return interaction.editReply({ embeds: [embed] });
     }
 
-    // Lógica do 'ver_todos_competidores'
     if (interaction.customId === 'ver_todos_competidores') {
-        // Mapeia o array *completo* formatando para menção ou texto
-        const lista = rankingArray
-            .map(([name, p]) => {
-                const formatoNome = /^\d+$/.test(name) ? `<@${name}>` : capitalize(name);
-                return `${formatoNome} — ${p} pts`;
-            })
+        const lista = ranking
+            .map((j, i) =>
+                `**${i + 1}.** <@${j.id}> — **${j.pontos} pts**` +
+                ` | 🥇 ${j.vitorias} | 🎮 ${j.partidas} | 💀 ${j.kills} | ☠️ ${j.mortes} | 🌍 ${j.continentes}`
+            )
             .join('\n');
-            
+
         const embed = new EmbedBuilder()
-            .setTitle('📜 Todos os Competidores')
-            .setDescription(lista || 'Nenhum competidor.')
-            .setColor('Blue');
+            .setTitle('📜 Todos os Competidores — Temporada Atual')
+            .setDescription(lista || 'Nenhum competidor na temporada atual.')
+            .setColor('Blue')
+            .setFooter({ text: 'Dados atuais da Liga' });
 
         return interaction.editReply({ embeds: [embed] });
     }
+
+    return interaction.editReply({ content: '❌ Ação de ranking desconhecida.' });
 };

@@ -3,14 +3,11 @@
   "ano": 2026,
   "mes": 9,
   "diasPermitidos": "pares",
-
   "canalPainel": "1543944529747382282",
   "canalResultados": "1071976981924687912",
   "canalTeg": "1543391902252933170",
   "cargoTeg": "1542641616903344268",
-
   "imagem": "https://cdn.discordapp.com/attachments/1082774011676729365/1543598573864886393/share_1788092920482.jpg",
-
   "paises": [
     "Brasil",
     "Argentina",
@@ -116,8 +113,70 @@
     "Israel",
     "Irã"
   ],
-
-  "duplas": [],
-  "resultados": [],
-  "ranking": {}
+  "duplas": [
+    {
+      "id": "dupla_1788265099281_511609606070599700",
+      "pais": "Colômbia",
+      "jogador1": "511609606070599700",
+      "jogador2": "804000178742493184",
+      "criadoPor": "1349484758769471609",
+      "criadoEm": "2026-09-01T12:18:19.281Z",
+      "ativa": true
+    },
+    {
+      "id": "dupla_1788265645327_473900424160739330",
+      "pais": "Uruguai",
+      "jogador1": "473900424160739330",
+      "jogador2": "1529544156924481746",
+      "criadoPor": "1349484758769471609",
+      "criadoEm": "2026-09-01T12:27:25.327Z",
+      "ativa": true
+    },
+    {
+      "id": "dupla_1788265658570_846478435974381569",
+      "pais": "Bolívia",
+      "jogador1": "846478435974381569",
+      "jogador2": "760879946184261662",
+      "criadoPor": "1349484758769471609",
+      "criadoEm": "2026-09-01T12:27:38.570Z",
+      "ativa": true
+    }
+  ],
+  "resultados": [
+    {
+      "id": "resultado_1788265687489",
+      "data": "2026-09-01T12:28:07.489Z",
+      "ouro": "dupla_1788265645327_473900424160739330",
+      "prata": "dupla_1788265099281_511609606070599700",
+      "bronze": "dupla_1788265658570_846478435974381569",
+      "print": "https://cdn.discordapp.com/attachments/1543944529747382282/1544322966085570691/image.png?ex=6a981657&is=6a96c4d7&hm=a0bd4a856e4541862f632f3223bdbc32972707bfe4e5bb5b3653d44ccdd6ad73&",
+      "printNome": "image.png",
+      "printTipo": "image/webp",
+      "registradoPor": "1349484758769471609"
+    }
+  ],
+  "ranking": {
+    "dupla_1788265645327_473900424160739330": {
+      "vitorias": 1,
+      "ouro": 1,
+      "prata": 0,
+      "bronze": 0,
+      "desempate": 0
+    },
+    "dupla_1788265099281_511609606070599700": {
+      "vitorias": 0,
+      "ouro": 0,
+      "prata": 1,
+      "bronze": 0,
+      "desempate": 3
+    },
+    "dupla_1788265658570_846478435974381569": {
+      "vitorias": 0,
+      "ouro": 0,
+      "prata": 0,
+      "bronze": 1,
+      "desempate": 1
+    }
+  },
+  "painelMensagemId": "1544320501478985740"
 }

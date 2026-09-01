@@ -1,59 +1,115 @@
 {
   "destaque": "🏆 **@Mathias3002** - Campeão do 1° campeonato do servidor!",
   "liga": [
-    "**📅 2022**",
-    "• Agosto: @Mathias3002",
-    "• Setembro: @usuário-desconhecido",
-    "• Outubro: @Miojo",
-    "• Novembro: @ʟᴜꜰɪ",
-    "• Dezembro: @Vini",
-    "",
-    "**📅 2023**",
-    "• Janeiro: @Vini",
-    "• Fevereiro: @• NT Guizinho™ 🧛 Millior",
-    "• Março: @usuário-desconhecido",
-    "• Abril: @Vini",
-    "• Maio: @Anarco10",
-    "• Agosto: @Mikael",
-    "• Setembro: @• NT Guizinho™ 🧛 Millior"
+    {
+      "id": "legacy-liga-2022",
+      "categoria": "liga",
+      "tipo": "temporada",
+      "nome": "Liga WorldWarBR — Temporada 2022",
+      "ano": "2022",
+      "descricao": "Registro histórico consolidado da temporada de 2022.",
+      "meses": [
+        "Agosto: @Mathias3002",
+        "Setembro: @usuário-desconhecido",
+        "Outubro: @Miojo",
+        "Novembro: @ʟᴜꜰɪ",
+        "Dezembro: @Vini"
+      ],
+      "timestamp": "2022-12-31T23:59:59.000Z"
+    },
+    {
+      "id": "legacy-liga-2023",
+      "categoria": "liga",
+      "tipo": "temporada",
+      "nome": "Liga WorldWarBR — Temporada 2023",
+      "ano": "2023",
+      "descricao": "Registro histórico consolidado da temporada de 2023.",
+      "meses": [
+        "Janeiro: @Vini",
+        "Fevereiro: @• NT Guizinho™ 🧛 Millior",
+        "Março: @usuário-desconhecido",
+        "Abril: @Vini",
+        "Maio: @Anarco10",
+        "Agosto: @Mikael",
+        "Setembro: @• NT Guizinho™ 🧛 Millior"
+      ],
+      "timestamp": "2023-12-31T23:59:59.000Z"
+    }
   ],
   "imperador": [
-    "**📅 2022**",
-    "• Abril: @Mathias3002",
-    "• Maio: @Mathias3002",
-    "• Junho: @Mikael",
-    "• Julho: @Mathias3002",
-    "• Agosto: @Mathias3002",
-    "• Setembro: @Mathias3002",
-    "• Outubro: @Miojo",
-    "• Novembro: @Vini",
-    "• Dezembro: @José Luiz",
-    "",
-    "**📅 2023**",
-    "• Janeiro: @Vini",
-    "• Fevereiro: @• NT Guizinho™ 🧛 Millior",
-    "• Março: @usuário-desconhecido",
-    "• Abril: @@thug",
-    "• Maio: @Anarco10",
-    "• Junho: @▷KING IS BAK !",
-    "• Agosto: @Vini",
-    "• Setembro: @• NT Guizinho™ 🧛 Millior"
+    {
+      "id": "legacy-imperador-2022",
+      "categoria": "imperador",
+      "tipo": "temporada",
+      "nome": "Imperador — Temporada 2022",
+      "ano": "2022",
+      "meses": [
+        "Abril: @Mathias3002",
+        "Maio: @Mathias3002",
+        "Junho: @Mikael",
+        "Julho: @Mathias3002",
+        "Agosto: @Mathias3002",
+        "Setembro: @Mathias3002",
+        "Outubro: @Miojo",
+        "Novembro: @Vini",
+        "Dezembro: @José Luiz"
+      ],
+      "timestamp": "2022-12-31T23:59:59.000Z"
+    },
+    {
+      "id": "legacy-imperador-2023",
+      "categoria": "imperador",
+      "tipo": "temporada",
+      "nome": "Imperador — Temporada 2023",
+      "ano": "2023",
+      "meses": [
+        "Janeiro: @Vini",
+        "Fevereiro: @• NT Guizinho™ 🧛 Millior",
+        "Março: @usuário-desconhecido",
+        "Abril: @@thug",
+        "Maio: @Anarco10",
+        "Junho: @▷KING IS BAK !",
+        "Agosto: @Vini",
+        "Setembro: @• NT Guizinho™ 🧛 Millior"
+      ],
+      "timestamp": "2023-12-31T23:59:59.000Z"
+    }
   ],
   "eventos": [
-    "🌙 **Noite dos Assassinos**",
-    "1ª @kotonet",
-    "2ª @Vini",
-    "",
-    "🏟️ **Arena**",
-    "1ª @Mikael",
-    "2ª @usuário-desconhecido",
-    "",
-    "⚔️ **Warlords (Duplas)**",
-    "1ª @Freitas e @usuário-desconhecido",
-    "",
-    "📨 **Invite Kings**",
-    "• @unnamed69",
-    "• @Vini",
+    {
+      "id": "legacy-evento-noite-assassinos",
+      "categoria": "eventos",
+      "tipo": "campeonato",
+      "nome": "Noite dos Assassinos",
+      "vencedor": "@kotonet",
+      "segundo": "@Vini",
+      "descricao": "Registro histórico preservado."
+    },
+    {
+      "id": "legacy-evento-arena",
+      "categoria": "eventos",
+      "tipo": "campeonato",
+      "nome": "Arena",
+      "vencedor": "@Mikael",
+      "segundo": "@usuário-desconhecido",
+      "descricao": "Registro histórico preservado."
+    },
+    {
+      "id": "legacy-evento-warlords",
+      "categoria": "eventos",
+      "tipo": "campeonato",
+      "nome": "Warlords (Duplas)",
+      "vencedor": "@Freitas e @usuário-desconhecido",
+      "descricao": "Registro histórico preservado."
+    },
+    {
+      "id": "legacy-evento-invite-kings",
+      "categoria": "eventos",
+      "tipo": "campeonato",
+      "nome": "Invite Kings",
+      "participantes": "@unnamed69\n@Vini",
+      "descricao": "Registro histórico preservado."
+    },
     {
       "id": "1787598998903-1349484758769471609",
       "categoria": "eventos",
@@ -74,13 +130,22 @@
     }
   ],
   "records": [
-    "🏆 **Maior Vencedor:** @Mathias3002 (7 títulos)",
-    "💀 **Maior Matador:** @• NT Guizinho™ (44 abates)",
-    "💯 **Maior Pontuador:** @• NT Guizinho™ (2145 pontos)",
-    "🕹️ **Maior Jogador:** @• NT Guizinho™ (128 partidas)"
+    {
+      "id": "legacy-records",
+      "categoria": "records",
+      "tipo": "recorde",
+      "nome": "Records históricos",
+      "descricao": "Grandes marcas registradas no WorldWarBR.",
+      "linhas": [
+        "🏆 **Maior Vencedor:** @Mathias3002 (7 títulos)",
+        "💀 **Maior Matador:** @• NT Guizinho™ (44 abates)",
+        "💯 **Maior Pontuador:** @• NT Guizinho™ (2145 pontos)",
+        "🕹️ **Maior Jogador:** @• NT Guizinho™ (128 partidas)"
+      ]
+    }
   ],
   "mural": {
     "channelId": "1079671915431608372",
-    "messageId": "1541524364867014667"
+    "messageId": "1541555871581208668"
   }
 }

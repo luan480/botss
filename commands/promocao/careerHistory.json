@@ -1,4 +1,1955 @@
 {
-  "version": 1,
-  "jogadores": {}
+  "version": 2,
+  "jogadores": {
+    "762166522709147649": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": 319,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "864637025433157663": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": 188,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "730550615251615824": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": 154,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "1176260337004183586": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": 115,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "496026963555778562": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": 65,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "1104674439322415104": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": 64,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "327831674924564481": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": 55,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "1463159230642131134": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": 45,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "1349484758769471609": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": 40,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "215158341515608065": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": 37,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "473900424160739330": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": 37,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "365109469732143104": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": 35,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "742570978965717094": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": 35,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "1207386411096084571": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": 25,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "793899198160437279": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": 22,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "403361886567137290": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": 20,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "1110320448547344384": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": 18,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "456624988636839937": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": 17,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "1456876470210138262": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": 10,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "804000178742493184": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": 10,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "1036645871825207388": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": 7,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "1121202243308372129": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": 7,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "1246147897901318146": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": 5,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "257651474903990272": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": 5,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "500800085307949066": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": 5,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "685695027271565329": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": 5,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "720081837363560548": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": 5,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "932424627072954408": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": 5,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "965777952455417876": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": 5,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "1032050939953156157": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": 0,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "1084873602723233904": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": 0,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "1203151738937278548": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": 0,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "1460334282382901309": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": 0,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "309512806355566593": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": 0,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "313460030735253514": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": 0,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "436322520015044619": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": 0,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "455850267464957954": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": 0,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "462050331996717059": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": 0,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "634501793401012276": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": 0,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "737817502100226189": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": 0,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "844347454211620875": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": 0,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "930699557170446357": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": 0,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "357660457458466817": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": -4,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "1484350391146516581": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": -10,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "1528768973665992706": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": -10,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "514399606474539009": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": -10,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "1032123056992305183": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": -15,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "1104676104196853760": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": -15,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "1105601842387361833": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": -15,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "1208260902495981630": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": -15,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "1394597924041658421": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": -15,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "1482754959391854623": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": -15,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "256065272853561344": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": -15,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "760879946184261662": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": -15,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "792901980338520085": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": -15,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "664581394445631510": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": -20,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "756368335956082749": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": -25,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    },
+    "661661474724511794": {
+      "nome": null,
+      "totalWins": 0,
+      "totalKills": 0,
+      "totalDeaths": 0,
+      "totalMatches": 0,
+      "totalContinents": 0,
+      "totalPoints": -30,
+      "temporadas": [
+        "Temporada 1"
+      ],
+      "ligas": [
+        "5445"
+      ],
+      "titulos": [],
+      "recordes": {}
+    }
+  },
+  "temporadas": {
+    "Temporada 1": {
+      "ligas": {
+        "5445": {
+          "temporada": "Temporada 1",
+          "liga": "5445",
+          "encerradaEm": "2026-09-01T12:17:26.486Z",
+          "campeao": {
+            "id": "762166522709147649",
+            "partidas": 0,
+            "vitorias": 0,
+            "derrotas": 0,
+            "primeiroLugar": 0,
+            "segundoLugar": 0,
+            "kills": 0,
+            "mortes": 0,
+            "continentes": 0,
+            "europa": 0,
+            "asia": 0,
+            "africa": 0,
+            "amnorte": 0,
+            "amsul": 0,
+            "oceania": 0,
+            "pontos": 319,
+            "pontosGanhos": 0,
+            "pontosPerdidos": 0,
+            "warCoins": 0,
+            "winrate": 0,
+            "posicao": 1
+          },
+          "top10": [
+            {
+              "id": "762166522709147649",
+              "partidas": 0,
+              "vitorias": 0,
+              "derrotas": 0,
+              "primeiroLugar": 0,
+              "segundoLugar": 0,
+              "kills": 0,
+              "mortes": 0,
+              "continentes": 0,
+              "europa": 0,
+              "asia": 0,
+              "africa": 0,
+              "amnorte": 0,
+              "amsul": 0,
+              "oceania": 0,
+              "pontos": 319,
+              "pontosGanhos": 0,
+              "pontosPerdidos": 0,
+              "warCoins": 0,
+              "winrate": 0,
+              "posicao": 1
+            },
+            {
+              "id": "864637025433157663",
+              "partidas": 0,
+              "vitorias": 0,
+              "derrotas": 0,
+              "primeiroLugar": 0,
+              "segundoLugar": 0,
+              "kills": 0,
+              "mortes": 0,
+              "continentes": 0,
+              "europa": 0,
+              "asia": 0,
+              "africa": 0,
+              "amnorte": 0,
+              "amsul": 0,
+              "oceania": 0,
+              "pontos": 188,
+              "pontosGanhos": 0,
+              "pontosPerdidos": 0,
+              "warCoins": 0,
+              "winrate": 0,
+              "posicao": 2
+            },
+            {
+              "id": "730550615251615824",
+              "partidas": 0,
+              "vitorias": 0,
+              "derrotas": 0,
+              "primeiroLugar": 0,
+              "segundoLugar": 0,
+              "kills": 0,
+              "mortes": 0,
+              "continentes": 0,
+              "europa": 0,
+              "asia": 0,
+              "africa": 0,
+              "amnorte": 0,
+              "amsul": 0,
+              "oceania": 0,
+              "pontos": 154,
+              "pontosGanhos": 0,
+              "pontosPerdidos": 0,
+              "warCoins": 0,
+              "winrate": 0,
+              "posicao": 3
+            },
+            {
+              "id": "1176260337004183586",
+              "partidas": 0,
+              "vitorias": 0,
+              "derrotas": 0,
+              "primeiroLugar": 0,
+              "segundoLugar": 0,
+              "kills": 0,
+              "mortes": 0,
+              "continentes": 0,
+              "europa": 0,
+              "asia": 0,
+              "africa": 0,
+              "amnorte": 0,
+              "amsul": 0,
+              "oceania": 0,
+              "pontos": 115,
+              "pontosGanhos": 0,
+              "pontosPerdidos": 0,
+              "warCoins": 0,
+              "winrate": 0,
+              "posicao": 4
+            },
+            {
+              "id": "496026963555778562",
+              "partidas": 0,
+              "vitorias": 0,
+              "derrotas": 0,
+              "primeiroLugar": 0,
+              "segundoLugar": 0,
+              "kills": 0,
+              "mortes": 0,
+              "continentes": 0,
+              "europa": 0,
+              "asia": 0,
+              "africa": 0,
+              "amnorte": 0,
+              "amsul": 0,
+              "oceania": 0,
+              "pontos": 65,
+              "pontosGanhos": 0,
+              "pontosPerdidos": 0,
+              "warCoins": 0,
+              "winrate": 0,
+              "posicao": 5
+            },
+            {
+              "id": "1104674439322415104",
+              "partidas": 0,
+              "vitorias": 0,
+              "derrotas": 0,
+              "primeiroLugar": 0,
+              "segundoLugar": 0,
+              "kills": 0,
+              "mortes": 0,
+              "continentes": 0,
+              "europa": 0,
+              "asia": 0,
+              "africa": 0,
+              "amnorte": 0,
+              "amsul": 0,
+              "oceania": 0,
+              "pontos": 64,
+              "pontosGanhos": 0,
+              "pontosPerdidos": 0,
+              "warCoins": 0,
+              "winrate": 0,
+              "posicao": 6
+            },
+            {
+              "id": "327831674924564481",
+              "partidas": 0,
+              "vitorias": 0,
+              "derrotas": 0,
+              "primeiroLugar": 0,
+              "segundoLugar": 0,
+              "kills": 0,
+              "mortes": 0,
+              "continentes": 0,
+              "europa": 0,
+              "asia": 0,
+              "africa": 0,
+              "amnorte": 0,
+              "amsul": 0,
+              "oceania": 0,
+              "pontos": 55,
+              "pontosGanhos": 0,
+              "pontosPerdidos": 0,
+              "warCoins": 0,
+              "winrate": 0,
+              "posicao": 7
+            },
+            {
+              "id": "1463159230642131134",
+              "partidas": 0,
+              "vitorias": 0,
+              "derrotas": 0,
+              "primeiroLugar": 0,
+              "segundoLugar": 0,
+              "kills": 0,
+              "mortes": 0,
+              "continentes": 0,
+              "europa": 0,
+              "asia": 0,
+              "africa": 0,
+              "amnorte": 0,
+              "amsul": 0,
+              "oceania": 0,
+              "pontos": 45,
+              "pontosGanhos": 0,
+              "pontosPerdidos": 0,
+              "warCoins": 0,
+              "winrate": 0,
+              "posicao": 8
+            },
+            {
+              "id": "1349484758769471609",
+              "partidas": 0,
+              "vitorias": 0,
+              "derrotas": 0,
+              "primeiroLugar": 0,
+              "segundoLugar": 0,
+              "kills": 0,
+              "mortes": 0,
+              "continentes": 0,
+              "europa": 0,
+              "asia": 0,
+              "africa": 0,
+              "amnorte": 0,
+              "amsul": 0,
+              "oceania": 0,
+              "pontos": 40,
+              "pontosGanhos": 0,
+              "pontosPerdidos": 0,
+              "warCoins": 0,
+              "winrate": 0,
+              "posicao": 9
+            },
+            {
+              "id": "215158341515608065",
+              "partidas": 0,
+              "vitorias": 0,
+              "derrotas": 0,
+              "primeiroLugar": 0,
+              "segundoLugar": 0,
+              "kills": 0,
+              "mortes": 0,
+              "continentes": 0,
+              "europa": 0,
+              "asia": 0,
+              "africa": 0,
+              "amnorte": 0,
+              "amsul": 0,
+              "oceania": 0,
+              "pontos": 37,
+              "pontosGanhos": 0,
+              "pontosPerdidos": 0,
+              "warCoins": 0,
+              "winrate": 0,
+              "posicao": 10
+            }
+          ],
+          "jogadores": [
+            {
+              "id": "762166522709147649",
+              "nome": null,
+              "posicao": 1,
+              "pontos": 319,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "864637025433157663",
+              "nome": null,
+              "posicao": 2,
+              "pontos": 188,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "730550615251615824",
+              "nome": null,
+              "posicao": 3,
+              "pontos": 154,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "1176260337004183586",
+              "nome": null,
+              "posicao": 4,
+              "pontos": 115,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "496026963555778562",
+              "nome": null,
+              "posicao": 5,
+              "pontos": 65,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "1104674439322415104",
+              "nome": null,
+              "posicao": 6,
+              "pontos": 64,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "327831674924564481",
+              "nome": null,
+              "posicao": 7,
+              "pontos": 55,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "1463159230642131134",
+              "nome": null,
+              "posicao": 8,
+              "pontos": 45,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "1349484758769471609",
+              "nome": null,
+              "posicao": 9,
+              "pontos": 40,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "215158341515608065",
+              "nome": null,
+              "posicao": 10,
+              "pontos": 37,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "473900424160739330",
+              "nome": null,
+              "posicao": 11,
+              "pontos": 37,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "365109469732143104",
+              "nome": null,
+              "posicao": 12,
+              "pontos": 35,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "742570978965717094",
+              "nome": null,
+              "posicao": 13,
+              "pontos": 35,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "1207386411096084571",
+              "nome": null,
+              "posicao": 14,
+              "pontos": 25,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "793899198160437279",
+              "nome": null,
+              "posicao": 15,
+              "pontos": 22,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "403361886567137290",
+              "nome": null,
+              "posicao": 16,
+              "pontos": 20,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "1110320448547344384",
+              "nome": null,
+              "posicao": 17,
+              "pontos": 18,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "456624988636839937",
+              "nome": null,
+              "posicao": 18,
+              "pontos": 17,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "1456876470210138262",
+              "nome": null,
+              "posicao": 19,
+              "pontos": 10,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "804000178742493184",
+              "nome": null,
+              "posicao": 20,
+              "pontos": 10,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "1036645871825207388",
+              "nome": null,
+              "posicao": 21,
+              "pontos": 7,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "1121202243308372129",
+              "nome": null,
+              "posicao": 22,
+              "pontos": 7,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "1246147897901318146",
+              "nome": null,
+              "posicao": 23,
+              "pontos": 5,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "257651474903990272",
+              "nome": null,
+              "posicao": 24,
+              "pontos": 5,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "500800085307949066",
+              "nome": null,
+              "posicao": 25,
+              "pontos": 5,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "685695027271565329",
+              "nome": null,
+              "posicao": 26,
+              "pontos": 5,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "720081837363560548",
+              "nome": null,
+              "posicao": 27,
+              "pontos": 5,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "932424627072954408",
+              "nome": null,
+              "posicao": 28,
+              "pontos": 5,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "965777952455417876",
+              "nome": null,
+              "posicao": 29,
+              "pontos": 5,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "1032050939953156157",
+              "nome": null,
+              "posicao": 30,
+              "pontos": 0,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "1084873602723233904",
+              "nome": null,
+              "posicao": 31,
+              "pontos": 0,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "1203151738937278548",
+              "nome": null,
+              "posicao": 32,
+              "pontos": 0,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "1460334282382901309",
+              "nome": null,
+              "posicao": 33,
+              "pontos": 0,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "309512806355566593",
+              "nome": null,
+              "posicao": 34,
+              "pontos": 0,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "313460030735253514",
+              "nome": null,
+              "posicao": 35,
+              "pontos": 0,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "436322520015044619",
+              "nome": null,
+              "posicao": 36,
+              "pontos": 0,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "455850267464957954",
+              "nome": null,
+              "posicao": 37,
+              "pontos": 0,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "462050331996717059",
+              "nome": null,
+              "posicao": 38,
+              "pontos": 0,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "634501793401012276",
+              "nome": null,
+              "posicao": 39,
+              "pontos": 0,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "737817502100226189",
+              "nome": null,
+              "posicao": 40,
+              "pontos": 0,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "844347454211620875",
+              "nome": null,
+              "posicao": 41,
+              "pontos": 0,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "930699557170446357",
+              "nome": null,
+              "posicao": 42,
+              "pontos": 0,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "357660457458466817",
+              "nome": null,
+              "posicao": 43,
+              "pontos": -4,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "1484350391146516581",
+              "nome": null,
+              "posicao": 44,
+              "pontos": -10,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "1528768973665992706",
+              "nome": null,
+              "posicao": 45,
+              "pontos": -10,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "514399606474539009",
+              "nome": null,
+              "posicao": 46,
+              "pontos": -10,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "1032123056992305183",
+              "nome": null,
+              "posicao": 47,
+              "pontos": -15,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "1104676104196853760",
+              "nome": null,
+              "posicao": 48,
+              "pontos": -15,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "1105601842387361833",
+              "nome": null,
+              "posicao": 49,
+              "pontos": -15,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "1208260902495981630",
+              "nome": null,
+              "posicao": 50,
+              "pontos": -15,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "1394597924041658421",
+              "nome": null,
+              "posicao": 51,
+              "pontos": -15,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "1482754959391854623",
+              "nome": null,
+              "posicao": 52,
+              "pontos": -15,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "256065272853561344",
+              "nome": null,
+              "posicao": 53,
+              "pontos": -15,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "760879946184261662",
+              "nome": null,
+              "posicao": 54,
+              "pontos": -15,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "792901980338520085",
+              "nome": null,
+              "posicao": 55,
+              "pontos": -15,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "664581394445631510",
+              "nome": null,
+              "posicao": 56,
+              "pontos": -20,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "756368335956082749",
+              "nome": null,
+              "posicao": 57,
+              "pontos": -25,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            },
+            {
+              "id": "661661474724511794",
+              "nome": null,
+              "posicao": 58,
+              "pontos": -30,
+              "vitorias": 0,
+              "derrotas": 0,
+              "kills": 0,
+              "mortes": 0,
+              "partidas": 0,
+              "continentes": 0
+            }
+          ]
+        }
+      }
+    }
+  }
 }

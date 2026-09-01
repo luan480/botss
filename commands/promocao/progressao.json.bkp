@@ -2,7 +2,7 @@
   "357660457458466817": {
     "factionId": "874475520333578310",
     "currentRankId": "874485130964656208",
-    "totalWins": 286,
+    "totalWins": 287,
     "nome": "xubz0",
     "printsProcessados": [
       "1534702411179102310",
@@ -16,10 +16,11 @@
       "1538674309466423489",
       "1539030942826627153",
       "1540854785841045504",
-      "1541142289177378836"
+      "1541142289177378836",
+      "1544138763758739507"
     ],
-    "vitoriasSemanais": 0,
-    "vitoriasMensais": 12,
+    "vitoriasSemanais": 1,
+    "vitoriasMensais": 13,
     "killsSemanais": 0,
     "mortesSemanais": 0,
     "partidasSemanais": 0,
@@ -311,7 +312,7 @@
   "762166522709147649": {
     "factionId": "874475515166216273",
     "currentRankId": "874481376848646175",
-    "totalWins": 99,
+    "totalWins": 102,
     "nome": "reginaldo0726",
     "printsProcessados": [
       "1535060790212829316",
@@ -328,10 +329,13 @@
       "1538221806471618610",
       "1539398937415516203",
       "1539470872476254358",
-      "1540402686116110336"
+      "1540402686116110336",
+      "1544116080249675877",
+      "1544116202391994458",
+      "1544116242829283331"
     ],
-    "vitoriasSemanais": 0,
-    "vitoriasMensais": 17,
+    "vitoriasSemanais": 3,
+    "vitoriasMensais": 20,
     "killsSemanais": 0,
     "mortesSemanais": 0,
     "partidasSemanais": 0,
@@ -504,8 +508,8 @@
   },
   "664581394445631510": {
     "factionId": "874475515166216273",
-    "currentRankId": "874481283437322321",
-    "totalWins": 30,
+    "currentRankId": "874481315628593283",
+    "totalWins": 33,
     "nome": "vhzero7",
     "printsProcessados": [
       "1535905669335613491",
@@ -519,10 +523,13 @@
       "1538704153713442836",
       "1540809200274378752",
       "1541216361823342722",
-      "1541249844147134484"
+      "1541249844147134484",
+      "1544065870748450847",
+      "1544152836344909894",
+      "1544185879218888764"
     ],
-    "vitoriasSemanais": 2,
-    "vitoriasMensais": 12,
+    "vitoriasSemanais": 5,
+    "vitoriasMensais": 15,
     "killsSemanais": 0,
     "mortesSemanais": 0,
     "partidasSemanais": 0,
@@ -16944,13 +16951,14 @@
     "nome": "monarquinho",
     "factionId": "874475515166216273",
     "currentRankId": "874481262520315934",
-    "totalWins": 3,
-    "vitoriasSemanais": 0,
-    "vitoriasMensais": 3,
+    "totalWins": 4,
+    "vitoriasSemanais": 1,
+    "vitoriasMensais": 4,
     "printsProcessados": [
       "1538624446280237156",
       "1539714348908552343",
-      "1539772849001070644"
+      "1539772849001070644",
+      "1543789476323664034"
     ],
     "partidasSemanais": 0,
     "killsSemanais": 0,

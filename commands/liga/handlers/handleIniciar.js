@@ -1,10 +1,13 @@
 /* ========================================================================
    WRAPPER DA LIGA — handleIniciar
 
-   O core antigo conta partidas pelo arquivo recebido. Para preservar a
-   regra correta de **80 partidas por temporada**, ele recebe uma visão
-   temporária contendo somente as partidas da temporada atual. Depois do
-   commit, o novo registro é mesclado no histórico permanente.
+   O core antigo trabalha com pontuacao.json numérica. A Liga atual usa
+   pontuacao.json estruturado. Por isso o core recebe um arquivo temporário
+   numérico com o saldo atual e, somente após o registro ser confirmado,
+   convertemos de volta para o formato estruturado.
+
+   Também usamos uma visão temporária de partidas da temporada para manter
+   o limite de 80 partidas por temporada sem apagar o histórico permanente.
    ======================================================================== */
 
 const fs = require('fs');
@@ -19,10 +22,25 @@ const TEMPORADA_PADRAO = path.join(__dirname, '..', 'temporada.json');
 const ECONOMY = path.join(__dirname, '..', '..', 'economy', 'economy.json');
 const PROGRESSAO = path.join(__dirname, '..', '..', 'promocao', 'progressao.json');
 const PUNICOES = path.join(__dirname, '..', 'punicoes.json');
-const MAX_PARTIDAS = 80;
 
 const clonar = valor => JSON.parse(JSON.stringify(valor ?? {}));
 const contar = dados => Object.keys(dados && typeof dados === 'object' ? dados : {}).length;
+
+function numero(valor) {
+    const n = Number(valor);
+    return Number.isFinite(n) ? n : 0;
+}
+
+function pontosAtuaisParaCore(pontuacao) {
+    const saida = {};
+    for (const [id, valor] of Object.entries(pontuacao || {})) {
+        const ponto = valor && typeof valor === 'object'
+            ? numero(valor.pontos ?? valor.ptsLiga ?? valor.pontuacao)
+            : numero(valor);
+        if (/^\d{17,20}$/.test(String(id))) saida[id] = ponto;
+    }
+    return saida;
+}
 
 function inicioTemporada() {
     const temporada = safeReadJson(TEMPORADA_PADRAO) || {};
@@ -54,11 +72,10 @@ function dataPartida(registro) {
 function partidasDaTemporada(partidas) {
     const inicio = inicioTemporada();
     if (!inicio) return {};
+
     const saida = {};
     for (const [id, partida] of Object.entries(partidas || {})) {
         const data = dataPartida({ id, partida });
-        // Registros antigos sem data confiável não entram na contagem da
-        // temporada nova; continuam preservados no histórico permanente.
         if (data !== null && data >= inicio) saida[id] = partida;
     }
     return saida;
@@ -77,12 +94,23 @@ module.exports = async function handleIniciar(...args) {
     };
 
     const temporadaView = partidasDaTemporada(snapshot.partidas);
-    const tempPath = path.join(__dirname, `partidas.registro.${process.pid}.${Date.now()}.tmp.json`);
-    safeWriteJson(tempPath, temporadaView);
+    const tempPartidasPath = path.join(__dirname, `partidas.registro.${process.pid}.${Date.now()}.tmp.json`);
+    const tempPontuacaoPath = path.join(__dirname, `pontuacao.registro.${process.pid}.${Date.now()}.tmp.json`);
+
+    if (!safeWriteJson(tempPartidasPath, temporadaView)) {
+        throw new Error('Não foi possível preparar o histórico temporário da partida.');
+    }
+
+    // O core antigo precisa de números simples. O arquivo real permanece
+    // estruturado e intocado até a operação terminar com sucesso.
+    if (!safeWriteJson(tempPontuacaoPath, pontosAtuaisParaCore(snapshot.pontuacao))) {
+        try { fs.unlinkSync(tempPartidasPath); } catch {}
+        throw new Error('Não foi possível preparar a pontuação temporária.');
+    }
 
     const argsCorrigidos = [...args];
-    argsCorrigidos[2] = pontuacaoPath;
-    argsCorrigidos[3] = tempPath;
+    argsCorrigidos[2] = tempPontuacaoPath;
+    argsCorrigidos[3] = tempPartidasPath;
 
     let erro = null;
     try {
@@ -92,24 +120,23 @@ module.exports = async function handleIniciar(...args) {
         console.error('[LIGA] Falha no motor de contabilização:', e);
     }
 
-    const tempDepois = safeReadJson(tempPath) || {};
+    const tempDepois = safeReadJson(tempPartidasPath) || {};
+    const pontuacaoDepois = safeReadJson(tempPontuacaoPath) || {};
     const criouPartida = contar(tempDepois) > contar(temporadaView);
 
-    try { fs.unlinkSync(tempPath); } catch {}
+    try { fs.unlinkSync(tempPartidasPath); } catch {}
+    try { fs.unlinkSync(tempPontuacaoPath); } catch {}
 
-    if (!criouPartida) {
+    if (!criouPartida || erro) {
         safeWriteJson(pontuacaoPath, snapshot.pontuacao);
         safeWriteJson(partidasPath, snapshot.partidas);
         safeWriteJson(ECONOMY, snapshot.economy);
         safeWriteJson(PROGRESSAO, snapshot.progressao);
         safeWriteJson(PUNICOES, snapshot.punicoes);
-        try { pontuacaoLiga.sincronizarArquivo(pontuacaoPath, partidasPath, TEMPORADA_PADRAO); } catch (e) { console.error('[LIGA] Restauração de pontos:', e); }
         if (erro) throw erro;
         return;
     }
 
-    // O limite continua explícito para impedir que o core antigo conte
-    // acidentalmente partidas de outras temporadas.
     const novas = Object.entries(tempDepois).filter(([id]) => !Object.prototype.hasOwnProperty.call(temporadaView, id));
     if (novas.length !== 1) {
         console.error(`[LIGA] Registro inesperado: ${novas.length} novas partidas.`);
@@ -117,6 +144,7 @@ module.exports = async function handleIniciar(...args) {
         safeWriteJson(partidasPath, snapshot.partidas);
         safeWriteJson(ECONOMY, snapshot.economy);
         safeWriteJson(PROGRESSAO, snapshot.progressao);
+        safeWriteJson(PUNICOES, snapshot.punicoes);
         return;
     }
 
@@ -124,13 +152,30 @@ module.exports = async function handleIniciar(...args) {
     const historicoAtual = safeReadJson(partidasPath) || {};
     const [novoId, novoRegistro] = novas[0];
     historicoAtual[novoId] = novoRegistro;
-    safeWriteJson(partidasPath, historicoAtual);
 
-    try {
-        pontuacaoLiga.sincronizarArquivo(pontuacaoPath, partidasPath, TEMPORADA_PADRAO);
-    } catch (syncErro) {
-        console.error('[LIGA] Falha ao sincronizar pontuação pós-registro:', syncErro);
+    if (!safeWriteJson(partidasPath, historicoAtual)) {
+        safeWriteJson(pontuacaoPath, snapshot.pontuacao);
+        safeWriteJson(partidasPath, snapshot.partidas);
+        safeWriteJson(ECONOMY, snapshot.economy);
+        safeWriteJson(PROGRESSAO, snapshot.progressao);
+        safeWriteJson(PUNICOES, snapshot.punicoes);
+        throw new Error('Não foi possível salvar a partida no histórico permanente.');
     }
 
-    if (erro) throw erro;
+    // Converte os pontos numéricos produzidos pelo core para o formato atual.
+    // A função de migração agora preserva esse saldo atual, inclusive punições.
+    const estruturado = pontuacaoLiga.paraFormatoEstruturado(
+        pontuacaoDepois,
+        partidasPath,
+        TEMPORADA_PADRAO
+    );
+
+    if (!safeWriteJson(pontuacaoPath, estruturado)) {
+        safeWriteJson(partidasPath, snapshot.partidas);
+        safeWriteJson(pontuacaoPath, snapshot.pontuacao);
+        safeWriteJson(ECONOMY, snapshot.economy);
+        safeWriteJson(PROGRESSAO, snapshot.progressao);
+        safeWriteJson(PUNICOES, snapshot.punicoes);
+        throw new Error('Não foi possível salvar a pontuação da Liga.');
+    }
 };

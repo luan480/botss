@@ -1,6 +1,6 @@
 /* ========================================================================
-   ARQUIVO: commands/liga/utils/menusLiga.js
-   DESCRIÇÃO: Menus da Liga das Nações
+   LIGA DAS NAÇÕES — MENUS
+   A pontuação exibida nos seletores vem somente da temporada atual.
    ======================================================================== */
 
 const {
@@ -12,34 +12,28 @@ const {
 
 const fs = require('fs');
 const path = require('path');
+const pontuacaoLiga = require('./pontuacaoLiga.js');
 
 const PONTUACAO_PATH = path.join(__dirname, '..', 'pontuacao.json');
 
 function lerPontuacaoAtual() {
     try {
         if (!fs.existsSync(PONTUACAO_PATH)) return {};
-        const conteudo = fs.readFileSync(PONTUACAO_PATH, 'utf8').trim();
-        if (!conteudo) return {};
-        const dados = JSON.parse(conteudo);
-        return dados && typeof dados === 'object' ? dados : {};
+        const dados = JSON.parse(fs.readFileSync(PONTUACAO_PATH, 'utf8') || '{}');
+        return pontuacaoLiga.normalizarTodos(dados);
     } catch (erro) {
         console.error('[LIGA] Erro lendo pontuacao.json para os menus:', erro.message);
         return {};
     }
 }
 
-// Mostra a pontuação ATUAL da Liga diretamente de pontuacao.json.
-// Assim, depois de um reset, a seleção passa a mostrar 0 pts sem reutilizar
-// vitórias antigas do sistema de promoção.
 function labelJogador(jogador, pontuacao = lerPontuacaoAtual()) {
-    const pontos = Number(pontuacao[jogador.id]) || 0;
+    const perfil = pontuacao[String(jogador.id)] || {};
+    const pontos = Number(perfil.pontos) || 0;
     return `${jogador.username} 🏆 ${pontos} pts`.slice(0, 100);
 }
 
 module.exports = {
-    // ==========================================
-    // ⚡ FASE 1: MODO + VENCEDOR + 2º LUGAR
-    // ==========================================
     criarPainelFase1: (jogadoresInfo, respostas) => {
         const pontuacao = lerPontuacaoAtual();
 
@@ -48,20 +42,8 @@ module.exports = {
                 .setCustomId('sel_modo')
                 .setPlaceholder('⚙️ 1. Selecione o Modo de Jogo...')
                 .addOptions([
-                    {
-                        label: 'Objetivo',
-                        value: 'objetivo',
-                        description: 'Vitória por carta de objetivo',
-                        emoji: '🎯',
-                        default: respostas.modo === 'objetivo'
-                    },
-                    {
-                        label: 'Territórios',
-                        value: 'territorios',
-                        description: 'Vitória por dominação global',
-                        emoji: '🌎',
-                        default: respostas.modo === 'territorios'
-                    }
+                    { label: 'Objetivo', value: 'objetivo', description: 'Vitória por carta de objetivo', emoji: '🎯', default: respostas.modo === 'objetivo' },
+                    { label: 'Territórios', value: 'territorios', description: 'Vitória por dominação global', emoji: '🌎', default: respostas.modo === 'territorios' }
                 ])
         );
 
@@ -69,30 +51,13 @@ module.exports = {
             new StringSelectMenuBuilder()
                 .setCustomId('sel_venc')
                 .setPlaceholder('🥇 2. Selecione o Vencedor...')
-                .addOptions(
-                    jogadoresInfo.map(j => ({
-                        label: labelJogador(j, pontuacao),
-                        value: j.id,
-                        default: respostas.vencedor === j.id
-                    }))
-                )
+                .addOptions(jogadoresInfo.map(j => ({ label: labelJogador(j, pontuacao), value: j.id, default: respostas.vencedor === j.id })))
         );
 
-        const opcoesSegundo = [
-            {
-                label: 'Nenhum / Não houve',
-                value: '0',
-                default: respostas.segundo === '0'
-            }
-        ];
-
+        const opcoesSegundo = [{ label: 'Nenhum / Não houve', value: '0', default: respostas.segundo === '0' }];
         jogadoresInfo.forEach(j => {
             if (j.id !== respostas.vencedor) {
-                opcoesSegundo.push({
-                    label: labelJogador(j, pontuacao),
-                    value: j.id,
-                    default: respostas.segundo === j.id
-                });
+                opcoesSegundo.push({ label: labelJogador(j, pontuacao), value: j.id, default: respostas.segundo === j.id });
             }
         });
 
@@ -104,181 +69,78 @@ module.exports = {
         );
 
         const rowBotoes = new ActionRowBuilder().addComponents(
-            new ButtonBuilder()
-                .setCustomId('btn_confirmar_p1')
-                .setLabel('Continuar ➔')
-                .setStyle(ButtonStyle.Success),
-            new ButtonBuilder()
-                .setCustomId('reset_p1')
-                .setLabel('Limpar')
-                .setEmoji('🔄')
-                .setStyle(ButtonStyle.Secondary)
+            new ButtonBuilder().setCustomId('btn_confirmar_p1').setLabel('Continuar ➔').setStyle(ButtonStyle.Success),
+            new ButtonBuilder().setCustomId('reset_p1').setLabel('Limpar').setEmoji('🔄').setStyle(ButtonStyle.Secondary)
         );
 
         return [rowModo, rowVencedor, rowSegundo, rowBotoes];
     },
 
-    // ==========================================
-    // 🏅 FASE 1B: 3º LUGAR + MAIS TROPAS
-    // ==========================================
     criarPainelFase1Extras: (jogadoresInfo, respostas) => {
         const pontuacao = lerPontuacaoAtual();
 
         const opcoesTerceiro = jogadoresInfo
             .filter(j => j.id !== respostas.vencedor && j.id !== respostas.segundo)
-            .map(j => ({
-                label: labelJogador(j, pontuacao),
-                value: j.id,
-                default: respostas.terceiro === j.id
-            }));
+            .map(j => ({ label: labelJogador(j, pontuacao), value: j.id, default: respostas.terceiro === j.id }));
 
         const rowTerceiro = new ActionRowBuilder().addComponents(
-            new StringSelectMenuBuilder()
-                .setCustomId('sel_terceiro')
-                .setPlaceholder('🥉 4. Quem ficou em 3º lugar?')
-                .addOptions(opcoesTerceiro)
+            new StringSelectMenuBuilder().setCustomId('sel_terceiro').setPlaceholder('🥉 4. Quem ficou em 3º lugar?').addOptions(opcoesTerceiro)
         );
 
         const rowTropas = new ActionRowBuilder().addComponents(
             new StringSelectMenuBuilder()
                 .setCustomId('sel_tropas')
                 .setPlaceholder('⚔️ 5. Quem terminou com mais tropas?')
-                .addOptions(
-                    jogadoresInfo.map(j => ({
-                        label: labelJogador(j, pontuacao),
-                        value: j.id,
-                        default: respostas.maisTropas === j.id
-                    }))
-                )
+                .addOptions(jogadoresInfo.map(j => ({ label: labelJogador(j, pontuacao), value: j.id, default: respostas.maisTropas === j.id })))
         );
 
         const rowBotoes = new ActionRowBuilder().addComponents(
-            new ButtonBuilder()
-                .setCustomId('btn_confirmar_extras')
-                .setLabel('Continuar para Abates ➔')
-                .setStyle(ButtonStyle.Success),
-            new ButtonBuilder()
-                .setCustomId('reset_extras')
-                .setLabel('Limpar')
-                .setEmoji('🔄')
-                .setStyle(ButtonStyle.Secondary)
+            new ButtonBuilder().setCustomId('btn_confirmar_extras').setLabel('Continuar para Abates ➔').setStyle(ButtonStyle.Success),
+            new ButtonBuilder().setCustomId('reset_extras').setLabel('Limpar').setEmoji('🔄').setStyle(ButtonStyle.Secondary)
         );
 
         return [rowTerceiro, rowTropas, rowBotoes];
     },
 
-    // ==========================================
-    // ⚔️ FASE 2: MENUS DE ABATES
-    // ==========================================
-    criarBotoesAbate: () => {
-        return new ActionRowBuilder().addComponents(
-            new ButtonBuilder()
-                .setCustomId('add_abate_lote')
-                .setLabel('Registrar Matador')
-                .setEmoji('🔪')
-                .setStyle(ButtonStyle.Danger),
-            new ButtonBuilder()
-                .setCustomId('reset_abates')
-                .setLabel('Desfazer Abates')
-                .setEmoji('🔄')
-                .setStyle(ButtonStyle.Secondary),
-            new ButtonBuilder()
-                .setCustomId('fim_abates')
-                .setLabel('Avançar')
-                .setEmoji('✅')
-                .setStyle(ButtonStyle.Success)
-        );
-    },
+    criarBotoesAbate: () => new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId('add_abate_lote').setLabel('Registrar Matador').setEmoji('🔪').setStyle(ButtonStyle.Danger),
+        new ButtonBuilder().setCustomId('reset_abates').setLabel('Desfazer Abates').setEmoji('🔄').setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId('fim_abates').setLabel('Avançar').setEmoji('✅').setStyle(ButtonStyle.Success)
+    ),
 
     criarMenuMatador: jogadoresInfo => {
         const pontuacao = lerPontuacaoAtual();
-
         return new ActionRowBuilder().addComponents(
-            new StringSelectMenuBuilder()
-                .setCustomId('sel_matador_lote')
-                .setPlaceholder('🔫 Selecione QUEM MATOU...')
-                .addOptions(
-                    jogadoresInfo.map(j => ({
-                        label: labelJogador(j, pontuacao),
-                        value: j.id
-                    }))
-                )
+            new StringSelectMenuBuilder().setCustomId('sel_matador_lote').setPlaceholder('🔫 Selecione QUEM MATOU...').addOptions(
+                jogadoresInfo.map(j => ({ label: labelJogador(j, pontuacao), value: j.id }))
+            )
         );
     },
 
     criarMenuMultiplasVitimas: (jogadoresValidosInfo, matadorId) => {
         const pontuacao = lerPontuacaoAtual();
-
-        const opcoes = jogadoresValidosInfo
-            .filter(j => j.id !== matadorId)
-            .map(j => ({
-                label: labelJogador(j, pontuacao),
-                value: j.id,
-                description: 'Marcar como eliminado na partida'
-            }));
-
+        const opcoes = jogadoresValidosInfo.filter(j => j.id !== matadorId).map(j => ({ label: labelJogador(j, pontuacao), value: j.id, description: 'Marcar como eliminado na partida' }));
         return new ActionRowBuilder().addComponents(
-            new StringSelectMenuBuilder()
-                .setCustomId('sel_vitimas_lote')
-                .setPlaceholder('💀 Selecione AS VÍTIMAS...')
-                .setMinValues(1)
-                .setMaxValues(opcoes.length > 0 ? opcoes.length : 1)
-                .addOptions(
-                    opcoes.length > 0
-                        ? opcoes
-                        : [{ label: 'Nenhuma vítima válida', value: '0' }]
-                )
+            new StringSelectMenuBuilder().setCustomId('sel_vitimas_lote').setPlaceholder('💀 Selecione AS VÍTIMAS...').setMinValues(1).setMaxValues(opcoes.length > 0 ? opcoes.length : 1).addOptions(opcoes.length > 0 ? opcoes : [{ label: 'Nenhuma vítima válida', value: '0' }])
         );
     },
 
-    // ==========================================
-    // 🗺️ FASE 3: MENUS DE CONTINENTES
-    // ==========================================
-    criarBotoesContinente: () => {
-        return new ActionRowBuilder().addComponents(
-            new ButtonBuilder()
-                .setCustomId('add_cont_lote')
-                .setLabel('Registrar Domínio')
-                .setEmoji('🗺️')
-                .setStyle(ButtonStyle.Primary),
-            new ButtonBuilder()
-                .setCustomId('reset_conts')
-                .setLabel('Desfazer Continentes')
-                .setEmoji('🔄')
-                .setStyle(ButtonStyle.Secondary),
-            new ButtonBuilder()
-                .setCustomId('fim_cont')
-                .setLabel('Finalizar Partida')
-                .setEmoji('✅')
-                .setStyle(ButtonStyle.Success)
-        );
-    },
+    criarBotoesContinente: () => new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId('add_cont_lote').setLabel('Registrar Domínio').setEmoji('🗺️').setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId('reset_conts').setLabel('Desfazer Continentes').setEmoji('🔄').setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId('fim_cont').setLabel('Finalizar Partida').setEmoji('✅').setStyle(ButtonStyle.Success)
+    ),
 
     criarMenuDonoContinente: jogadoresVivosInfo => {
         const pontuacao = lerPontuacaoAtual();
-
         return new ActionRowBuilder().addComponents(
-            new StringSelectMenuBuilder()
-                .setCustomId('sel_dono_cont_lote')
-                .setPlaceholder('🚩 Selecione quem dominou...')
-                .addOptions(
-                    jogadoresVivosInfo.map(j => ({
-                        label: labelJogador(j, pontuacao),
-                        value: j.id,
-                        description: 'Apenas jogadores vivos aparecem aqui'
-                    }))
-                )
+            new StringSelectMenuBuilder().setCustomId('sel_dono_cont_lote').setPlaceholder('🚩 Selecione quem dominou...').addOptions(
+                jogadoresVivosInfo.map(j => ({ label: labelJogador(j, pontuacao), value: j.id, description: 'Apenas jogadores vivos aparecem aqui' }))
+            )
         );
     },
 
-    criarMenuMultiplosContinentes: continentesDisp => {
-        return new ActionRowBuilder().addComponents(
-            new StringSelectMenuBuilder()
-                .setCustomId('sel_conts_lote')
-                .setPlaceholder('🌍 Selecione os continentes...')
-                .setMinValues(1)
-                .setMaxValues(continentesDisp.length)
-                .addOptions(continentesDisp)
-        );
-    }
+    criarMenuMultiplosContinentes: continentesDisp => new ActionRowBuilder().addComponents(
+        new StringSelectMenuBuilder().setCustomId('sel_conts_lote').setPlaceholder('🌍 Selecione os continentes...').setMinValues(1).setMaxValues(continentesDisp.length).addOptions(continentesDisp)
+    )
 };

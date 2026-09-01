@@ -23,13 +23,15 @@
     "vitoriasMensais": 13,
     "killsSemanais": 0,
     "mortesSemanais": 0,
-    "partidasSemanais": 0,
+    "partidasSemanais": 1,
     "asiaSemanal": 0,
     "europaSemanal": 0,
     "oceaniaSemanal": 0,
-    "amsulSemanal": 0,
+    "amsulSemanal": 1,
     "amnorteSemanal": 0,
-    "africaSemanal": 0
+    "africaSemanal": 0,
+    "partidasLigaTotal": 1,
+    "partidasConsideradasLiga": 1
   },
   "1349484758769471609": {
     "factionId": "1090063773630484490",
@@ -74,15 +76,17 @@
     ],
     "vitoriasSemanais": 0,
     "vitoriasMensais": 34,
-    "partidasSemanais": 1,
+    "partidasSemanais": 2,
     "killsSemanais": 0,
-    "mortesSemanais": 0,
+    "mortesSemanais": 1,
     "asiaSemanal": 0,
     "europaSemanal": 0,
     "oceaniaSemanal": 0,
     "amsulSemanal": 0,
     "amnorteSemanal": 0,
-    "africaSemanal": 0
+    "africaSemanal": 0,
+    "partidasLigaTotal": 1,
+    "partidasConsideradasLiga": 1
   },
   "730550615251615824": {
     "factionId": "1090063773630484490",
@@ -338,13 +342,15 @@
     "vitoriasMensais": 20,
     "killsSemanais": 0,
     "mortesSemanais": 0,
-    "partidasSemanais": 0,
+    "partidasSemanais": 1,
     "asiaSemanal": 0,
     "europaSemanal": 0,
     "oceaniaSemanal": 0,
     "amsulSemanal": 0,
     "amnorteSemanal": 0,
-    "africaSemanal": 0
+    "africaSemanal": 1,
+    "partidasLigaTotal": 1,
+    "partidasConsideradasLiga": 1
   },
   "704450104194498584": {
     "factionId": "874475520333578310",
@@ -530,15 +536,17 @@
     ],
     "vitoriasSemanais": 5,
     "vitoriasMensais": 15,
-    "killsSemanais": 0,
+    "killsSemanais": 1,
     "mortesSemanais": 0,
-    "partidasSemanais": 0,
+    "partidasSemanais": 1,
     "asiaSemanal": 0,
     "europaSemanal": 0,
     "oceaniaSemanal": 0,
     "amsulSemanal": 0,
     "amnorteSemanal": 0,
-    "africaSemanal": 0
+    "africaSemanal": 0,
+    "partidasLigaTotal": 1,
+    "partidasConsideradasLiga": 1
   },
   "813278974078615572": {
     "factionId": "874475515166216273",
@@ -16804,7 +16812,7 @@
     "africaSemanal": 0
   },
   "1484350391146516581": {
-    "totalWins": 9,
+    "totalWins": 11,
     "nome": "xxx.xx.1",
     "factionId": "1090063773630484490",
     "printsProcessados": [
@@ -16816,20 +16824,23 @@
       "1539488894393917570",
       "1539527814817251430",
       "1540222508907896842",
-      "1540926085284368474"
+      "1540926085284368474",
+      "1544399451077087312"
     ],
-    "vitoriasSemanais": 0,
-    "vitoriasMensais": 9,
-    "currentRankId": "1090082022329950229",
-    "partidasSemanais": 0,
+    "vitoriasSemanais": 2,
+    "vitoriasMensais": 11,
+    "currentRankId": "1090081988939100240",
+    "partidasSemanais": 1,
     "mortesSemanais": 0,
-    "killsSemanais": 0,
+    "killsSemanais": 1,
     "asiaSemanal": 0,
     "europaSemanal": 0,
-    "oceaniaSemanal": 0,
+    "oceaniaSemanal": 1,
     "amsulSemanal": 0,
     "amnorteSemanal": 0,
-    "africaSemanal": 0
+    "africaSemanal": 0,
+    "partidasLigaTotal": 1,
+    "partidasConsideradasLiga": 1
   },
   "1538233170053566566": {
     "totalWins": 0,
@@ -17486,5 +17497,13 @@
     "vitoriasSemanais": 2,
     "vitoriasMensais": 2,
     "currentRankId": "1090082057373372516"
+  },
+  "723021581340901397": {
+    "totalWins": 0,
+    "nome": "murilo_freitas2504",
+    "partidasSemanais": 1,
+    "partidasLigaTotal": 1,
+    "partidasConsideradasLiga": 1,
+    "mortesSemanais": 1
   }
 }

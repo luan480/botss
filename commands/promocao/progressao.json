@@ -131,15 +131,17 @@
     ],
     "vitoriasSemanais": 4,
     "vitoriasMensais": 41,
-    "partidasSemanais": 1,
+    "partidasSemanais": 2,
     "oceaniaSemanal": 0,
     "africaSemanal": 0,
-    "killsSemanais": 3,
+    "killsSemanais": 4,
     "mortesSemanais": 0,
     "asiaSemanal": 0,
     "europaSemanal": 0,
-    "amsulSemanal": 0,
-    "amnorteSemanal": 0
+    "amsulSemanal": 1,
+    "amnorteSemanal": 0,
+    "partidasLigaTotal": 1,
+    "partidasConsideradasLiga": 1
   },
   "1135337155376467968": {
     "factionId": "874475515166216273",
@@ -336,15 +338,17 @@
     ],
     "vitoriasSemanais": 3,
     "vitoriasMensais": 20,
-    "killsSemanais": 0,
+    "killsSemanais": 1,
     "mortesSemanais": 0,
-    "partidasSemanais": 0,
+    "partidasSemanais": 1,
     "asiaSemanal": 0,
     "europaSemanal": 0,
     "oceaniaSemanal": 0,
     "amsulSemanal": 0,
     "amnorteSemanal": 0,
-    "africaSemanal": 0
+    "africaSemanal": 0,
+    "partidasLigaTotal": 1,
+    "partidasConsideradasLiga": 1
   },
   "704450104194498584": {
     "factionId": "874475520333578310",
@@ -509,7 +513,7 @@
   "664581394445631510": {
     "factionId": "874475515166216273",
     "currentRankId": "874481315628593283",
-    "totalWins": 33,
+    "totalWins": 34,
     "nome": "vhzero7",
     "printsProcessados": [
       "1535905669335613491",
@@ -528,17 +532,19 @@
       "1544152836344909894",
       "1544185879218888764"
     ],
-    "vitoriasSemanais": 5,
-    "vitoriasMensais": 15,
+    "vitoriasSemanais": 6,
+    "vitoriasMensais": 16,
     "killsSemanais": 0,
     "mortesSemanais": 0,
-    "partidasSemanais": 0,
-    "asiaSemanal": 0,
+    "partidasSemanais": 1,
+    "asiaSemanal": 1,
     "europaSemanal": 0,
-    "oceaniaSemanal": 0,
+    "oceaniaSemanal": 1,
     "amsulSemanal": 0,
     "amnorteSemanal": 0,
-    "africaSemanal": 0
+    "africaSemanal": 0,
+    "partidasLigaTotal": 1,
+    "partidasConsideradasLiga": 1
   },
   "813278974078615572": {
     "factionId": "874475515166216273",
@@ -1576,7 +1582,7 @@
     "vitoriasSemanais": 1,
     "killsSemanais": 0,
     "mortesSemanais": 0,
-    "partidasSemanais": 0,
+    "partidasSemanais": 1,
     "asiaSemanal": 0,
     "europaSemanal": 0,
     "oceaniaSemanal": 0,
@@ -1586,7 +1592,9 @@
     "printsProcessados": [
       "1541555191059587143"
     ],
-    "vitoriasMensais": 1
+    "vitoriasMensais": 1,
+    "partidasLigaTotal": 1,
+    "partidasConsideradasLiga": 1
   },
   "862172254057922570": {
     "factionId": "874475515166216273",
@@ -16435,8 +16443,8 @@
     "nome": "tiagostoso2920",
     "vitoriasSemanais": 0,
     "killsSemanais": 0,
-    "mortesSemanais": 0,
-    "partidasSemanais": 0,
+    "mortesSemanais": 1,
+    "partidasSemanais": 1,
     "asiaSemanal": 0,
     "europaSemanal": 0,
     "oceaniaSemanal": 0,
@@ -16453,7 +16461,9 @@
       "1540159841484677200",
       "1540461533232894023"
     ],
-    "vitoriasMensais": 8
+    "vitoriasMensais": 8,
+    "partidasLigaTotal": 1,
+    "partidasConsideradasLiga": 1
   },
   "1460334282382901309": {
     "nome": "risada0973",
@@ -16804,7 +16814,7 @@
     "africaSemanal": 0
   },
   "1484350391146516581": {
-    "totalWins": 9,
+    "totalWins": 10,
     "nome": "xxx.xx.1",
     "factionId": "1090063773630484490",
     "printsProcessados": [
@@ -16816,11 +16826,12 @@
       "1539488894393917570",
       "1539527814817251430",
       "1540222508907896842",
-      "1540926085284368474"
+      "1540926085284368474",
+      "1544399451077087312"
     ],
-    "vitoriasSemanais": 0,
-    "vitoriasMensais": 9,
-    "currentRankId": "1090082022329950229",
+    "vitoriasSemanais": 1,
+    "vitoriasMensais": 10,
+    "currentRankId": "1090081988939100240",
     "partidasSemanais": 0,
     "mortesSemanais": 0,
     "killsSemanais": 0,
@@ -17485,6 +17496,10 @@
     ],
     "vitoriasSemanais": 2,
     "vitoriasMensais": 2,
-    "currentRankId": "1090082057373372516"
+    "currentRankId": "1090082057373372516",
+    "partidasSemanais": 1,
+    "partidasLigaTotal": 1,
+    "partidasConsideradasLiga": 1,
+    "mortesSemanais": 1
   }
 }

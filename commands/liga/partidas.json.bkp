@@ -648,90 +648,69 @@
       }
     }
   },
-  "1539999336908324967": {
-    "adminId": "1349484758769471609",
+  "1544410009797005313": {
+    "adminId": "1484350391146516581",
     "respostas": {
-      "vencedor": "1176260337004183586",
-      "segundo": "462050331996717059",
-      "modo": "objetivo",
+      "vencedor": "1484350391146516581",
+      "segundo": "357660457458466817",
+      "terceiro": "664581394445631510",
+      "maisTropas": "1484350391146516581",
+      "modo": "territorios",
       "abates": [
         {
-          "matador": "1176260337004183586",
-          "vitima": "844347454211620875"
+          "matador": "1484350391146516581",
+          "vitima": "1349484758769471609"
+        },
+        {
+          "matador": "664581394445631510",
+          "vitima": "723021581340901397"
         }
       ],
       "continentes": [
         {
-          "cont": "asia",
-          "dono": "403361886567137290"
-        },
-        {
-          "cont": "amnorte",
-          "dono": "403361886567137290"
+          "cont": "oceania",
+          "dono": "1484350391146516581"
         },
         {
           "cont": "africa",
-          "dono": "403361886567137290"
+          "dono": "762166522709147649"
+        },
+        {
+          "cont": "amsul",
+          "dono": "357660457458466817"
         }
       ]
     },
     "jogadoresBrutos": [
       {
-        "id": "215158341515608065",
-        "username": "yamato7043"
+        "id": "357660457458466817",
+        "username": "xubz0"
       },
       {
-        "id": "1176260337004183586",
-        "username": "tgasparino"
+        "id": "762166522709147649",
+        "username": "reginaldo0726"
       },
       {
-        "id": "462050331996717059",
-        "username": "tiok_yt"
+        "id": "1484350391146516581",
+        "username": "xxx.xx.1"
       },
       {
-        "id": "403361886567137290",
-        "username": "troskovisk"
+        "id": "723021581340901397",
+        "username": "murilo_freitas2504"
       },
       {
-        "id": "844347454211620875",
-        "username": "minus2800"
+        "id": "664581394445631510",
+        "username": "vhzero7"
       },
       {
-        "id": "685695027271565329",
-        "username": "antonymus1"
+        "id": "1349484758769471609",
+        "username": "z_coelho_z"
       }
     ],
-    "pontos": {
-      "215158341515608065": {
-        "ptsLiga": 5,
-        "wcRecebido": 500,
-        "vitoria": 0
-      },
-      "1176260337004183586": {
-        "ptsLiga": 45,
-        "wcRecebido": 4500,
-        "vitoria": 1
-      },
-      "462050331996717059": {
-        "ptsLiga": 15,
-        "wcRecebido": 1500,
-        "vitoria": 0
-      },
-      "403361886567137290": {
-        "ptsLiga": 20,
-        "wcRecebido": 2000,
-        "vitoria": 0
-      },
-      "844347454211620875": {
-        "ptsLiga": -15,
-        "wcRecebido": 0,
-        "vitoria": 0
-      },
-      "685695027271565329": {
-        "ptsLiga": 5,
-        "wcRecebido": 500,
-        "vitoria": 0
-      }
+    "pontos": {},
+    "meta": {
+      "limiteLiga": 80,
+      "registradaEm": 1788286441577
     }
   }
 }

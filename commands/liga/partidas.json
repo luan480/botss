@@ -647,5 +647,135 @@
         "vitoria": 0
       }
     }
+  },
+  "1544410009797005313": {
+    "adminId": "1484350391146516581",
+    "respostas": {
+      "vencedor": "1484350391146516581",
+      "segundo": "357660457458466817",
+      "terceiro": "664581394445631510",
+      "maisTropas": "1484350391146516581",
+      "modo": "territorios",
+      "abates": [
+        {
+          "matador": "1484350391146516581",
+          "vitima": "1349484758769471609"
+        },
+        {
+          "matador": "664581394445631510",
+          "vitima": "723021581340901397"
+        }
+      ],
+      "continentes": [
+        {
+          "cont": "oceania",
+          "dono": "1484350391146516581"
+        },
+        {
+          "cont": "africa",
+          "dono": "762166522709147649"
+        },
+        {
+          "cont": "amsul",
+          "dono": "357660457458466817"
+        }
+      ]
+    },
+    "jogadoresBrutos": [
+      {
+        "id": "357660457458466817",
+        "username": "xubz0"
+      },
+      {
+        "id": "762166522709147649",
+        "username": "reginaldo0726"
+      },
+      {
+        "id": "1484350391146516581",
+        "username": "xxx.xx.1"
+      },
+      {
+        "id": "723021581340901397",
+        "username": "murilo_freitas2504"
+      },
+      {
+        "id": "664581394445631510",
+        "username": "vhzero7"
+      },
+      {
+        "id": "1349484758769471609",
+        "username": "z_coelho_z"
+      }
+    ],
+    "pontos": {},
+    "meta": {
+      "limiteLiga": 80,
+      "registradaEm": 1788286441577
+    }
+  },
+  "1544410639114567700": {
+    "adminId": "1349484758769471609",
+    "respostas": {
+      "vencedor": "664581394445631510",
+      "segundo": "730550615251615824",
+      "terceiro": "762166522709147649",
+      "maisTropas": "664581394445631510",
+      "modo": "territorios",
+      "abates": [
+        {
+          "matador": "762166522709147649",
+          "vitima": "965777952455417876"
+        },
+        {
+          "matador": "730550615251615824",
+          "vitima": "552700033674379265"
+        }
+      ],
+      "continentes": [
+        {
+          "cont": "asia",
+          "dono": "664581394445631510"
+        },
+        {
+          "cont": "oceania",
+          "dono": "664581394445631510"
+        },
+        {
+          "cont": "amsul",
+          "dono": "730550615251615824"
+        }
+      ]
+    },
+    "jogadoresBrutos": [
+      {
+        "id": "552700033674379265",
+        "username": "tarcosbelmonts"
+      },
+      {
+        "id": "762166522709147649",
+        "username": "reginaldo0726"
+      },
+      {
+        "id": "730550615251615824",
+        "username": "ntguilherme1"
+      },
+      {
+        "id": "965777952455417876",
+        "username": "tiagostoso2920"
+      },
+      {
+        "id": "664581394445631510",
+        "username": "vhzero7"
+      },
+      {
+        "id": "793899198160437279",
+        "username": "susu3999"
+      }
+    ],
+    "pontos": {},
+    "meta": {
+      "limiteLiga": 80,
+      "registradaEm": 1788286590648
+    }
   }
 }

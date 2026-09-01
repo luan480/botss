@@ -19,6 +19,7 @@ const fs = require('fs');
 const path = require('path');
 const { safeReadJson, safeWriteJson } = require('./utils/helpers.js');
 const pontuacaoLiga = require('./utils/pontuacaoLiga.js');
+const migracaoLiga = require('./utils/migracaoLiga.js');
 
 const base = __dirname;
 const pontuacaoPath = path.join(base, 'pontuacao.json');
@@ -28,24 +29,20 @@ const painelPath = path.join(base, 'painel.json');
 const CANAL_PAINEL_LIGA = '1543636868682354748';
 
 function rankingAtual() {
+    try {
+        const reparados = migracaoLiga.executar();
+        if (reparados > 0) console.log(`[LIGA] ${reparados} registros com pontos ausentes foram reparados.`);
+    } catch (erro) {
+        console.error('[LIGA] Migração automática de integridade falhou:', erro);
+    }
+
     const dados = safeReadJson(pontuacaoPath) || {};
     const perfis = pontuacaoLiga.normalizarTodos(dados, partidasPath, temporadaPath);
 
     return Object.values(perfis)
-        .map(j => ({
-            ...j,
-            id: String(j.id),
-            pontos: Number(j.pontos) || 0,
-            vitorias: Number(j.vitorias) || 0,
-            partidas: Number(j.partidas) || 0
-        }))
+        .map(j => ({ ...j, id: String(j.id), pontos: Number(j.pontos) || 0, vitorias: Number(j.vitorias) || 0, partidas: Number(j.partidas) || 0 }))
         .filter(j => j.partidas > 0 || j.pontos !== 0 || j.vitorias > 0)
-        .sort((a, b) =>
-            b.pontos - a.pontos ||
-            b.vitorias - a.vitorias ||
-            b.partidas - a.partidas ||
-            String(a.id).localeCompare(String(b.id))
-        );
+        .sort((a, b) => b.pontos - a.pontos || b.vitorias - a.vitorias || b.partidas - a.partidas || String(a.id).localeCompare(String(b.id)));
 }
 
 module.exports = async function criarPainelDashboard(guild, canalId) {
@@ -57,49 +54,32 @@ module.exports = async function criarPainelDashboard(guild, canalId) {
     if (!canal.isTextBased()) throw new Error('O canal informado não é de texto.');
 
     const ranking = rankingAtual();
-    const linha = (j, emoji, posicao) =>
-        j ? `${emoji} **${posicao}º** <@${j.id}> — **${j.pontos} pts**` : `${emoji} **${posicao}º** ⏳ *Vago*`;
+    const linha = (j, emoji, posicao) => j ? `${emoji} **${posicao}º** <@${j.id}> — **${j.pontos} pts**` : `${emoji} **${posicao}º** ⏳ *Vago*`;
 
     const containerPainel = new ContainerBuilder()
         .setAccentColor(0x9B59B6)
-        .addTextDisplayComponents(
-            new TextDisplayBuilder().setContent('### 🏆 LIGA DAS NAÇÕES 🏆\n🔥 **A Liga War Grow está ativa!**')
-        )
-        .addSeparatorComponents(
-            new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small)
-        )
-        .addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(
-                `📆 **Temporada atual**\n` +
-                `⚔️ **Pontuação calculada pelo histórico válido da temporada.**\n\n` +
-                `__**PREMIAÇÃO:**__\n` +
-                `🥇 **1º Lugar:** R$ 30,00 + <@&1429934221216186458>\n` +
-                `🥈 **2º Lugar:** R$ 20,00 + <@&938174095470772305>\n` +
-                `🥉 **3º Lugar:** <@&938174095470772305>`
-            )
-        )
-        .addSeparatorComponents(
-            new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small)
-        )
-        .addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(
-                `📈 **TOP 3 ATUAL — TEMPO REAL**\n\n` +
-                `${linha(ranking[0], '🥇', 1)}\n` +
-                `${linha(ranking[1], '🥈', 2)}\n` +
-                `${linha(ranking[2], '🥉', 3)}`
-            )
-        )
-        .addSeparatorComponents(
-            new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small)
-        )
-        .addMediaGalleryComponents(
-            new MediaGalleryBuilder().addItems(
-                new MediaGalleryItemBuilder().setURL('https://cdn.discordapp.com/attachments/1082774011676729365/1283426407313182803/WAR.gif')
-            )
-        )
-        .addTextDisplayComponents(
-            new TextDisplayBuilder().setContent('📖 **GUIA DA LIGA:** regras, registro de partidas e pontuação.')
-        );
+        .addTextDisplayComponents(new TextDisplayBuilder().setContent('### 🏆 LIGA DAS NAÇÕES 🏆\n🔥 **A Liga War Grow está ativa!**'))
+        .addSeparatorComponents(new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small))
+        .addTextDisplayComponents(new TextDisplayBuilder().setContent(
+            `📆 **Temporada atual**\n` +
+            `⚔️ **Pontuação calculada pelo histórico válido da temporada.**\n\n` +
+            `__**PREMIAÇÃO:**__\n` +
+            `🥇 **1º Lugar:** R$ 30,00 + <@&1429934221216186458>\n` +
+            `🥈 **2º Lugar:** R$ 20,00 + <@&938174095470772305>\n` +
+            `🥉 **3º Lugar:** <@&938174095470772305>`
+        ))
+        .addSeparatorComponents(new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small))
+        .addTextDisplayComponents(new TextDisplayBuilder().setContent(
+            `📈 **TOP 3 ATUAL — TEMPO REAL**\n\n` +
+            `${linha(ranking[0], '🥇', 1)}\n` +
+            `${linha(ranking[1], '🥈', 2)}\n` +
+            `${linha(ranking[2], '🥉', 3)}`
+        ))
+        .addSeparatorComponents(new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small))
+        .addMediaGalleryComponents(new MediaGalleryBuilder().addItems(
+            new MediaGalleryItemBuilder().setURL('https://cdn.discordapp.com/attachments/1082774011676729365/1283426407313182803/WAR.gif')
+        ))
+        .addTextDisplayComponents(new TextDisplayBuilder().setContent('📖 **GUIA DA LIGA:** regras, registro de partidas e pontuação.'));
 
     const row = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId('iniciar_contabilizacao').setLabel('Contabilizar').setEmoji('▶️').setStyle(ButtonStyle.Primary),
@@ -113,7 +93,6 @@ module.exports = async function criarPainelDashboard(guild, canalId) {
     if (painelData.messageId) painelMsg = await canal.messages.fetch(painelData.messageId).catch(() => null);
 
     const payload = { flags: MessageFlags.IsComponentsV2, components: [containerPainel, row] };
-
     if (painelMsg) {
         await painelMsg.edit(payload);
         return painelMsg;

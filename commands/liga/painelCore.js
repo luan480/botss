@@ -15,7 +15,6 @@ const {
     MediaGalleryItemBuilder
 } = require('discord.js');
 
-const fs = require('fs');
 const path = require('path');
 const { safeReadJson, safeWriteJson } = require('./utils/helpers.js');
 const pontuacaoLiga = require('./utils/pontuacaoLiga.js');
@@ -62,7 +61,7 @@ module.exports = async function criarPainelDashboard(guild, canalId) {
         .addSeparatorComponents(new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small))
         .addTextDisplayComponents(new TextDisplayBuilder().setContent(
             `📆 **Temporada atual**\n` +
-            `⚔️ **Pontuação calculada pelo histórico válido da temporada.**\n\n` +
+            `⚔️ **Saldo de pontos lido diretamente do pontuacao.json.**\n\n` +
             `__**PREMIAÇÃO:**__\n` +
             `🥇 **1º Lugar:** R$ 30,00 + <@&1429934221216186458>\n` +
             `🥈 **2º Lugar:** R$ 20,00 + <@&938174095470772305>\n` +

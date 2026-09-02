@@ -54,7 +54,9 @@ module.exports = {
                 .addOptions(jogadoresInfo.map(j => ({ label: labelJogador(j, pontuacao), value: j.id, default: respostas.vencedor === j.id })))
         );
 
-        const opcoesSegundo = [{ label: 'Nenhum / Não houve', value: '0', default: respostas.segundo === '0' }];
+        const opcoesSegundo = [
+            { label: '❌ Não teve 2º lugar', value: '0', description: 'Não houve segundo colocado', default: respostas.segundo === '0' }
+        ];
         jogadoresInfo.forEach(j => {
             if (j.id !== respostas.vencedor) {
                 opcoesSegundo.push({ label: labelJogador(j, pontuacao), value: j.id, default: respostas.segundo === j.id });
@@ -64,7 +66,7 @@ module.exports = {
         const rowSegundo = new ActionRowBuilder().addComponents(
             new StringSelectMenuBuilder()
                 .setCustomId('sel_seg')
-                .setPlaceholder('🥈 3. Selecione o 2º Lugar...')
+                .setPlaceholder('🥈 3. Selecione o 2º Lugar ou "Não teve"...')
                 .addOptions(opcoesSegundo)
         );
 
@@ -79,12 +81,21 @@ module.exports = {
     criarPainelFase1Extras: (jogadoresInfo, respostas) => {
         const pontuacao = lerPontuacaoAtual();
 
-        const opcoesTerceiro = jogadoresInfo
+        const opcoesTerceiro = [
+            { label: '❌ Não teve 3º lugar', value: '0', description: 'Não houve terceiro colocado', default: respostas.terceiro === '0' }
+        ];
+
+        jogadoresInfo
             .filter(j => j.id !== respostas.vencedor && j.id !== respostas.segundo)
-            .map(j => ({ label: labelJogador(j, pontuacao), value: j.id, default: respostas.terceiro === j.id }));
+            .forEach(j => {
+                opcoesTerceiro.push({ label: labelJogador(j, pontuacao), value: j.id, default: respostas.terceiro === j.id });
+            });
 
         const rowTerceiro = new ActionRowBuilder().addComponents(
-            new StringSelectMenuBuilder().setCustomId('sel_terceiro').setPlaceholder('🥉 4. Quem ficou em 3º lugar?').addOptions(opcoesTerceiro)
+            new StringSelectMenuBuilder()
+                .setCustomId('sel_terceiro')
+                .setPlaceholder('🥉 4. Selecione o 3º Lugar ou "Não teve"...')
+                .addOptions(opcoesTerceiro)
         );
 
         const rowTropas = new ActionRowBuilder().addComponents(
@@ -105,7 +116,7 @@ module.exports = {
     criarBotoesAbate: () => new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId('add_abate_lote').setLabel('Registrar Matador').setEmoji('🔪').setStyle(ButtonStyle.Danger),
         new ButtonBuilder().setCustomId('reset_abates').setLabel('Desfazer Abates').setEmoji('🔄').setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder().setCustomId('fim_abates').setLabel('Avançar').setEmoji('✅').setStyle(ButtonStyle.Success)
+        new ButtonBuilder().setCustomId('fim_abates').setLabel('Avançar').setStyle(ButtonStyle.Success)
     ),
 
     criarMenuMatador: jogadoresInfo => {
@@ -128,7 +139,7 @@ module.exports = {
     criarBotoesContinente: () => new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId('add_cont_lote').setLabel('Registrar Domínio').setEmoji('🗺️').setStyle(ButtonStyle.Primary),
         new ButtonBuilder().setCustomId('reset_conts').setLabel('Desfazer Continentes').setEmoji('🔄').setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder().setCustomId('fim_cont').setLabel('Finalizar Partida').setEmoji('✅').setStyle(ButtonStyle.Success)
+        new ButtonBuilder().setCustomId('fim_cont').setLabel('Finalizar Partida').setStyle(ButtonStyle.Success)
     ),
 
     criarMenuDonoContinente: jogadoresVivosInfo => {

@@ -4,6 +4,12 @@
    Idempotente: só altera registros novos/estruturados que possuem jogadores
    com IDs Discord válidos e não possuem pontos persistidos.
    Registros legados sem estrutura suficiente são preservados.
+
+   IMPORTANTE:
+   - partidas.json continua sendo corrigido quando faltam pontos por partida.
+   - pontuacao.json NÃO é reconstruído pela migração.
+   - O saldo atual de pontuacao.json é persistente e pode ser alterado
+     manualmente pela staff sem ser recalculado/sobrescrito no restart.
    ======================================================================== */
 
 const path = require('path');
@@ -11,8 +17,6 @@ const { safeReadJson, safeWriteJson } = require('./helpers.js');
 const liga = require('./pontuacaoLiga.js');
 
 const PARTIDAS = path.join(__dirname, '..', 'partidas.json');
-const PONTOS = path.join(__dirname, '..', 'pontuacao.json');
-const TEMPORADA = path.join(__dirname, '..', 'temporada.json');
 
 function idValido(id) { return /^\d{17,20}$/.test(String(id || '')); }
 
@@ -49,8 +53,10 @@ function executar() {
     }
 
     if (reparados > 0) {
-        if (!safeWriteJson(PARTIDAS, partidas)) throw new Error('Não foi possível salvar a migração da Liga.');
-        liga.sincronizarArquivo(PONTOS, PARTIDAS, TEMPORADA);
+        if (!safeWriteJson(PARTIDAS, partidas)) {
+            throw new Error('Não foi possível salvar a migração da Liga.');
+        }
+        console.log(`[LIGA] ${reparados} pontos de partidas foram reparados sem alterar o saldo de pontuacao.json.`);
     }
 
     return reparados;

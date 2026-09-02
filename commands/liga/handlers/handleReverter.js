@@ -4,11 +4,10 @@
    REGRA DA REVERSÃO:
    - A partida NÃO é apagada: fica anulada para auditoria.
    - O histórico válido deixa de considerar a partida anulada.
-   - O saldo de pontos da partida é estornado do pontuacao.json.
-   - O estorno funciona tanto para pontuacao.json legado (número) quanto
-     para o formato atual (perfil estruturado).
-   - Depois do estorno, a sincronização recalcula as estatísticas históricas
-     sem a partida anulada, mas preserva o saldo atual e seus ajustes manuais.
+   - A pontuação NÃO é subtraída manualmente: o histórico válido é a fonte
+     de verdade e a sincronização reconstrói o total.
+   - Ajustes manuais são preservados pelo pontuacaoLiga como delta.
+   - WarCoins e progressão operacional são estornados separadamente.
    ======================================================================== */
 
 const path = require('path');
@@ -47,41 +46,6 @@ function extrairPontos(valor) {
     return numero(valor);
 }
 
-/*
- * Estorna o saldo de pontuação sem destruir o formato do perfil.
- * Antes o código fazia Number(perfilObjeto), que resultava em NaN/0.
- * Assim, ao reverter uma partida, os pontos permaneciam no ranking.
- */
-function estornarPontuacao(dados, id, valor) {
-    if (!dados || !Object.prototype.hasOwnProperty.call(dados, id)) return;
-
-    const atual = dados[id];
-    const delta = numero(valor);
-
-    if (atual && typeof atual === 'object' && !Array.isArray(atual)) {
-        const chave = Object.prototype.hasOwnProperty.call(atual, 'pontos')
-            ? 'pontos'
-            : Object.prototype.hasOwnProperty.call(atual, 'ptsLiga')
-                ? 'ptsLiga'
-                : 'pontuacao';
-
-        atual[chave] = numero(atual[chave]) - delta;
-        return;
-    }
-
-    dados[id] = numero(atual) - delta;
-}
-
-function estornarNumero(dados, id, valor) {
-    if (!dados || !Object.prototype.hasOwnProperty.call(dados, id)) return;
-    dados[id] = numero(dados[id]) - numero(valor);
-}
-
-function diminuir(objeto, chave, quantidade = 1) {
-    if (!objeto || objeto[chave] === undefined) return;
-    objeto[chave] = Math.max(0, numero(objeto[chave]) - numero(quantidade));
-}
-
 function obterPontos(partida) {
     const saida = {};
     const jogadores = Array.isArray(partida?.jogadoresBrutos)
@@ -116,17 +80,9 @@ function obterJogadores(partida, pontos) {
     const respostas = partida?.respostas || partida?.resultado || {};
 
     for (const chave of [
-        'vencedor',
-        'winner',
-        'ganhador',
-        'segundo',
-        'segundoLugar',
-        'runnerUp',
-        'terceiro',
-        'terceiroLugar',
-        'maisTropas',
-        'maiorTropas',
-        'tropas'
+        'vencedor', 'winner', 'ganhador', 'segundo', 'segundoLugar',
+        'runnerUp', 'terceiro', 'terceiroLugar', 'maisTropas',
+        'maiorTropas', 'tropas'
     ]) {
         const id = idDe(respostas?.[chave]);
         if (id) ids.add(id);
@@ -144,7 +100,6 @@ function obterWarCoins(partida, id, pontos) {
         if (salvo.wc !== undefined) return numero(salvo.wc);
     }
 
-    // Compatibilidade com registros antigos que não guardaram o WC.
     return pontos > 0 ? pontos * 100 : 0;
 }
 
@@ -156,6 +111,11 @@ function marcarAnulada(partida, interaction) {
         anuladaPor: interaction.user.id,
         motivoAnulacao: 'Anulação manual pela Liga'
     };
+}
+
+function diminuir(objeto, chave, quantidade = 1) {
+    if (!objeto || objeto[chave] === undefined) return;
+    objeto[chave] = Math.max(0, numero(objeto[chave]) - numero(quantidade));
 }
 
 module.exports = async function handleReverter(
@@ -184,12 +144,7 @@ module.exports = async function handleReverter(
         });
     }
 
-    if (
-        partida.anulada === true ||
-        partida.anulado === true ||
-        partida.cancelada === true ||
-        partida.cancelado === true
-    ) {
+    if (partida.anulada === true || partida.anulado === true || partida.cancelada === true || partida.cancelado === true) {
         return interaction.editReply({
             content: '⚠️ Esta partida já está anulada.'
         });
@@ -217,30 +172,28 @@ module.exports = async function handleReverter(
     try {
         const pontos = obterPontos(partida);
         const respostas = partida.respostas || partida.resultado || {};
-        const vencedor = idDe(
-            respostas.vencedor || respostas.winner || respostas.ganhador
-        );
+        const vencedor = idDe(respostas.vencedor || respostas.winner || respostas.ganhador);
         const jogadores = obterJogadores(partida, pontos);
 
         /* ================================================================
-           1. ESTORNO DO SALDO ATUAL
+           1. NÃO ALTERAR MANUALMENTE pontuacao.json
+
+           O histórico é a fonte de verdade. Depois de marcar a partida como
+           anulada, sincronizarArquivo() reconstrói a pontuação somente com
+           partidas válidas e preserva apenas os deltas de ajustes manuais.
+           ================================================================ */
+
+        /* ================================================================
+           2. ESTORNO DE WARCOINS / PROGRESSÃO OPERACIONAL
            ================================================================ */
         for (const uid of jogadores) {
             const pts = numero(pontos[uid]);
-
-            if (pontos[uid] !== undefined) {
-                estornarPontuacao(antes.pontuacao, uid, pts);
-            }
-
             const wc = obterWarCoins(partida, uid, pts);
+
             if (wc !== 0) {
-                estornarNumero(antes.economy, uid, wc);
+                antes.economy[uid] = numero(antes.economy[uid]) - wc;
             }
 
-            /*
-             * A progressão é um saldo operacional. Removemos somente o que
-             * a própria partida comprovadamente adicionou.
-             */
             if (antes.progressao[uid]) {
                 const dadosPontos = partida?.pontos?.[uid];
                 const vitoriaRegistrada = dadosPontos && typeof dadosPontos === 'object'
@@ -256,90 +209,54 @@ module.exports = async function handleReverter(
                 diminuir(antes.progressao[uid], 'partidasSemanais');
                 diminuir(antes.progressao[uid], 'partidasLigaTotal');
 
-                const entraNaLiga = dadosPontos && typeof dadosPontos === 'object'
-                    ? dadosPontos.entraNaLiga === true
-                    : false;
-
-                if (entraNaLiga) {
+                if (dadosPontos?.entraNaLiga === true) {
                     diminuir(antes.progressao[uid], 'partidasConsideradasLiga');
                 }
             }
         }
 
         /* ================================================================
-           2. ESTORNO DE KILLS / MORTES DA PROGRESSÃO
+           3. ESTORNO DE KILLS / MORTES DA PROGRESSÃO
            ================================================================ */
-        for (const abate of Array.isArray(respostas.abates)
-            ? respostas.abates
-            : []) {
-            const matador = idDe(
-                abate?.matador || abate?.killer || abate?.atacante || abate?.quemMatou
-            );
-            const vitima = idDe(
-                abate?.vitima || abate?.victim || abate?.morto || abate?.quemMorreu
-            );
+        for (const abate of Array.isArray(respostas.abates) ? respostas.abates : []) {
+            const matador = idDe(abate?.matador || abate?.killer || abate?.atacante || abate?.quemMatou);
+            const vitima = idDe(abate?.vitima || abate?.victim || abate?.morto || abate?.quemMorreu);
 
-            if (matador && antes.progressao[matador]) {
-                diminuir(antes.progressao[matador], 'killsSemanais');
-            }
-
-            if (vitima && antes.progressao[vitima]) {
-                diminuir(antes.progressao[vitima], 'mortesSemanais');
-            }
+            if (matador && antes.progressao[matador]) diminuir(antes.progressao[matador], 'killsSemanais');
+            if (vitima && antes.progressao[vitima]) diminuir(antes.progressao[vitima], 'mortesSemanais');
         }
 
         /* ================================================================
-           3. ESTORNO DE CONTINENTES DA PROGRESSÃO
+           4. ESTORNO DE CONTINENTES DA PROGRESSÃO
            ================================================================ */
-        for (const continente of Array.isArray(respostas.continentes)
-            ? respostas.continentes
-            : []) {
+        for (const continente of Array.isArray(respostas.continentes) ? respostas.continentes : []) {
             const dono = idDe(
-                continente?.dono ||
-                continente?.jogador ||
-                continente?.jogadorId ||
-                continente?.userId ||
-                continente?.conquistador
+                continente?.dono || continente?.jogador || continente?.jogadorId ||
+                continente?.userId || continente?.conquistador
             );
             const codigo = String(
-                continente?.cont ||
-                continente?.continente ||
-                continente?.territorio ||
-                ''
+                continente?.cont || continente?.continente || continente?.territorio || ''
             ).trim();
 
             if (!dono || !codigo || !antes.progressao[dono]) continue;
 
-            const normalizado = codigo
-                .normalize('NFD')
-                .replace(/[\u0300-\u036f]/g, '')
-                .toLowerCase();
-
+            const normalizado = codigo.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
             const chaves = new Set([
                 `${codigo}Semanal`,
                 `${codigo.toLowerCase()}Semanal`,
                 `${normalizado}Semanal`
             ]);
 
-            for (const chave of chaves) {
-                diminuir(antes.progressao[dono], chave);
-            }
+            for (const chave of chaves) diminuir(antes.progressao[dono], chave);
         }
 
         /* ================================================================
-           4. MARCAR PARTIDA COMO ANULADA — NÃO APAGAR
+           5. MARCAR PARTIDA COMO ANULADA
            ================================================================ */
         partidas[matchId] = marcarAnulada(partida, interaction);
 
-        /* ================================================================
-           5. SALVAR ATOMICAMENTE O ESTADO ESTORNADO
-           ================================================================ */
         if (!safeWriteJson(partidasPath, partidas)) {
             throw new Error('Falha ao salvar a anulação da partida.');
-        }
-
-        if (!safeWriteJson(pontuacaoPath, antes.pontuacao)) {
-            throw new Error('Falha ao salvar o saldo de pontos.');
         }
 
         if (!safeWriteJson(ECONOMY, antes.economy)) {
@@ -351,11 +268,7 @@ module.exports = async function handleReverter(
         }
 
         /* ================================================================
-           6. RECONSTRUIR ESTATÍSTICAS SEM A PARTIDA ANULADA
-
-           IMPORTANTE:
-           sincronizarArquivo preserva o saldo que acabamos de estornar,
-           inclusive punições e ajustes administrativos.
+           6. RECONSTRUIR PONTUAÇÃO / RANKING
            ================================================================ */
         pontuacaoLiga.sincronizarArquivo(
             pontuacaoPath,
@@ -366,21 +279,17 @@ module.exports = async function handleReverter(
         await interaction.editReply({
             content:
                 '✅ **Partida anulada com sucesso.**\n' +
-                '📊 A pontuação foi estornada.\n' +
-                '📈 O ranking/estatísticas foram reconstruídos sem essa partida.\n' +
+                '📊 A pontuação foi reconstruída pelo histórico válido.\n' +
+                '📈 O ranking/estatísticas foram atualizados sem essa partida.\n' +
                 '🗃️ O registro foi preservado para auditoria.'
         });
 
-        await painelLiga(
-            interaction.guild,
-            '1543636868682354748'
-        ).catch(erro => {
+        await painelLiga(interaction.guild, '1543636868682354748').catch(erro => {
             console.error('[LIGA] Painel pós-anulação:', erro);
         });
     } catch (erro) {
         console.error('[LIGA] Erro ao anular:', erro);
 
-        // Rollback completo caso qualquer etapa falhe.
         safeWriteJson(partidasPath, antes.partidas);
         safeWriteJson(pontuacaoPath, antes.pontuacao);
         safeWriteJson(ECONOMY, antes.economy);

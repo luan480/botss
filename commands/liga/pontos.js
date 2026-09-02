@@ -41,6 +41,7 @@ module.exports = {
 
         const dados = pontuacaoLiga.carregar(pontuacaoPath);
         const ranking = pontuacaoLiga.normalizarTodos(dados, partidasPath, temporadaPath);
+        const historico = pontuacaoLiga.calcularEstatisticasTemporada(partidasPath, temporadaPath);
         const subcommand = interaction.options.getSubcommand();
         const targetUser = interaction.options.getUser('jogador');
         const quantidade = interaction.options.getInteger('quantidade');
@@ -51,15 +52,19 @@ module.exports = {
         }
 
         ranking[idJogador].nome = targetUser.username;
-        const pontosAtuais = Number(ranking[idJogador].pontos) || 0;
 
+        const pontosAtuais = Number(ranking[idJogador].pontos) || 0;
         let novoTotal = pontosAtuais;
+
         if (subcommand === 'adicionar') novoTotal = pontosAtuais + quantidade;
         if (subcommand === 'remover') novoTotal = Math.max(0, pontosAtuais - quantidade);
         if (subcommand === 'definir') novoTotal = quantidade;
 
+        const pontosHistoricos = Number(historico[idJogador]?.pontos) || 0;
+
         ranking[idJogador].pontos = novoTotal;
         ranking[idJogador].ajusteManual = true;
+        ranking[idJogador].ajusteManualValor = novoTotal - pontosHistoricos;
         ranking[idJogador].ajusteManualEm = Date.now();
         ranking[idJogador].ajusteManualPor = interaction.user.id;
 

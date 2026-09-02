@@ -15,6 +15,7 @@ const path = require('path');
 const { safeReadJson, safeWriteJson } = require('../utils/helpers.js');
 const core = require('./handleIniciarCore.js');
 const pontuacaoLiga = require('../utils/pontuacaoLiga.js');
+const painelMod = require('../painel.js');
 
 const PONTUACAO_PADRAO = path.join(__dirname, '..', 'pontuacao.json');
 const PARTIDAS_PADRAO = path.join(__dirname, '..', 'partidas.json');
@@ -177,5 +178,20 @@ module.exports = async function handleIniciar(...args) {
         safeWriteJson(PROGRESSAO, snapshot.progressao);
         safeWriteJson(PUNICOES, snapshot.punicoes);
         throw new Error('Não foi possível salvar a pontuação da Liga.');
+    }
+
+    // ============================================================
+    // PAINEL DA LIGA — ATUALIZAR SOMENTE DEPOIS DE TUDO SALVO
+    // ============================================================
+    // O core trabalha com arquivos temporários. Portanto, atualizar o painel
+    // dentro do core fazia o painel ler os pontos antigos. Agora o painel só
+    // é atualizado depois que partidas.json e pontuacao.json permanentes já
+    // foram gravados com sucesso.
+    try {
+        await painelMod(args[0]?.guild || args[1]?.guild);
+        console.log('[LIGA] Painel principal atualizado após contabilização.');
+    } catch (erroPainel) {
+        // A partida já foi salva; falha no painel não deve desfazer o resultado.
+        console.error('[LIGA] Erro ao atualizar painel após contabilização:', erroPainel);
     }
 };

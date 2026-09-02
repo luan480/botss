@@ -1,16 +1,58 @@
 /* ========================================================================
    LIGA DAS NAÇÕES — API DE ESTATÍSTICAS
 
-   Não converte pontuacao.json em formatos diferentes.
    Todas as estatísticas são derivadas do histórico válido da temporada.
+   pontuacaoLiga é responsável pela normalização dos perfis; a leitura de
+   partidas deste módulo aceita array, {partidas: []} e objeto indexado.
    ======================================================================== */
 
+const fs = require('fs');
 const path = require('path');
 const pontuacaoLiga = require('./pontuacaoLiga.js');
 
 const pontuacaoPath = path.join(__dirname, '..', 'pontuacao.json');
 const partidasPath = path.join(__dirname, '..', 'partidas.json');
 const temporadaPath = path.join(__dirname, '..', 'temporada.json');
+
+function lerJson(caminho, fallback = {}) {
+    try {
+        if (!fs.existsSync(caminho)) return fallback;
+        const bruto = fs.readFileSync(caminho, 'utf8');
+        if (!bruto.trim()) return fallback;
+        const dados = JSON.parse(bruto);
+        return dados && typeof dados === 'object' ? dados : fallback;
+    } catch (erro) {
+        console.error('[LIGA/ESTATISTICAS] Erro ao ler JSON:', caminho, erro.message);
+        return fallback;
+    }
+}
+
+function carregarPartidas() {
+    const dados = lerJson(partidasPath, {});
+
+    if (Array.isArray(dados)) {
+        return dados.map((partida, i) => ({ id: String(i), partida }));
+    }
+
+    if (Array.isArray(dados.partidas)) {
+        return dados.partidas.map((partida, i) => ({ id: String(i), partida }));
+    }
+
+    return Object.entries(dados).map(([id, partida]) => ({
+        id: String(id),
+        partida
+    }));
+}
+
+function partidaAnulada(registro) {
+    const p = registro?.partida || {};
+    return Boolean(
+        p.anulada ||
+        p.anulado ||
+        p.cancelada ||
+        p.cancelado
+    );
+}
 
 function perfis() {
     return pontuacaoLiga.normalizarTodos(
@@ -46,10 +88,6 @@ function calcularPerfil(jogadorId) {
     return perfis()[String(jogadorId)] || null;
 }
 
-function carregarPartidas() {
-    return pontuacaoLiga.carregarPartidas(partidasPath);
-}
-
 function carregarPontuacao() {
     return pontuacaoLiga.carregar(pontuacaoPath);
 }
@@ -61,53 +99,99 @@ function criarPerfil(id) {
 function rankingPorPontos(limite = 10) {
     return ordenar('pontos', limite);
 }
+
 function rankingPorVitorias(limite = 10) {
     return ordenar('vitorias', limite);
 }
+
 function rankingPorKills(limite = 10) {
     return ordenar('kills', limite);
 }
+
 function rankingPorMortes(limite = 10) {
     return ordenar('mortes', limite);
 }
+
 function rankingPorContinentes(limite = 10) {
     return ordenar('continentes', limite);
 }
+
 function rankingPorEuropa(limite = 10) {
-    return ordenar('continentesDetalhes', limite, j => Number(j.continentesDetalhes?.europa) >= 0)
+    return Object.values(perfis())
         .map(j => ({ ...j, europa: Number(j.continentesDetalhes?.europa) || 0 }))
         .sort((a, b) => b.europa - a.europa || b.pontos - a.pontos)
         .slice(0, Math.max(0, Number(limite) || 10));
 }
+
 function rankingPorAsia(limite = 10) {
-    return Object.values(perfis()).sort((a,b) => (b.continentesDetalhes?.asia||0)-(a.continentesDetalhes?.asia||0) || b.pontos-a.pontos).slice(0, limite);
+    return Object.values(perfis())
+        .sort((a, b) =>
+            (Number(b.continentesDetalhes?.asia) || 0) -
+            (Number(a.continentesDetalhes?.asia) || 0) ||
+            b.pontos - a.pontos
+        )
+        .slice(0, Math.max(0, Number(limite) || 10));
 }
+
 function rankingPorAfrica(limite = 10) {
-    return Object.values(perfis()).sort((a,b) => (b.continentesDetalhes?.africa||0)-(a.continentesDetalhes?.africa||0) || b.pontos-a.pontos).slice(0, limite);
+    return Object.values(perfis())
+        .sort((a, b) =>
+            (Number(b.continentesDetalhes?.africa) || 0) -
+            (Number(a.continentesDetalhes?.africa) || 0) ||
+            b.pontos - a.pontos
+        )
+        .slice(0, Math.max(0, Number(limite) || 10));
 }
+
 function rankingPorAmericaDoNorte(limite = 10) {
-    return Object.values(perfis()).sort((a,b) => (b.continentesDetalhes?.amnorte||0)-(a.continentesDetalhes?.amnorte||0) || b.pontos-a.pontos).slice(0, limite);
+    return Object.values(perfis())
+        .sort((a, b) =>
+            (Number(b.continentesDetalhes?.amnorte) || 0) -
+            (Number(a.continentesDetalhes?.amnorte) || 0) ||
+            b.pontos - a.pontos
+        )
+        .slice(0, Math.max(0, Number(limite) || 10));
 }
+
 function rankingPorAmericaDoSul(limite = 10) {
-    return Object.values(perfis()).sort((a,b) => (b.continentesDetalhes?.amsul||0)-(a.continentesDetalhes?.amsul||0) || b.pontos-a.pontos).slice(0, limite);
+    return Object.values(perfis())
+        .sort((a, b) =>
+            (Number(b.continentesDetalhes?.amsul) || 0) -
+            (Number(a.continentesDetalhes?.amsul) || 0) ||
+            b.pontos - a.pontos
+        )
+        .slice(0, Math.max(0, Number(limite) || 10));
 }
+
 function rankingPorOceania(limite = 10) {
-    return Object.values(perfis()).sort((a,b) => (b.continentesDetalhes?.oceania||0)-(a.continentesDetalhes?.oceania||0) || b.pontos-a.pontos).slice(0, limite);
+    return Object.values(perfis())
+        .sort((a, b) =>
+            (Number(b.continentesDetalhes?.oceania) || 0) -
+            (Number(a.continentesDetalhes?.oceania) || 0) ||
+            b.pontos - a.pontos
+        )
+        .slice(0, Math.max(0, Number(limite) || 10));
 }
+
 function rankingPorWinrate(limite = 10, partidasMinimas = 3) {
-    return ordenar('winrate', limite, j => Number(j.partidas) >= Number(partidasMinimas));
+    return ordenar(
+        'winrate',
+        limite,
+        j => Number(j.partidas) >= Number(partidasMinimas)
+    );
 }
+
 function rankingPorWarCoins(limite = 10) {
     return ordenar('warCoins', limite);
 }
 
 function resumoLiga() {
     const jogadores = Object.values(perfis());
+    const partidasValidas = carregarPartidas().filter(r => !partidaAnulada(r));
+
     return {
         jogadores: jogadores.length,
-        partidasRegistradas: pontuacaoLiga.calcularEstatisticasTemporada(partidasPath, temporadaPath)
-            ? pontuacaoLiga.carregarPartidas(partidasPath).filter(r => !r.partida?.anulada).length
-            : 0,
+        partidasRegistradas: partidasValidas.length,
         participacoes: jogadores.reduce((s, j) => s + Number(j.partidas || 0), 0),
         vitorias: jogadores.reduce((s, j) => s + Number(j.vitorias || 0), 0),
         kills: jogadores.reduce((s, j) => s + Number(j.kills || 0), 0),

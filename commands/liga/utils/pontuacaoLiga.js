@@ -5,9 +5,10 @@
    REGRA PRINCIPAL:
    - partidas.json é a fonte de verdade para partidas, vitórias, kills,
      mortes, continentes e pontos de partidas.
-   - pontuacao.json guarda o saldo ATUAL da temporada, incluindo ajustes
-     administrativos/punições, e nunca deve ser sobrescrito pelo histórico.
-   - Nenhuma função de leitura converte o arquivo no disco entre formatos.
+   - Partidas anuladas NÃO entram no histórico.
+   - pontuacao.json pode conter AJUSTES MANUAIS. Quando existirem, o valor
+     manual é aplicado como diferença sobre o histórico, nunca como substituto
+     do histórico.
    ======================================================================== */
 
 const fs = require('fs');
@@ -162,12 +163,8 @@ function normalizarPerfil(id, perfil, nomeFallback) {
 
 function lerPartidas(partidasPath = PARTIDAS_PADRAO) {
     const dados = carregar(partidasPath);
-    if (Array.isArray(dados)) {
-        return dados.map((partida, i) => ({ id: String(i), partida }));
-    }
-    if (Array.isArray(dados?.partidas)) {
-        return dados.partidas.map((partida, i) => ({ id: String(i), partida }));
-    }
+    if (Array.isArray(dados)) return dados.map((partida, i) => ({ id: String(i), partida }));
+    if (Array.isArray(dados?.partidas)) return dados.partidas.map((partida, i) => ({ id: String(i), partida }));
     return Object.entries(dados || {}).map(([id, partida]) => ({ id: String(id), partida }));
 }
 
@@ -211,30 +208,17 @@ function inicioTemporada(temporadaPath = TEMPORADA_PADRAO) {
 
 function temporadaIdAtual(temporadaPath = TEMPORADA_PADRAO) {
     const temporada = carregar(temporadaPath);
-    return String(
-        temporada.id ||
-        temporada.nome ||
-        temporada.codigo ||
-        temporada.inicio ||
-        'temporada-atual'
-    );
+    return String(temporada.id || temporada.nome || temporada.codigo || temporada.inicio || 'temporada-atual');
 }
 
 function estaNaTemporada(registro, inicioMs) {
     if (!inicioMs) return true;
     const ts = dataDaPartida(registro);
-    // Com uma temporada explicitamente iniciada, registro sem data confiável
-    // é histórico legado e NÃO pode contaminar a temporada nova.
     return ts !== null && ts >= inicioMs;
 }
 
 function anulada(partida) {
-    return Boolean(
-        partida?.anulada ||
-        partida?.anulado ||
-        partida?.cancelada ||
-        partida?.cancelado
-    );
+    return Boolean(partida?.anulada || partida?.anulado || partida?.cancelada || partida?.cancelado);
 }
 
 function nomeDosJogadores(registros) {
@@ -242,9 +226,7 @@ function nomeDosJogadores(registros) {
     for (const { partida } of registros) {
         for (const jogador of partida?.jogadoresBrutos || partida?.jogadores || []) {
             const id = idDe(jogador);
-            if (id && (jogador?.username || jogador?.nome)) {
-                nomes[id] = jogador.username || jogador.nome;
-            }
+            if (id && (jogador?.username || jogador?.nome)) nomes[id] = jogador.username || jogador.nome;
         }
     }
     return nomes;
@@ -270,17 +252,13 @@ function obterRespostas(partida) {
 function pontuacaoPersistida(partida, id) {
     const dados = partida?.pontos?.[id] ?? partida?.pontos?.[String(id)];
     if (dados === undefined) return null;
-    if (dados && typeof dados === 'object') {
-        return numero(dados.ptsLiga ?? dados.pontos ?? dados.pontuacao);
-    }
+    if (dados && typeof dados === 'object') return numero(dados.ptsLiga ?? dados.pontos ?? dados.pontuacao);
     return numero(dados);
 }
 
 function calcularPontosDaPartida(partida) {
     const respostas = obterRespostas(partida);
-    const jogadores = jogadoresDaPartida(partida)
-        .map(j => idDe(j))
-        .filter(Boolean);
+    const jogadores = jogadoresDaPartida(partida).map(j => idDe(j)).filter(Boolean);
     const tabela = Object.fromEntries(jogadores.map(id => [id, 0]));
 
     const vencedor = idDe(respostas.vencedor || respostas.winner || respostas.ganhador);
@@ -300,6 +278,7 @@ function calcularPontosDaPartida(partida) {
     const continentes = Array.isArray(respostas.continentes)
         ? respostas.continentes
         : (Array.isArray(respostas.territorios) ? respostas.territorios : []);
+
     for (const continente of continentes) {
         const dono = idDe(continente?.dono || continente?.jogador || continente?.jogadorId || continente?.userId);
         const codigo = String(continente?.cont || continente?.continente || '').toLowerCase();
@@ -420,41 +399,62 @@ function calcularEstatisticasTemporada(partidasPath = PARTIDAS_PADRAO, temporada
 function pontosAtuais(dados, id) {
     const salvo = dados?.[id];
     if (salvo === undefined) return null;
-    return ehPerfil(salvo)
-        ? numero(salvo.pontos ?? salvo.ptsLiga ?? salvo.pontuacao)
-        : numero(salvo);
+    return ehPerfil(salvo) ? numero(salvo.pontos ?? salvo.ptsLiga ?? salvo.pontuacao) : numero(salvo);
+}
+
+function ajusteManual(dados, id, historicoPontos) {
+    const salvo = dados?.[id];
+    if (!salvo || typeof salvo !== 'object' || salvo.ajusteManual !== true) return 0;
+
+    if (salvo.ajusteManualValor !== undefined) {
+        return numero(salvo.ajusteManualValor);
+    }
+
+    const atual = pontosAtuais(dados, id);
+    if (atual === null) return 0;
+
+    // Compatibilidade com ajustes antigos que ainda não guardavam o delta.
+    return atual - numero(historicoPontos);
+}
+
+function aplicarPontosHistoricos(resultado, dadosOriginais, historico) {
+    for (const [id, perfil] of Object.entries(resultado)) {
+        const h = historico[id];
+        const base = h ? numero(h.pontos) : 0;
+        const delta = ajusteManual(dadosOriginais, id, base);
+        perfil.pontos = base + delta;
+
+        // O extrato histórico continua representando apenas partidas.
+        // Ajustes manuais ficam apenas no total final.
+        if (dadosOriginais?.[id]?.ajusteManual === true) {
+            perfil.ajusteManual = true;
+            perfil.ajusteManualValor = delta;
+            perfil.ajusteManualEm = dadosOriginais[id].ajusteManualEm;
+            perfil.ajusteManualPor = dadosOriginais[id].ajusteManualPor;
+        }
+    }
 }
 
 function normalizarTodos(dados, partidasPath = PARTIDAS_PADRAO, temporadaPath = TEMPORADA_PADRAO) {
     const historico = calcularEstatisticasTemporada(partidasPath, temporadaPath);
     const resultado = {};
 
-    // O histórico fornece as estatísticas. O arquivo atual fornece o saldo
-    // de pontos, pois ele também contém punições e ajustes administrativos.
     for (const [idOriginal, valor] of Object.entries(dados || {})) {
         const id = idDe(idOriginal);
         if (!id) continue;
         const salvo = normalizarPerfil(id, valor, valor?.nome);
         const h = historico[id];
-        const saldoAtual = pontosAtuais(dados, id);
 
         resultado[id] = h
-            ? {
-                ...salvo,
-                ...h,
-                id,
-                nome: h.nome || salvo.nome,
-                pontos: saldoAtual !== null ? saldoAtual : h.pontos
-            }
+            ? { ...salvo, ...h, id, nome: h.nome || salvo.nome }
             : salvo;
     }
 
     for (const [id, h] of Object.entries(historico)) {
-        if (!resultado[id]) {
-            resultado[id] = { ...h, id, pontos: h.pontos };
-        }
+        if (!resultado[id]) resultado[id] = { ...h, id, pontos: h.pontos };
     }
 
+    aplicarPontosHistoricos(resultado, dados, historico);
     return resultado;
 }
 
@@ -465,29 +465,39 @@ function paraFormatoEstruturado(legacy, partidasPath = PARTIDAS_PADRAO, temporad
         ...Object.keys(legacy || {}).map(id => idDe(id)).filter(Boolean)
     ]);
 
-    return Object.fromEntries([...ids].map(id => {
+    const resultado = {};
+
+    for (const id of ids) {
         const h = historico[id] || criarPerfil(id);
         const salvo = legacy?.[id];
-        const saldoAtual = pontosAtuais(legacy, id);
-
-        return [id, {
+        const perfil = {
             ...criarPerfil(id, h.nome),
             ...h,
             id,
             nome: h.nome || (ehPerfil(salvo) ? salvo.nome : 'Desconhecido'),
-            // Migração/sincronização preserva o saldo atual. Isso impede que
-            // uma punição negativa seja apagada pelo recálculo do histórico.
-            pontos: saldoAtual !== null ? saldoAtual : h.pontos
-        }];
-    }));
+            pontos: h.pontos
+        };
+
+        const delta = ajusteManual(legacy, id, h.pontos);
+        perfil.pontos = h.pontos + delta;
+
+        if (salvo?.ajusteManual === true) {
+            perfil.ajusteManual = true;
+            perfil.ajusteManualValor = delta;
+            perfil.ajusteManualEm = salvo.ajusteManualEm;
+            perfil.ajusteManualPor = salvo.ajusteManualPor;
+        }
+
+        resultado[id] = perfil;
+    }
+
+    return resultado;
 }
 
-/* Compatibilidade: NÃO grava nada no disco. */
 function prepararFormatoAntigo(pontuacaoPath = PONTUACAO_PADRAO) {
     return paraFormatoAntigo(carregar(pontuacaoPath));
 }
 
-/* Reconstrói e grava explicitamente. Use somente em comandos de manutenção. */
 function sincronizarArquivo(
     pontuacaoPath = PONTUACAO_PADRAO,
     partidasPath = PARTIDAS_PADRAO,

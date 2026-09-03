@@ -894,10 +894,10 @@ function rankingPaises(dados) {
     }
 
     return Object.values(ranking).sort((a, b) =>
+        b.vitorias - a.vitorias ||
         b.ouro - a.ouro ||
         b.prata - a.prata ||
         b.bronze - a.bronze ||
-        b.vitorias - a.vitorias ||
         b.desempate - a.desempate ||
         normalizar(a.pais).localeCompare(normalizar(b.pais))
     );
@@ -914,7 +914,7 @@ function criarPainel(dados = carregarDados()) {
 
     const resumoRanking = ranking.length
         ? ranking.slice(0, 10).map((item, indice) =>
-            `**${indice + 1}. 🌎 ${limparTexto(item.pais)}** — 🥇 ${item.ouro} • 🥈 ${item.prata} • 🥉 ${item.bronze}`
+            `**${indice + 1}. 🌎 ${limparTexto(item.pais)}** — 🏆 ${item.vitorias} vitórias • 🥇 ${item.ouro} • 🥈 ${item.prata} • 🥉 ${item.bronze}`
         ).join('\n')
         : 'Sem resultados ainda.';
 
@@ -929,7 +929,7 @@ function criarPainel(dados = carregarDados()) {
             '📅 **Contabilização:** dias pares de setembro.',
             MODO_TESTE ? '🧪 **MODO TESTE ATIVO.**' : '',
             '',
-            '🥇 Ouro • 🥈 Prata • 🥉 Bronze',
+            '🏆 Vitórias • 🥇 Ouro • 🥈 Prata • 🥉 Bronze',
             '➖ 2º ou 3º podem ficar **sem colocação**.',
             '',
             `👥 **Duplas registradas:** ${dados.duplas.length}`,
@@ -1023,7 +1023,7 @@ async function verRanking(interaction) {
     const ranking = rankingPaises(carregarDados());
     const texto = ranking.length
         ? ranking.slice(0, 25).map((item, indice) =>
-            `**${indice + 1}. 🌎 ${limparTexto(item.pais)}** — 🥇 ${item.ouro} • 🥈 ${item.prata} • 🥉 ${item.bronze} • 🏅 ${item.total}`
+            `**${indice + 1}. 🌎 ${limparTexto(item.pais)}**\n🏆 **Vitórias:** ${item.vitorias}\n🥇 **Ouro:** ${item.ouro}\n🥈 **Prata:** ${item.prata}\n🥉 **Bronze:** ${item.bronze}`
         ).join('\n\n')
         : '🌎 **PAÍSES**\n\nSem medalhas ainda.';
 

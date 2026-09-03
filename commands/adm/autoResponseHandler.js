@@ -1,17 +1,21 @@
 /* ========================================================================
-   WORLDWARBR — AUTO RESPOSTA INTELIGENTE
+   WORLDWARBR — AUTO RESPOSTA INTELIGENTE V2
 
-   Integração com:
+   Integração:
    - Liga das Nações
    - Olimpíadas de Duplas
 
-   A automação só funciona em canais pertencentes à categoria configurada.
-   Além das respostas tradicionais do auto_respostas.json, este módulo:
-   - entende palavras-chave e intenções;
-   - consulta os dados atuais da Liga/Olimpíadas;
-   - gera comentários dinâmicos sobre ranking, pontos, vitórias e medalhas;
-   - publica mensagens espontâneas em intervalos aleatórios;
-   - evita spam e repetição imediata.
+   Recursos:
+   - somente na categoria configurada;
+   - respostas tradicionais do auto_respostas.json;
+   - análise dinâmica do ranking;
+   - jogadores subindo/caindo;
+   - ultrapassagens detectadas entre snapshots;
+   - sequência atual e maior sequência de vitórias;
+   - comparação direta entre dois jogadores mencionados;
+   - comentários sobre diferença de pontos, vitórias, kills e winrate;
+   - mensagens espontâneas com variação humana;
+   - anti-spam e anti-repetição.
    ======================================================================== */
 
 const { Events } = require('discord.js');
@@ -21,23 +25,20 @@ const { safeReadJson } = require('../liga/utils/helpers.js');
 const estatisticasLiga = require('../liga/utils/estatisticasLiga.js');
 
 const dbPath = path.join(__dirname, 'auto_respostas.json');
+const inteligenciaPath = path.join(__dirname, 'auto_inteligencia.json');
 const olympPath = path.join(__dirname, '..', 'olimpiadas', 'olimpiadas.json');
 
 const CONFIG = {
     categoriaId: '849698902634004510',
-    // Intervalo espontâneo: 10 a 30 minutos.
     intervaloMinMs: 10 * 60 * 1000,
     intervaloMaxMs: 30 * 60 * 1000,
-    // Evita responder repetidamente no mesmo canal.
     cooldownCanalMs: 90 * 1000,
-    // Chance de uma mensagem espontânea ser Liga/Olimpíadas.
     chanceOlimpiadas: 0.45,
-    // Chance de uma palavra-chave gerar resposta inteligente.
-    chanceRespostaInteligente: 0.72
+    chanceRespostaInteligente: 0.82,
+    maxRankingSnapshot: 50
 };
 
 const cooldownCanais = new Map();
-const ultimaEspontanea = new Map();
 const ultimoModelo = new Map();
 let timerEspontaneo = null;
 let clienteAtual = null;
@@ -55,6 +56,16 @@ function lerJson(caminho, fallback = {}) {
     }
 }
 
+function salvarJson(caminho, dados) {
+    try {
+        fs.writeFileSync(caminho, JSON.stringify(dados, null, 2), 'utf8');
+        return true;
+    } catch (erro) {
+        console.error('[Auto-Resposta] Erro salvando JSON:', caminho, erro.message);
+        return false;
+    }
+}
+
 function normalizar(valor) {
     return String(valor ?? '')
         .normalize('NFD')
@@ -63,21 +74,33 @@ function normalizar(valor) {
         .trim();
 }
 
-function escaparRegExp(valor) {
-    return String(valor).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+function numero(valor) {
+    const n = Number(valor);
+    return Number.isFinite(n) ? n : 0;
 }
 
-function contemPalavra(texto, palavra) {
-    const termo = normalizar(palavra);
-    if (!termo) return false;
-    return new RegExp(`(^|[^\\p{L}\\p{N}])${escaparRegExp(termo)}(?=$|[^\\p{L}\\p{N}])`, 'iu').test(normalizar(texto));
+function fmt(valor) {
+    return numero(valor).toLocaleString('pt-BR');
+}
+
+function mencionar(id) {
+    return id ? `<@${String(id)}>` : 'esse competidor';
+}
+
+function escolher(lista, chave) {
+    if (!Array.isArray(lista) || !lista.length) return '';
+    const anterior = ultimoModelo.get(chave);
+    const candidatos = lista.length > 1 ? lista.filter(x => x !== anterior) : lista;
+    const item = candidatos[Math.floor(Math.random() * candidatos.length)] || lista[0];
+    ultimoModelo.set(chave, item);
+    return item;
 }
 
 function estaNaCategoria(channel) {
     return String(channel?.parentId || '') === CONFIG.categoriaId;
 }
 
-function podeResponderNoCanal(channelId) {
+function podeResponder(channelId) {
     const agora = Date.now();
     const ultimo = cooldownCanais.get(String(channelId)) || 0;
     if (agora - ultimo < CONFIG.cooldownCanalMs) return false;
@@ -85,36 +108,13 @@ function podeResponderNoCanal(channelId) {
     return true;
 }
 
-function escolher(lista, chave = 'global') {
-    if (!Array.isArray(lista) || !lista.length) return null;
-
-    const anterior = ultimoModelo.get(chave);
-    let candidatos = lista;
-    if (lista.length > 1 && anterior) {
-        candidatos = lista.filter(item => item !== anterior);
-        if (!candidatos.length) candidatos = lista;
+function rankingLiga() {
+    try {
+        return estatisticasLiga.rankingPorPontos(CONFIG.maxRankingSnapshot) || [];
+    } catch (erro) {
+        console.error('[Auto-Resposta] Ranking:', erro.message);
+        return [];
     }
-
-    const item = candidatos[Math.floor(Math.random() * candidatos.length)];
-    ultimoModelo.set(chave, item);
-    return item;
-}
-
-function limparNome(nome) {
-    return String(nome || '').replace(/[<>`]/g, '').trim() || 'jogador';
-}
-
-function numero(valor) {
-    const n = Number(valor);
-    return Number.isFinite(n) ? n : 0;
-}
-
-function formatarPontos(valor) {
-    return numero(valor).toLocaleString('pt-BR');
-}
-
-function diferenca(a, b) {
-    return Math.abs(numero(a) - numero(b));
 }
 
 function perfilLiga(id) {
@@ -125,13 +125,276 @@ function perfilLiga(id) {
     }
 }
 
-function rankingLiga() {
+function resumoLiga() {
     try {
-        return estatisticasLiga.rankingPorPontos(50) || [];
-    } catch (erro) {
-        console.error('[Auto-Resposta] Erro no ranking da Liga:', erro.message);
-        return [];
+        return estatisticasLiga.resumoLiga() || {};
+    } catch {
+        return {};
     }
+}
+
+function carregarInteligencia() {
+    const dados = lerJson(inteligenciaPath, {});
+    if (!dados.ultimaClassificacao || typeof dados.ultimaClassificacao !== 'object') {
+        dados.ultimaClassificacao = {};
+    }
+    return dados;
+}
+
+function salvarSnapshot(ranking) {
+    if (!ranking.length) return;
+    const dados = carregarInteligencia();
+    const classificacao = {};
+    ranking.forEach((j, index) => {
+        classificacao[String(j.id)] = {
+            posicao: index + 1,
+            pontos: numero(j.pontos)
+        };
+    });
+    dados.ultimaClassificacao = classificacao;
+    dados.atualizadoEm = new Date().toISOString();
+    salvarJson(inteligenciaPath, dados);
+}
+
+function analisarMovimento(ranking) {
+    const anterior = carregarInteligencia().ultimaClassificacao || {};
+    const atual = {};
+    const subindo = [];
+    const caindo = [];
+    const ultrapassagens = [];
+
+    ranking.forEach((j, index) => {
+        const id = String(j.id);
+        const posicao = index + 1;
+        atual[id] = posicao;
+        const antigo = anterior[id];
+        if (!antigo) return;
+
+        const delta = numero(antigo.posicao) - posicao;
+        if (delta >= 1) subindo.push({ ...j, de: antigo.posicao, para: posicao, delta });
+        if (delta <= -1) caindo.push({ ...j, de: antigo.posicao, para: posicao, delta: Math.abs(delta) });
+    });
+
+    for (let i = 0; i < ranking.length; i++) {
+        for (let j = i + 1; j < ranking.length; j++) {
+            const a = ranking[i];
+            const b = ranking[j];
+            const pa = anterior[String(a.id)]?.posicao;
+            const pb = anterior[String(b.id)]?.posicao;
+            if (!pa || !pb) continue;
+            if (pa > pb && i < j) {
+                ultrapassagens.push({ ultrapassou: a, ultrapassado: b });
+            }
+            if (pb > pa && j < i) {
+                ultrapassagens.push({ ultrapassou: b, ultrapassado: a });
+            }
+        }
+    }
+
+    return { subindo, caindo, ultrapassagens, atual };
+}
+
+function melhorMovimento(movimento, tipo) {
+    const lista = tipo === 'subindo' ? movimento.subindo : movimento.caindo;
+    return [...lista].sort((a, b) => b.delta - a.delta)[0] || null;
+}
+
+function streakTexto(jogador) {
+    const atual = numero(jogador?.streakAtual);
+    const maior = numero(jogador?.maiorStreak);
+    if (atual >= 5) return `está em uma sequência absurda de **${fmt(atual)} vitórias seguidas** (melhor marca: **${fmt(maior)}**) 🔥🔥`;
+    if (atual >= 3) return `vem de **${fmt(atual)} vitórias seguidas** e já tem uma sequência de respeito (máxima: **${fmt(maior)}**) 🔥`;
+    if (atual === 2) return `venceu as **2 últimas partidas** e começou a embalar 👀`;
+    if (atual === 1) return `venceu a partida mais recente e pode começar uma sequência`;
+    if (maior >= 3) return `está sem sequência ativa agora, mas já chegou a **${fmt(maior)} vitórias seguidas**`;
+    return 'ainda não tem uma sequência de vitórias relevante registrada';
+}
+
+function taxa(j) {
+    if (numero(j?.partidas) <= 0) return 0;
+    return numero(j?.winrate) || (numero(j.vitorias) / numero(j.partidas)) * 100;
+}
+
+function compararJogadores(a, b) {
+    if (!a || !b) return null;
+    const pontos = numero(a.pontos) - numero(b.pontos);
+    const vitorias = numero(a.vitorias) - numero(b.vitorias);
+    const kills = numero(a.kills) - numero(b.kills);
+    const winrate = taxa(a) - taxa(b);
+    const ranking = rankingLiga();
+    const posA = ranking.findIndex(j => String(j.id) === String(a.id)) + 1;
+    const posB = ranking.findIndex(j => String(j.id) === String(b.id)) + 1;
+
+    const vencedor = pontos > 0 ? a : pontos < 0 ? b : vitorias > 0 ? a : vitorias < 0 ? b : null;
+    const nomeA = mencionar(a.id);
+    const nomeB = mencionar(b.id);
+
+    let abertura;
+    if (pontos === 0) abertura = `${nomeA} e ${nomeB} estão empatados em **${fmt(a.pontos)} pts**.`;
+    else if (vencedor?.id === a.id) abertura = `${nomeA} está na frente de ${nomeB} por **${fmt(Math.abs(pontos))} pts**.`;
+    else abertura = `${nomeB} está na frente de ${nomeA} por **${fmt(Math.abs(pontos))} pts**.`;
+
+    return [
+        `⚔️ **COMPARAÇÃO DIRETA**`,
+        abertura,
+        `📊 **Ranking:** ${nomeA} #${posA || '—'} • ${nomeB} #${posB || '—'}`,
+        `🏆 **Vitórias:** ${fmt(a.vitorias)} x ${fmt(b.vitorias)} • **Kills:** ${fmt(a.kills)} x ${fmt(b.kills)}`,
+        `📈 **Winrate:** ${taxa(a).toFixed(1)}% x ${taxa(b).toFixed(1)}%`,
+        pontos !== 0
+            ? `💡 Hoje, a vantagem é de ${vencedor?.id === a.id ? nomeA : nomeB}. Mas uma boa partida pode virar esse duelo.`
+            : vitorias !== 0
+                ? `💡 Em vitórias, ${vitorias > 0 ? nomeA : nomeB} leva vantagem.`
+                : kills !== 0
+                    ? `💡 Em poder de fogo, ${kills > 0 ? nomeA : nomeB} está na frente.`
+                    : winrate !== 0
+                        ? `💡 Em aproveitamento, ${winrate > 0 ? nomeA : nomeB} está melhor.`
+                        : '💡 Os dois estão praticamente lado a lado nos números.'
+    ].join('\n');
+}
+
+function extrairMencoes(message) {
+    return [...message.mentions.users.keys()].slice(0, 2);
+}
+
+function tem(texto, termos) {
+    const n = normalizar(texto);
+    return termos.some(t => n.includes(normalizar(t)));
+}
+
+const MODELOS_MOVIMENTO = [
+    m => `📈 **TEM GENTE SUBINDO**\n${m.jogador ? mencionar(m.jogador.id) : 'Um competidor'} ganhou **${fmt(m.delta)} posição(ões)** e foi do #${m.de} para o #${m.para}. Isso sim é evolução. 🔥`,
+    m => `👀 **OLHA QUEM APARECEU**\n${m.jogador ? mencionar(m.jogador.id) : 'Um jogador'} está avançando no ranking. Saiu do #${m.de} e agora está no #${m.para}. A próxima partida pode colocar ainda mais pressão no topo.`,
+    m => `📉 **ATENÇÃO NO RANKING**\n${m.jogador ? mencionar(m.jogador.id) : 'Um competidor'} perdeu **${fmt(m.delta)} posição(ões)**. Caiu do #${m.de} para o #${m.para}. Agora é hora de reagir.`,
+    m => `⚔️ **ULTRAPASSAGEM!**\n${m.ultrapassou ? mencionar(m.ultrapassou.id) : 'Um jogador'} passou na frente de ${m.ultrapassado ? mencionar(m.ultrapassado.id) : 'outro competidor'}. O ranking acabou de ganhar mais uma reviravolta.`,
+    m => `🔥 **A BRIGA ESTÁ PEGANDO**\n${m.ultrapassou ? mencionar(m.ultrapassou.id) : 'Um competidor'} ultrapassou ${m.ultrapassado ? mencionar(m.ultrapassado.id) : 'um adversário'}. É exatamente esse tipo de mudança que deixa a Liga viva.`
+];
+
+function gerarAnaliseMovimento(ranking) {
+    if (!ranking.length) return null;
+    const movimento = analisarMovimento(ranking);
+    const subida = melhorMovimento(movimento, 'subindo');
+    const queda = melhorMovimento(movimento, 'caindo');
+    const ultrapassagem = movimento.ultrapassagens[0];
+
+    if (!subida && !queda && !ultrapassagem) return null;
+
+    let tipo;
+    if (ultrapassagem && Math.random() < 0.45) tipo = { ultrapassou: ultrapassagem.ultrapassou, ultrapassado: ultrapassagem.ultrapassado };
+    else if (subida && (!queda || Math.random() < 0.65)) tipo = { jogador: subida, de: subida.de, para: subida.para, delta: subida.delta };
+    else tipo = { jogador: queda, de: queda.de, para: queda.para, delta: queda.delta };
+
+    let mensagem = escolher(MODELOS_MOVIMENTO, 'movimento');
+    // Corrige o tom do modelo 3 quando o escolhido for queda.
+    if (mensagem.includes('TEM GENTE SUBINDO') && tipo.jogador && tipo.jogador.delta < 0) {
+        mensagem = MODELOS_MOVIMENTO[2];
+    }
+    return mensagem(tipo);
+}
+
+const MODELOS_LIGA = [
+    r => `👑 **A COROA TEM DONO... POR ENQUANTO**\n${mencionar(r.lider.id)} lidera com **${fmt(r.lider.pontos)} pts**. ${mencionar(r.segundo.id)} está a **${fmt(Math.abs(numero(r.lider.pontos) - numero(r.segundo.pontos)))} pontos**.`,
+    r => `⚔️ **CAÇADA AO TOPO**\n${mencionar(r.segundo.id)} está perseguindo ${mencionar(r.lider.id)}. Faltam **${fmt(Math.abs(numero(r.lider.pontos) - numero(r.segundo.pontos)))} pts** para encostar.`,
+    r => `🔥 **SEQUÊNCIA DE VITÓRIAS**\n${mencionar(r.destaque.id)} ${streakTexto(r.destaque)}. Se continuar assim, o ranking vai sentir.`,
+    r => `💀 **PODER DE FOGO**\n${mencionar(r.kills.id)} lidera em kills com **${fmt(r.kills.kills)} eliminações**. Não é só pontuação: combate também está pesando.`,
+    r => `📈 **MOMENTO**\n${mencionar(r.destaque.id)} está com **${fmt(r.destaque.pontos)} pts**, **${fmt(r.destaque.vitorias)} vitórias** e **${fmt(r.destaque.kills)} kills**. É um nome para ficar de olho.`,
+    r => `📊 **TOP 3**\n🥇 ${mencionar(r.lider.id)} — ${fmt(r.lider.pontos)} pts\n🥈 ${mencionar(r.segundo.id)} — ${fmt(r.segundo.pontos)} pts\n🥉 ${mencionar(r.terceiro.id)} — ${fmt(r.terceiro.pontos)} pts`,
+    r => `🧠 **NÚMEROS NÃO MENTEM**\n${mencionar(r.winrate.id)} tem **${taxa(r.winrate).toFixed(1)}% de aproveitamento**. Em ${fmt(r.winrate.partidas)} partidas, isso chama atenção.`,
+    r => `🏆 **CONSISTÊNCIA**\n${mencionar(r.vitorias.id)} já soma **${fmt(r.vitorias.vitorias)} vitórias**. Quem mantém esse ritmo começa a construir uma campanha difícil de alcançar.`,
+    r => `⚡ **A DISTÂNCIA É PEQUENA**\nOs dois primeiros estão separados por **${fmt(Math.abs(numero(r.lider.pontos) - numero(r.segundo.pontos)))} pts**. Uma única partida pode mudar o cenário.`,
+    r => `🌎 **A LIGA ESTÁ VIVA**\nJá são **${fmt(r.resumo.partidasRegistradas)} partidas**, **${fmt(r.resumo.jogadores)} jogadores** e **${fmt(r.resumo.kills)} kills** contabilizadas. Cada resultado pesa.`,
+    r => `🎯 **QUEM ESTÁ MAIS PERTO?**\n${mencionar(r.segundo.id)} precisa superar **${fmt(Math.abs(numero(r.lider.pontos) - numero(r.segundo.pontos)))} pts** de diferença para assumir a liderança.`,
+    r => `🔥 **OLHO NESSE JOGADOR**\n${mencionar(r.destaque.id)} tem **${fmt(r.destaque.pontos)} pts** e ${streakTexto(r.destaque)}. A próxima partida pode mudar bastante a leitura desse ranking.`
+];
+
+function gerarMensagemLiga() {
+    const ranking = rankingLiga();
+    if (!ranking.length) return '🏆 **LIGA DAS NAÇÕES**\nAinda não tenho dados suficientes para fazer uma análise. Assim que houver partidas, eu começo a acompanhar a disputa. 👀';
+
+    const lider = ranking[0];
+    const segundo = ranking[1] || lider;
+    const terceiro = ranking[2] || segundo;
+    const resumo = resumoLiga();
+    const kills = [...ranking].sort((a, b) => numero(b.kills) - numero(a.kills))[0] || lider;
+    const vitorias = [...ranking].sort((a, b) => numero(b.vitorias) - numero(a.vitorias))[0] || lider;
+    const winrate = [...ranking].filter(j => numero(j.partidas) > 0).sort((a, b) => taxa(b) - taxa(a))[0] || lider;
+    const destaque = [...ranking].sort((a, b) => {
+        const sa = numero(a.streakAtual) * 4 + numero(a.vitorias) + numero(a.kills) * 0.2;
+        const sb = numero(b.streakAtual) * 4 + numero(b.vitorias) + numero(b.kills) * 0.2;
+        return sb - sa;
+    })[0] || lider;
+
+    const mensagemMovimento = gerarAnaliseMovimento(ranking);
+    salvarSnapshot(ranking);
+    if (mensagemMovimento && Math.random() < 0.60) return mensagemMovimento;
+
+    return escolher(MODELOS_LIGA, 'liga').({
+        lider, segundo, terceiro, kills, vitorias, winrate, destaque, resumo
+    });
+}
+
+function analisarJogador(id) {
+    const ranking = rankingLiga();
+    const jogador = perfilLiga(id);
+    if (!jogador) return `🔎 Não encontrei dados de ${mencionar(id)} na Liga ainda.`;
+    const posicao = ranking.findIndex(j => String(j.id) === String(id)) + 1;
+    const movimento = analisarMovimento(ranking);
+    const subiu = movimento.subindo.find(j => String(j.id) === String(id));
+    const caiu = movimento.caindo.find(j => String(j.id) === String(id));
+
+    let leitura = 'está mantendo a posição atual';
+    if (subiu) leitura = `subiu **${fmt(subiu.delta)} posição(ões)**, indo do #${subiu.de} para o #${subiu.para}`;
+    if (caiu) leitura = `caiu **${fmt(caiu.delta)} posição(ões)**, indo do #${caiu.de} para o #${caiu.para}`;
+
+    return [
+        `📋 **RAIO-X DE ${mencionar(id)}**`,
+        `🏅 Posição: **#${posicao || '—'}** • Pontos: **${fmt(jogador.pontos)}**`,
+        `🏆 Vitórias: **${fmt(jogador.vitorias)}** • Partidas: **${fmt(jogador.partidas)}** • Winrate: **${taxa(jogador).toFixed(1)}%**`,
+        `💀 Kills: **${fmt(jogador.kills)}** • Mortes: **${fmt(jogador.mortes)}**`,
+        `🔥 ${mencionar(id)} ${streakTexto(jogador)}.`,
+        `📈 No movimento mais recente que eu consegui observar, ${leitura}.`
+    ].join('\n');
+}
+
+function gerarRespostaInteligente(message) {
+    const texto = message.content || '';
+    const mencoes = extrairMencoes(message);
+
+    if (mencoes.length === 2 && tem(texto, ['comparar', 'compare', 'versus', 'vs', 'contra', 'duelo'])) {
+        const a = perfilLiga(mencoes[0]);
+        const b = perfilLiga(mencoes[1]);
+        return compararJogadores(a, b);
+    }
+
+    if (mencoes.length === 1 && tem(texto, ['meus pontos', 'minha pontuacao', 'minha pontuação', 'meu ranking', 'meus numeros', 'meus números', 'como estou', 'como to', 'como tô'])) {
+        return analisarJogador(mencoes[0]);
+    }
+
+    if (tem(texto, ['quem subiu', 'quem esta subindo', 'quem está subindo', 'quem caiu', 'quem esta caindo', 'quem está caindo', 'ultrapassou', 'ultrapassagem', 'mudou no ranking', 'movimentacao', 'movimentação'])) {
+        const ranking = rankingLiga();
+        const analise = gerarAnaliseMovimento(ranking);
+        return analise || '📊 Ainda não detectei uma mudança de posição desde a última leitura do ranking. A próxima partida pode mudar isso. 👀';
+    }
+
+    if (tem(texto, ['sequencia', 'sequência', 'vitorias seguidas', 'vitórias seguidas', 'streak', 'embalado', 'embalada'])) {
+        const ranking = rankingLiga();
+        const jogador = [...ranking].sort((a, b) => numero(b.streakAtual) - numero(a.streakAtual))[0];
+        if (!jogador || numero(jogador.streakAtual) <= 0) return '🔥 Ainda não há uma sequência ativa forte registrada. Quero ver quem vai começar a embalar.';
+        return `🔥 **SEQUÊNCIA ATIVA**\n${mencionar(jogador.id)} ${streakTexto(jogador)}.`;
+    }
+
+    if (mencoes.length === 1 && tem(texto, ['pontos', 'pontuacao', 'pontuação', 'ranking', 'estatistica', 'estatística', 'desempenho'])) {
+        return analisarJogador(mencoes[0]);
+    }
+
+    if (tem(texto, ['liga', 'ranking da liga', 'lider', 'líder', 'primeiro', 'quem esta ganhando', 'quem está ganhando', 'quem lidera', 'campeao', 'campeão'])) {
+        return gerarMensagemLiga();
+    }
+
+    if (tem(texto, ['olimpiada', 'olimpíada', 'olimpiadas', 'olimpíadas', 'duplas', 'medalhas', 'ouro', 'prata', 'bronze'])) {
+        return gerarMensagemOlimpiadas();
+    }
+
+    return null;
 }
 
 function dadosOlimpiadas() {
@@ -142,323 +405,110 @@ function dadosOlimpiadas() {
     return dados;
 }
 
-function estatisticasOlimpiadas() {
+function gerarMensagemOlimpiadas() {
     const dados = dadosOlimpiadas();
-    const ranking = dados.ranking || {};
-    const entradas = Object.entries(ranking).map(([pais, item]) => ({
-        pais,
-        ...(item && typeof item === 'object' ? item : { pontos: numero(item) })
-    }));
+    const ranking = Object.entries(dados.ranking)
+        .map(([pais, item]) => ({ pais, ...(item && typeof item === 'object' ? item : { pontos: numero(item) }) }))
+        .sort((a, b) => numero(b.pontos) - numero(a.pontos));
 
-    const medalhas = dados.resultados.reduce((acc, resultado) => {
-        const colocacoes = [
-            ['ouro', resultado.ouro || resultado.vencedor || resultado.primeiro],
-            ['prata', resultado.prata || resultado.segundo],
-            ['bronze', resultado.bronze || resultado.terceiro]
-        ];
-        for (const [tipo, pais] of colocacoes) {
-            if (pais) {
-                const chave = String(pais);
-                if (!acc[chave]) acc[chave] = { ouro: 0, prata: 0, bronze: 0 };
-                acc[chave][tipo]++;
-            }
-        }
-    }, {});
-
-    // Se o ranking já possuir medalhas, elas têm prioridade.
-    for (const entrada of entradas) {
-        const atual = medalhas[entrada.pais] || { ouro: 0, prata: 0, bronze: 0 };
-        atual.ouro = numero(entrada.ouro ?? entrada.ouros ?? atual.ouro);
-        atual.prata = numero(entrada.prata ?? entradas.pratas ?? atual.prata);
-        atual.bronze = numero(entrada.bronze ?? entrada.bronzes ?? atual.bronze);
-        medalhas[entrada.pais] = atual;
+    if (!ranking.length && !dados.duplas.length && !dados.resultados.length) {
+        return '🥇 **OLIMPÍADAS DE DUPLAS**\nAinda estou esperando os primeiros resultados para começar a narrar essa disputa. 👀';
     }
-
-    return { dados, ranking: entradas, medalhas };
-}
-
-function mencionarJogador(id) {
-    return id ? `<@${String(id)}>` : 'um competidor';
-}
-
-/* ========================================================================
-   20 RESPOSTAS INTELIGENTES — LIGA
-   ======================================================================== */
-
-const LIGA_MODELOS = [
-    '👑 **DISPUTA PELO TOPO**\n{lider} está liderando a Liga com **{pontos} pts**. O segundo colocado está a apenas **{dif} pontos**. A liderança ainda está em jogo. ⚔️',
-    '🔥 **RANKING DA LIGA**\nO topo está nas mãos de {lider} com **{pontos} pts**. Logo atrás vem {segundo} com **{pontos2} pts**. Essa diferença de **{dif}** pode desaparecer em uma boa partida.',
-    '📈 **QUEM ESTÁ SUBINDO?**\n{melhor} já acumula **{pontos} pts**, com **{vitorias} vitórias** e **{kills} kills**. É um nome que merece atenção no próximo confronto.',
-    '⚔️ **CAÇADA AO LÍDER**\n{segundo} precisa de apenas **{dif} pontos** para alcançar {lider}. Uma vitória pode mudar completamente a ordem do ranking.',
-    '💀 **PODER DE FOGO**\n{kill} está liderando em kills com **{kills} eliminações**. Pontuação não é só vitória: combate também pesa na Liga.',
-    '🏆 **CONSISTÊNCIA**\n{vencedor} já soma **{vitorias} vitórias**. Quem consegue manter esse ritmo começa a construir uma campanha difícil de alcançar.',
-    '📊 **OLHA ESSE NÚMERO**\nA Liga já registra **{partidas} partidas**, **{jogadores} jogadores** e **{killsTotal} kills**. A temporada está ficando cada vez mais disputada.',
-    '🧠 **ESTRATÉGIA IMPORTA**\nCom a pontuação atual, {lider} tem **{pontos} pts**. O próximo jogador precisa de **{dif} pts** para assumir a liderança.',
-    '⚡ **MOMENTO DA LIGA**\n{lider} está no topo, mas {terceiro} ainda está na briga. Os três primeiros estão separados por apenas **{topDif} pontos**.',
-    '🎯 **EFICIÊNCIA**\n{eficiente} tem **{vitorias} vitórias** em **{partidasJogador} partidas**. Uma campanha assim chama atenção no ranking.',
-    '🌎 **DOMÍNIO TERRITORIAL**\n{continente} aparece como um dos focos fortes da Liga, com **{valorContinente} conquistas** registradas pelos competidores.',
-    '📉 **NINGUÉM ESTÁ SEGURO**\nMesmo quem está no topo precisa continuar pontuando. A diferença atual para o segundo colocado é de **{dif} pontos**.',
-    '🔥 **OLHO NO TOP 3**\n{lider} lidera com **{pontos}**, {segundo} vem com **{pontos2}** e {terceiro} aparece com **{pontos3}**. O pódio está formado, mas não está garantido.',
-    '⚔️ **UMA PARTIDA MUDA TUDO**\nCom apenas **{dif} pontos** separando os dois primeiros, qualquer resultado relevante pode reorganizar a classificação.',
-    '🏅 **DESTAQUE DA RODADA**\n{melhor} aparece com **{pontos} pts**, **{vitorias} vitórias** e **{kills} kills**. A campanha está falando por si.',
-    '📚 **RAIO-X DA LIGA**\nLíder: {lider} (**{pontos} pts**) • Vice: {segundo} (**{pontos2} pts**) • Terceiro: {terceiro} (**{pontos3} pts**).',
-    '💥 **COMBATE PESADO**\n{kill} tem **{kills} kills** registradas. Quem joga para vencer também precisa saber sobreviver aos confrontos.',
-    '👀 **NOME PARA OBSERVAR**\n{melhor} está entre os destaques atuais com **{pontos} pts**. Dependendo da próxima partida, pode ganhar várias posições.',
-    '🏆 **A COROA TEM DONO... POR ENQUANTO**\n{lider} ocupa o primeiro lugar com **{pontos} pts**. Mas a diferença de **{dif}** para {segundo} não permite relaxar.',
-    '📊 **A LIGA ESTÁ VIVA**\nJá são **{partidas} partidas** contabilizadas. Cada vitória, kill e conquista territorial pode pesar quando o ranking fechar.'
-];
-
-function gerarMensagemLiga() {
-    const ranking = rankingLiga();
-    const resumo = (() => { try { return estatisticasLiga.resumoLiga(); } catch { return {}; } })();
-    if (!ranking.length) return '🏆 **LIGA DAS NAÇÕES**\nAinda não há dados suficientes para fazer uma análise do ranking. A próxima partida pode mudar isso. 👀';
 
     const lider = ranking[0];
-    const segundo = ranking[1] || lider;
-    const terceiro = ranking[2] || segundo;
-    const porKills = [...ranking].sort((a, b) => numero(b.kills) - numero(a.kills));
-    const porWin = [...ranking].sort((a, b) => numero(b.vitorias) - numero(a.vitorias));
-    const continenteValores = ['europa', 'asia', 'africa', 'amnorte', 'amsul', 'oceania']
-        .map(chave => ({ chave, valor: numero(resumo[chave]) }))
-        .sort((a, b) => b.valor - a.valor);
-    const modelo = escolher(LIGA_MODELOS, 'liga-espontanea');
+    const duplas = dados.duplas.length;
+    const resultados = dados.resultados.length;
+    if (!lider) return `🏅 **OLIMPÍADAS DE DUPLAS**\nJá existem **${fmt(duplas)} duplas** e **${fmt(resultados)} resultados** registrados. A disputa está começando!`;
 
-    const vencedor = porWin[0] || lider;
-    const eficiente = ranking.find(j => numero(j.partidas) > 0) || lider;
-    const partidasJogador = Math.max(1, numero(eficiente.partidas));
-    const topDif = numero(lider.pontos) - numero(terceiro.pontos);
-
-    return modelo
-        .replaceAll('{lider}', mencionarJogador(lider.id))
-        .replaceAll('{pontos}', formatarPontos(lider.pontos))
-        .replaceAll('{segundo}', mencionarJogador(segundo.id))
-        .replaceAll('{pontos2}', formatarPontos(segundo.pontos))
-        .replaceAll('{terceiro}', mencionarJogador(terceiro.id))
-        .replaceAll('{pontos3}', formatarPontos(terceiro.pontos))
-        .replaceAll('{dif}', formatarPontos(diferenca(lider.pontos, segundo.pontos)))
-        .replaceAll('{topDif}', formatarPontos(topDif))
-        .replaceAll('{melhor}', mencionarJogador(ranking[0].id))
-        .replaceAll('{vencedor}', mencionarJogador(vencedor.id))
-        .replaceAll('{vitorias}', formatarPontos(numero(vencedor.vitorias || lider.vitorias)))
-        .replaceAll('{kills}', formatarPontos(numero(porKills[0]?.kills || lider.kills)))
-        .replaceAll('{kill}', mencionarJogador(porKills[0]?.id || lider.id))
-        .replaceAll('{partidas}', formatarPontos(resumo.partidasRegistradas))
-        .replaceAll('{jogadores}', formatarPontos(resumo.jogadores))
-        .replaceAll('{killsTotal}', formatarPontos(resumo.kills))
-        .replaceAll('{partidasJogador}', formatarPontos(partidasJogador))
-        .replaceAll('{eficiente}', mencionarJogador(eficiente.id))
-        .replaceAll('{continente}', continenteValores[0]?.chave?.toUpperCase() || 'territórios')
-        .replaceAll('{valorContinente}', formatarPontos(continenteValores[0]?.valor || 0));
+    return escolher([
+        `🥇 **CORRIDA PELO TOPO**\n${lider.pais} está liderando as Olimpíadas com **${fmt(lider.pontos)} pts**. Mas ainda tem muita disputa pela frente.`,
+        `🏅 **OLIMPÍADAS DE DUPLAS**\nO país que aparece na frente agora é **${lider.pais}**, com **${fmt(lider.pontos)} pts**. Já são **${fmt(duplas)} duplas** registradas.`,
+        `👀 **OLHO NO QUADRO**\n${lider.pais} tomou a dianteira com **${fmt(lider.pontos)} pts**. Se o segundo colocado encostar, o cenário muda rapidinho.`,
+        `🔥 **A DISPUTA ESTÁ VIVA**\n**${fmt(resultados)} resultados** já foram registrados e **${fmt(duplas)} duplas** estão no sistema. ${lider.pais} aparece na frente neste momento.`
+    ], 'olimpiadas');
 }
 
-/* ========================================================================
-   20 RESPOSTAS INTELIGENTES — OLIMPÍADAS
-   ======================================================================== */
-
-const OLIMPIADAS_MODELOS = [
-    '🥇 **CORRIDA PELO OURO**\n{liderPais} lidera o quadro com **{ouro} ouro(s)**. Será que alguém consegue tirar essa liderança? 👀',
-    '🏅 **PÓDIO ATUAL**\n🥇 {ouroPais} • 🥈 {prataPais} • 🥉 {bronzePais}\nAs Olimpíadas estão começando a ganhar seus protagonistas.',
-    '🔥 **DISPUTA INTERNACIONAL**\n{liderPais} tem **{vitorias} vitória(s)** registradas. {segundoPais} vem logo atrás com **{vitorias2}**. A diferença é de apenas **{dif}**.',
-    '🌎 **MAPA DAS DUPLAS**\nJá existem **{duplas} duplas** representando **{paises} países**. A competição está ficando global de verdade.',
-    '🥇 **QUEM DOMINA?**\n{liderPais} está na frente com **{ouro} ouro(s), {prata} prata(s) e {bronze} bronze(s)**. Campanha forte.',
-    '⚔️ **AMEAÇA AO LÍDER**\n{segundoPais} está a apenas **{dif}** resultado(s) de alcançar {liderPais}. O próximo confronto pode ser decisivo.',
-    '🏆 **DUPLA EM DESTAQUE**\nA representação de {liderPais} vem chamando atenção. Quando uma dupla começa a acumular resultados, todo mundo passa a mirar nela.',
-    '📊 **RAIO-X DAS OLIMPÍADAS**\nDuplas: **{duplas}** • Países: **{paises}** • Resultados: **{resultados}**. A competição está ganhando forma.',
-    '🔥 **PÓDIO NÃO É GARANTIDO**\n{bronzePais} ocupa o bronze, mas uma nova vitória pode reorganizar completamente as posições.',
-    '👀 **OLHO NESSA REPRESENTAÇÃO**\n{liderPais} está entre os países que mais aparecem no topo. A pressão agora é manter o desempenho.',
-    '🥈 **CAÇANDO A PRATA**\n{prataPais} está na segunda posição. Falta pouco para transformar uma campanha boa em uma campanha histórica.',
-    '🥉 **BRIGA PELO BRONZE**\n{bronzePais} está segurando o terceiro lugar. Qualquer tropeço pode abrir espaço para outro país.',
-    '🎯 **CONSISTÊNCIA OLÍMPICA**\n{liderPais} tem resultados suficientes para se manter entre os destaques. Consistência vale ouro nesta competição.',
-    '🌍 **MUITOS PAÍSES, UM PÓDIO**\nCom **{paises} países** registrados, nem todo mundo vai conseguir chegar ao pódio. A disputa promete.',
-    '🏅 **MEDALHAS EM JOGO**\nO quadro atual tem {ouroPais} na frente. Mas ainda existe muita competição pela frente.',
-    '⚡ **MOMENTO OLÍMPICO**\nJá foram registrados **{resultados} resultados**. Cada novo confronto pode mexer no equilíbrio entre os países.',
-    '👑 **CANDIDATO AO TOPO**\n{liderPais} está construindo uma campanha de respeito. Se continuar assim, o ouro pode ficar cada vez mais próximo.',
-    '⚔️ **GUERRA PELO PÓDIO**\n🥇 {ouroPais} • 🥈 {prataPais} • 🥉 {bronzePais}. Três posições, dezenas de olhos tentando tomar o lugar deles.',
-    '📈 **COMPETIÇÃO CRESCENDO**\nAs Olimpíadas já contam com **{duplas} duplas** e **{resultados} resultados**. Quanto mais partidas, mais difícil fica prever o campeão.',
-    '🏆 **MOMENTO DE PRESTAR ATENÇÃO**\n{liderPais} aparece na liderança das estatísticas atuais. Quem pretende disputar o ouro vai precisar responder dentro do tabuleiro.'
-];
-
-function resumoPais(item) {
-    const v = item?.vitorias ?? item?.wins ?? item?.pontos ?? item?.score ?? 0;
-    return numero(v);
-}
-
-function gerarMensagemOlimpiadas() {
-    const { dados, ranking, medalhas } = estatisticasOlimpiadas();
-    const porValor = [...ranking].sort((a, b) => resumoPais(b) - resumoPais(a));
-    const paisesMedalha = Object.entries(medalhas)
-        .map(([pais, m]) => ({ pais, ...m }))
-        .sort((a, b) => b.ouro - a.ouro || b.prata - a.prata || b.bronze - a.bronze);
-
-    const lider = paisesMedalha[0] || porValor[0] || { pais: 'nenhum país', ouro: 0, prata: 0, bronze: 0 };
-    const segundo = paisesMedalha[1] || porValor[1] || lider;
-    const terceiro = paisesMedalha[2] || porValor[2] || segundo;
-    const modelo = escolher(OLIMPIADAS_MODELOS, 'olimpiadas-espontanea');
-
-    const v1 = resumoPais(porValor[0] || {});
-    const v2 = resumoPais(porValor[1] || {});
-
-    return modelo
-        .replaceAll('{liderPais}', String(lider.pais))
-        .replaceAll('{ouroPais}', String(lider.pais))
-        .replaceAll('{prataPais}', String(segundo.pais))
-        .replaceAll('{bronzePais}', String(terceiro.pais))
-        .replaceAll('{ouro}', formatarPontos(lider.ouro))
-        .replaceAll('{prata}', formatarPontos(lider.prata))
-        .replaceAll('{bronze}', formatarPontos(lider.bronze))
-        .replaceAll('{vitorias}', formatarPontos(v1))
-        .replaceAll('{vitorias2}', formatarPontos(v2))
-        .replaceAll('{dif}', formatarPontos(diferenca(v1, v2)))
-        .replaceAll('{duplas}', formatarPontos(dados.duplas.length))
-        .replaceAll('{paises}', formatarPontos(new Set(dados.duplas.map(d => normalizar(d.pais)).filter(Boolean)).size))
-        .replaceAll('{resultados}', formatarPontos(dados.resultados.length));
-}
-
-/* ========================================================================
-   PALAVRAS-CHAVE / INTENÇÕES
-   ======================================================================== */
-
-const INTENCOES = [
-    { tipo: 'liga', palavras: ['liga', 'ranking da liga', 'pontuacao da liga', 'pontuação da liga', 'partida da liga', 'quem esta em primeiro', 'quem está em primeiro', 'lider da liga', 'líder da liga', 'pontos da liga'] },
-    { tipo: 'liga-pontos', palavras: ['meus pontos', 'minha pontuacao', 'minha pontuação', 'quanto tenho', 'quantos pontos tenho', 'meu ranking'] },
-    { tipo: 'olimpiadas', palavras: ['olimpiadas', 'olimpíadas', 'olimpiada', 'olimpíada', 'duplas', 'medalhas', 'ouro', 'prata', 'bronze', 'pais lider', 'país líder', 'ranking das olimpiadas', 'ranking das olimpíadas'] },
-    { tipo: 'competicao', palavras: ['campeao', 'campeão', 'quem esta ganhando', 'quem está ganhando', 'quem lidera', 'quem liderando'] }
-];
-
-function detectarIntencao(conteudo) {
-    const texto = normalizar(conteudo);
-    let melhor = null;
-    let maior = 0;
-
-    for (const intencao of INTENCOES) {
-        let pontos = 0;
-        for (const palavra of intencao.palavras) {
-            if (contemPalavra(texto, palavra)) pontos += palavra.includes(' ') ? 2 : 1;
-        }
-        if (pontos > maior) {
-            maior = pontos;
-            melhor = intencao.tipo;
-        }
-    }
-    return maior ? melhor : null;
-}
-
-function gerarRespostaInteligente(interaction) {
-    const tipo = detectarIntencao(interaction.content || '');
-    if (!tipo) return null;
-
-    if (tipo === 'olimpiadas') return gerarMensagemOlimpiadas();
-    if (tipo === 'liga-pontos') {
-        const perfil = perfilLiga(interaction.author.id);
-        if (!perfil) return '📊 Ainda não encontrei uma pontuação registrada para você na Liga. Participe de uma partida e volte aqui. 👀';
-        return `📊 **SEU RAIO-X NA LIGA**\n${mencionarJogador(interaction.author.id)} está com **${formatarPontos(perfil.pontos)} pts**, **${formatarPontos(perfil.vitorias)} vitória(s)**, **${formatarPontos(perfil.kills)} kill(s)** e **${formatarPontos(perfil.mortes)} morte(s)**.\n🏆 Posição atual: **${Math.max(1, rankingLiga().findIndex(j => String(j.id) === String(interaction.author.id)) + 1)}º lugar**.`;
-    }
-    return gerarMensagemLiga();
-}
-
-/* ========================================================================
-   AUTO-RESPOSTAS TRADICIONAIS
-   ======================================================================== */
-
-function gerarRespostaTradicional(conteudo) {
-    const db = safeReadJson(dbPath);
-    for (const [gatilho, respostas] of Object.entries(db || {})) {
-        if (!contemPalavra(conteudo, gatilho)) continue;
-        return Array.isArray(respostas) ? escolher(respostas, `tradicional:${gatilho}`) : respostas;
-    }
-    return null;
-}
-
-/* ========================================================================
-   MENSAGEM ESPONTÂNEA
-   ======================================================================== */
-
-async function enviarEspontanea() {
-    if (!clienteAtual?.channels?.cache) return;
-
-    const canais = [...clienteAtual.channels.cache.values()].filter(channel =>
-        channel?.isTextBased?.() &&
-        estaNaCategoria(channel) &&
-        channel.guild &&
-        typeof channel.send === 'function'
-    );
-
-    if (!canais.length) return;
-
-    const canal = canais[Math.floor(Math.random() * canais.length)];
-    const agora = Date.now();
-    const ultima = ultimaEspontanea.get(canal.id) || 0;
-    if (agora - ultima < CONFIG.cooldownCanalMs) return;
-    ultimaEspontanea.set(canal.id, agora);
-
-    const mensagem = Math.random() < CONFIG.chanceOlimpiadas
-        ? gerarMensagemOlimpiadas()
-        : gerarMensagemLiga();
-
+function gerarRespostaTradicional(texto) {
     try {
-        await canal.send({ content: mensagem, allowedMentions: { parse: [] } });
-        console.log(`[Auto-Resposta] Mensagem espontânea enviada em #${canal.name}.`);
+        const db = safeReadJson(dbPath, {});
+        if (!db || typeof db !== 'object') return null;
+
+        const respostas = Array.isArray(db) ? db : (db.respostas || db);
+        if (Array.isArray(respostas)) {
+            for (const item of respostas) {
+                const gatilhos = item.gatilhos || item.palavras || item.keywords || [];
+                const lista = Array.isArray(gatilhos) ? gatilhos : [gatilhos];
+                if (lista.some(g => normalizar(texto).includes(normalizar(g)))) {
+                    const opcoes = item.respostas || item.mensagens || item.resposta;
+                    return Array.isArray(opcoes) ? escolher(opcoes, 'tradicional') : opcoes;
+                }
+            }
+        }
+
+        return null;
     } catch (erro) {
-        console.error('[Auto-Resposta] Erro na mensagem espontânea:', erro.message);
+        console.error('[Auto-Resposta] Sistema tradicional:', erro.message);
+        return null;
     }
+}
+
+function canaisDaCategoria() {
+    if (!clienteAtual?.channels?.cache) return [];
+    return [...clienteAtual.channels.cache.values()].filter(c => {
+        return estaNaCategoria(c) && typeof c.send === 'function' && c.isTextBased?.();
+    });
 }
 
 function agendarProximaEspontanea() {
     if (timerEspontaneo) clearTimeout(timerEspontaneo);
-    const intervalo = Math.floor(
-        CONFIG.intervaloMinMs + Math.random() * (CONFIG.intervaloMaxMs - CONFIG.intervaloMinMs)
-    );
-
+    const atraso = CONFIG.intervaloMinMs + Math.random() * (CONFIG.intervaloMaxMs - CONFIG.intervaloMinMs);
     timerEspontaneo = setTimeout(async () => {
-        await enviarEspontanea();
-        agendarProximaEspontanea();
-    }, intervalo);
+        try {
+            const canais = canaisDaCategoria();
+            if (canais.length) {
+                const canal = canais[Math.floor(Math.random() * canais.length)];
+                if (podeResponder(canal.id)) {
+                    const texto = Math.random() < CONFIG.chanceOlimpiadas
+                        ? gerarMensagemOlimpiadas()
+                        : gerarMensagemLiga();
+                    if (texto) await canal.send(texto);
+                }
+            }
+        } catch (erro) {
+            console.error('[Auto-Resposta] Espontânea:', erro.message);
+        } finally {
+            agendarProximaEspontanea();
+        }
+    }, atraso);
 }
 
-/* ========================================================================
-   HANDLER
-   ======================================================================== */
-
-module.exports = (client) => {
+module.exports = client => {
     clienteAtual = client;
 
     client.on(Events.MessageCreate, async message => {
-        if (message.author.bot || !message.content) return;
-        if (!estaNaCategoria(message.channel)) return;
+        try {
+            if (message.author?.bot || !message.content) return;
+            if (!estaNaCategoria(message.channel)) return;
 
-        // Primeiro tenta entender Liga/Olimpíadas pelo contexto.
-        const inteligente = gerarRespostaInteligente(message);
-        if (inteligente && Math.random() <= CONFIG.chanceRespostaInteligente && podeResponderNoCanal(message.channelId)) {
-            try {
-                await message.reply({
-                    content: inteligente,
-                    allowedMentions: { repliedUser: false, parse: [] }
-                });
-                console.log(`[Auto-Resposta] Inteligente acionada por ${message.author.tag}.`);
-            } catch (erro) {
-                console.error('[Auto-Resposta] Erro na resposta inteligente:', erro.message);
+            const inteligente = gerarRespostaInteligente(message);
+            if (inteligente && Math.random() <= CONFIG.chanceRespostaInteligente && podeResponder(message.channelId)) {
+                await message.reply(inteligente);
+                return;
             }
-            return;
-        }
 
-        // Mantém o sistema antigo funcionando, mas agora restrito à categoria.
-        const tradicional = gerarRespostaTradicional(message.content);
-        if (tradicional && podeResponderNoCanal(message.channelId)) {
-            try {
-                await message.reply({
-                    content: tradicional,
-                    allowedMentions: { repliedUser: false, parse: [] }
-                });
-                console.log(`[Auto-Resposta] Gatilho tradicional acionado por ${message.author.tag}.`);
-            } catch (erro) {
-                console.error('[Auto-Resposta] Erro ao enviar auto-resposta:', erro.message);
+            const tradicional = gerarRespostaTradicional(message.content);
+            if (tradicional && podeResponder(message.channelId)) {
+                await message.reply(String(tradicional));
             }
+        } catch (erro) {
+            console.error('[Auto-Resposta] MessageCreate:', erro.message);
         }
     });
 
     client.once(Events.ClientReady, () => {
+        console.log('🤖 Auto-Resposta Inteligente V2 ativado.');
+        console.log(`📁 Categoria monitorada: ${CONFIG.categoriaId}`);
+        console.log('📈 Análise ativa: subidas, quedas, ultrapassagens, streaks e comparações.');
         agendarProximaEspontanea();
-        console.log(`[Auto-Resposta] Inteligente ativada na categoria ${CONFIG.categoriaId}.`);
-        console.log('[Auto-Resposta] Liga + Olimpíadas + palavras-chave + mensagens espontâneas habilitadas.');
     });
 };

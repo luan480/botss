@@ -19,7 +19,49 @@ const runtimeModule = new Module(handlerPath, module);
 runtimeModule.filename = handlerPath;
 runtimeModule.paths = Module._nodeModulePaths(__dirname);
 
+/*
+ * O final do handler principal perdeu o roteador "handle".
+ * Nós o reconstruímos aqui dentro do mesmo escopo do handler compilado,
+ * portanto todas as funções privadas originais continuam acessíveis.
+ */
 const exportBlock = `
+async function handle(interaction) {
+    const id = interaction.customId || '';
+
+    if (interaction.isModalSubmit?.() && id.startsWith('olymp_pesquisa_modal_')) {
+        return pesquisarPais(interaction);
+    }
+
+    if (!(
+        interaction.isButton?.() ||
+        interaction.isStringSelectMenu?.() ||
+        interaction.isUserSelectMenu?.()
+    )) {
+        return false;
+    }
+
+    if (id === 'olymp_contabilizar') return contabilizar(interaction);
+    if (id === 'olymp_duplas') return verDuplas(interaction);
+    if (id === 'olymp_registrar') return registrar(interaction);
+    if (id === 'olymp_ranking') return verRanking(interaction);
+    if (id === 'olymp_guia') return guia(interaction);
+
+    if (id === 'olymp_reg_p1') return registrarJogador1(interaction);
+    if (id.startsWith('olymp_reg_p2_')) return registrarJogador2(interaction);
+    if (id.startsWith('olymp_buscar_')) return abrirPesquisa(interaction);
+    if (id.startsWith('olymp_prev_')) return mudarPaginaPais(interaction, -1);
+    if (id.startsWith('olymp_next_')) return mudarPaginaPais(interaction, 1);
+    if (id.startsWith('olymp_pais_')) return selecionarPais(interaction);
+
+    if (id.startsWith('olymp_result_ouro_')) return escolherOuro(interaction);
+    if (id.startsWith('olymp_result_prata_none_')) return escolherPrataNenhum(interaction);
+    if (id.startsWith('olymp_result_prata_')) return escolherPrata(interaction);
+    if (id.startsWith('olymp_result_bronze_none_')) return escolherBronzeNenhum(interaction);
+    if (id.startsWith('olymp_result_bronze_')) return escolherBronze(interaction);
+
+    return false;
+}
+
 module.exports = {
     handle,
     painel,

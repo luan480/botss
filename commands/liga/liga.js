@@ -130,6 +130,22 @@ function contarMotivo(texto, regex) {
     return match ? numero(match[1] || 1) : 0;
 }
 
+function extrairGanhosEPerdasDoDetalhamento(detalhamento) {
+    let ganhos = 0;
+    let perdas = 0;
+    const texto = String(detalhamento || '');
+    const regex = /([+-])\s*(\d+)/g;
+    let match;
+
+    while ((match = regex.exec(texto)) !== null) {
+        const valor = numero(match[2]);
+        if (match[1] === '+') ganhos += valor;
+        else perdas += valor;
+    }
+
+    return { ganhos, perdas };
+}
+
 function aplicarContinente(perfil, detalhamento, regex, chave) {
     if (!possuiMotivo(detalhamento, regex)) return;
     perfil.continentes++;
@@ -188,10 +204,22 @@ function aplicarResultado(perfis, message, estatisticas) {
             perfil.nome = obterNome(message, item.id, item.nome);
         }
 
-        // O total do EXTRATO FINAL é a fonte oficial dos pontos.
+        // O total do EXTRATO FINAL é a fonte oficial do saldo.
         perfil.pontos += item.pontos;
-        if (item.pontos >= 0) perfil.pontosGanhos += item.pontos;
-        else perfil.pontosPerdidos += Math.abs(item.pontos);
+
+        // Ganhos/perdas são os valores BRUTOS de cada componente do extrato,
+        // e não o saldo líquido da linha. Ex.: +10 Abate -15 Morte -15 Morte
+        // => pontos -20, pontosGanhos 10, pontosPerdidos 30.
+        const { ganhos, perdas } = extrairGanhosEPerdasDoDetalhamento(item.detalhamento);
+        if (item.detalhamento) {
+            perfil.pontosGanhos += ganhos;
+            perfil.pontosPerdidos += perdas;
+        } else {
+            // Compatibilidade com linhas antigas que não possuíam detalhamento.
+            if (item.pontos >= 0) perfil.pontosGanhos += item.pontos;
+            else perfil.pontosPerdidos += Math.abs(item.pontos);
+        }
+
         perfil.partidas++;
         aplicarEstatisticasDoExtrato(perfil, item);
     }

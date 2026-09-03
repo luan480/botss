@@ -3,11 +3,13 @@
    ESTADO / NORMALIZAÇÃO DA PONTUAÇÃO
 
    REGRA PRINCIPAL:
-   - partidas.json é a fonte de verdade para partidas, vitórias, kills,
-     mortes, continentes e pontos de partidas.
+   - partidas.json é a fonte de verdade para partidas, vitórias, colocações,
+     kills, mortes, continentes e pontos de partidas.
    - Partidas anuladas NÃO entram no histórico.
    - pontuacao.json é a fonte de verdade para o SALDO ATUAL de pontos.
      Assim, uma alteração manual em "pontos" permanece no painel e ranking.
+   - Contadores derivados (1º/2º/3º lugar, etc.) são reconstruídos do histórico
+     e não podem ficar dependentes do estado anterior do pontuacao.json.
    ======================================================================== */
 
 const fs = require('fs');
@@ -44,7 +46,8 @@ function criarPerfil(id, nome = 'Desconhecido') {
         pontosGanhos: 0, pontosPerdidos: 0, vitorias: 0, derrotas: 0,
         partidas: 0, kills: 0, mortes: 0, continentes: 0,
         continentesDetalhes: { asia: 0, europa: 0, africa: 0, amnorte: 0, amsul: 0, oceania: 0 },
-        terceiroLugar: 0, maisTropas: 0, warCoins: 0, winrate: 0
+        primeiroLugar: 0, segundoLugar: 0, terceiroLugar: 0,
+        maisTropas: 0, warCoins: 0, winrate: 0
     };
 }
 
@@ -99,7 +102,10 @@ function paraFormatoAntigo(dados) {
 
 function normalizarContinentes(perfil) {
     const origem = perfil?.continentesDetalhes || {};
-    return { asia: numero(origem.asia), europa: numero(origem.europa), africa: numero(origem.africa), amnorte: numero(origem.amnorte), amsul: numero(origem.amsul), oceania: numero(origem.oceania) };
+    return {
+        asia: numero(origem.asia), europa: numero(origem.europa), africa: numero(origem.africa),
+        amnorte: numero(origem.amnorte), amsul: numero(origem.amsul), oceania: numero(origem.oceania)
+    };
 }
 
 function normalizarPerfil(id, perfil, nomeFallback) {
@@ -116,6 +122,8 @@ function normalizarPerfil(id, perfil, nomeFallback) {
     base.mortes = numero(perfil.mortes);
     base.continentes = numero(perfil.continentes);
     base.continentesDetalhes = normalizarContinentes(perfil);
+    base.primeiroLugar = numero(perfil.primeiroLugar);
+    base.segundoLugar = numero(perfil.segundoLugar);
     base.terceiroLugar = numero(perfil.terceiroLugar);
     base.maisTropas = numero(perfil.maisTropas);
     base.warCoins = numero(perfil.warCoins);
@@ -255,9 +263,16 @@ function adicionarParticipantes(perfis, partida, nomes) {
 function adicionarResultado(perfis, partida, nomes) {
     const respostas = obterRespostas(partida);
     const vencedor = idDe(respostas.vencedor || respostas.winner || respostas.ganhador);
+    const segundo = idDe(respostas.segundo || respostas.segundoLugar || respostas.runnerUp);
     const terceiro = idDe(respostas.terceiro || respostas.terceiroLugar);
     const tropas = idDe(respostas.maisTropas || respostas.maiorTropas || respostas.tropas);
-    if (vencedor) garantir(perfis, vencedor, nomes[vencedor]).vitorias++;
+
+    if (vencedor) {
+        const perfil = garantir(perfis, vencedor, nomes[vencedor]);
+        perfil.vitorias++;
+        perfil.primeiroLugar++;
+    }
+    if (segundo) garantir(perfis, segundo, nomes[segundo]).segundoLugar++;
     if (terceiro) garantir(perfis, terceiro, nomes[terceiro]).terceiroLugar++;
     if (tropas) garantir(perfis, tropas, nomes[tropas]).maisTropas++;
 
@@ -330,8 +345,8 @@ function aplicarPontosHistoricos(resultado, dadosOriginais, historico) {
         const salvo = dadosOriginais?.[id];
         const h = historico[id];
 
-        // Se existe no pontuacao.json, o campo pontos é o saldo oficial atual.
-        // O histórico continua sendo usado para estatísticas, mas NÃO substitui o saldo.
+        // O saldo atual salvo continua soberano. Apenas estatísticas derivadas
+        // são reconstruídas a partir do histórico.
         if (salvo !== undefined) {
             perfil.pontos = pontosAtuais(dadosOriginais, id) ?? 0;
         } else {

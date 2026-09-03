@@ -12,7 +12,7 @@ const {
     MessageFlags
 } = require('discord.js');
 
-const olimp = require('./olimpiadas-runtime.js');
+const olimp = require('./olimpiadas-handler.js');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -22,15 +22,12 @@ module.exports = {
 
     async execute(interaction) {
         try {
-            /* Confirma o slash command imediatamente. */
             if (!interaction.replied && !interaction.deferred) {
                 await interaction.deferReply({
                     flags: MessageFlags.Ephemeral
                 });
             }
 
-            /* painel() usa reply() para a confirmação. Como já houve defer,
-               transformamos essa resposta em editReply(). */
             const replyOriginal = interaction.reply?.bind(interaction);
             if (interaction.reply) {
                 interaction.reply = options => interaction.editReply(options);

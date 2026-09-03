@@ -3,8 +3,8 @@
    RUNTIME / COMPATIBILIDADE
 
    O handler principal continua contendo toda a lógica das Olimpíadas.
-   Este arquivo apenas recompõe os exports do handler e centraliza a
-   confirmação rápida das interações para evitar "Esta interação falhou".
+   Este arquivo recompõe os exports do handler e centraliza a confirmação
+   rápida das interações para evitar "Esta interação falhou".
    ======================================================================== */
 
 const fs = require('fs');
@@ -19,11 +19,6 @@ const runtimeModule = new Module(handlerPath, module);
 runtimeModule.filename = handlerPath;
 runtimeModule.paths = Module._nodeModulePaths(__dirname);
 
-/*
- * O arquivo handler.js atualmente termina depois de rankingPaises().
- * O bloco abaixo é anexado em memória para expor as funções internas sem
- * duplicar nem alterar a lógica existente do sistema.
- */
 const exportBlock = `
 module.exports = {
     handle,
@@ -45,6 +40,14 @@ if (typeof olimp.handle !== 'function') {
     throw new Error('[OLIMPIADAS] O handler não expôs a função handle.');
 }
 
+/*
+ * O index.js existente faz require direto de olimpiadas-handler.js nos
+ * eventos de botão/select/modal. Como este runtime recompõe o handler
+ * corretamente, colocamos sua instância no cache do Node para que esses
+ * requires recebam exatamente o mesmo objeto e o mesmo estado em memória.
+ */
+require.cache[handlerPath] = runtimeModule;
+
 /* ========================================================================
    PROTEÇÃO DAS INTERAÇÕES
    ======================================================================== */
@@ -63,7 +66,7 @@ olimp.handle = async function handleProtegido(interaction, ...args) {
         return handleOriginal.call(this, interaction, ...args);
     }
 
-    /* O botão de pesquisa precisa chamar showModal() diretamente. */
+    /* Este botão precisa chamar showModal() diretamente. */
     if (customId.startsWith('olymp_buscar_')) {
         return handleOriginal.call(this, interaction, ...args);
     }
@@ -76,14 +79,9 @@ olimp.handle = async function handleProtegido(interaction, ...args) {
     const replyOriginal = interaction.reply?.bind(interaction);
 
     try {
-        /* Discord recebe a confirmação imediatamente. */
+        /* Confirma imediatamente qualquer botão/select das Olimpíadas. */
         await interaction.deferUpdate();
 
-        /*
-         * Depois do defer:
-         * - update() -> edita a resposta da interação;
-         * - reply()  -> cria uma mensagem adicional.
-         */
         if (interaction.update) {
             interaction.update = options => interaction.editReply(options);
         }

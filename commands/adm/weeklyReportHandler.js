@@ -1,25 +1,5 @@
 /* ========================================================================
    ARQUIVO: commands/adm/weeklyReportHandler.js
-
-   SISTEMA:
-   - 📰 Boletim semanal REAL
-   - 🏆 Fechamento mensal REAL
-   - 🌍 Ranking por continentes
-   - 👑 Evento Especial: Imperador Mundial (Domingo)
-   - 🏅 Líder atual das Olimpíadas de Duplas
-   - 💀 Kills / ☠️ Mortes
-   - ⚔️ Partidas
-   - 🔥 Streak
-   - 📈 Evolução
-   - 🏛️ Histórico / Hall da Fama
-   - 📊 Records históricos
-   - 🎖️ Cargos rotativos
-   - 🛡️ Proteção contra relatório duplicado
-
-   FONTE PRINCIPAL:
-   commands/liga/utils/periodosLiga.js
-
-   Os números são reconstruídos a partir das partidas reais.
    ======================================================================== */
 
 const { EmbedBuilder } = require('discord.js');
@@ -29,16 +9,8 @@ const { safeReadJson, safeWriteJson } = require('../liga/utils/helpers.js');
 const periodosLiga = require('../liga/utils/periodosLiga.js');
 const recordsLiga = require('../liga/utils/recordsLiga.js');
 
-// ========================================================================
-// CONFIGURAÇÕES
-// ========================================================================
-
 const CANAL_RELATORIO_ID = '1228294929546219530';
 const INTERVALO_VERIFICACAO = 60 * 60 * 1000;
-
-// ========================================================================
-// CARGOS DA LIGA
-// ========================================================================
 
 const CARGOS_LIGA = {
     CAMPEAO: '1429934221216186458',
@@ -47,27 +19,17 @@ const CARGOS_LIGA = {
     LENDA: '1088105642327293962'
 };
 
-// ========================================================================
-// CARGOS SEMANAIS / IMPERADORES DE CONTINENTE
-// ========================================================================
-// Substitua somente os placeholders pelos IDs reais dos cargos.
-// O boletim continua funcionando mesmo enquanto algum cargo não estiver configurado.
-
 const CARGOS_SEMANAIS = {
-    EUROPA: 'COLOQUE_ID_AQUI_IMPERADOR_EUROPA',
-    ASIA: 'COLOQUE_ID_AQUI_IMPERADOR_ASIA',
-    AFRICA: 'COLOQUE_ID_AQUI_IMPERADOR_AFRICA',
-    AMNORTE: 'COLOQUE_ID_AQUI_IMPERADOR_NORTE',
-    AMSUL: 'COLOQUE_ID_AQUI_IMPERADOR_SUL',
-    OCEANIA: 'COLOQUE_ID_AQUI_IMPERADOR_OCEANIA',
-    ACOUGUEIRO: 'COLOQUE_ID_AQUI_ACOUGUEIRO',
-    IMA_BALA: 'COLOQUE_ID_AQUI_IMA_BALA',
-    VETERANO: 'COLOQUE_ID_AQUI_VETERANO'
+    EUROPA: '1542543082325803098',
+    ASIA: '1542543277906075818',
+    AFRICA: '1542542996803821568',
+    AMNORTE: '1542541962324738170',
+    AMSUL: '1542543277906075818',
+    OCEANIA: '1542542579445407754',
+    ACOUGUEIRO: '1545125030705369138',
+    IMA_BALA: '1545125303222014044',
+    VETERANO: '1545125339511001128'
 };
-
-// ========================================================================
-// CAMINHOS
-// ========================================================================
 
 const paths = {
     progressao: path.join(__dirname, '../promocao/progressao.json'),
@@ -78,10 +40,6 @@ const paths = {
     controle: path.join(__dirname, '../liga/controleRelatorios.json'),
     olimpiadas: path.join(__dirname, '../olimpiadas/olimpiadas.json')
 };
-
-// ========================================================================
-// AUXILIARES
-// ========================================================================
 
 function numero(valor) {
     const n = Number(valor);
@@ -121,10 +79,6 @@ function salvarHistorico(historico) {
     safeWriteJson(paths.historico, historico);
 }
 
-// ========================================================================
-// PERÍODOS
-// ========================================================================
-
 function calcularMesAnterior(data = new Date()) {
     const atual = data instanceof Date ? data : new Date(data);
     const inicio = new Date(atual.getFullYear(), atual.getMonth() - 1, 1);
@@ -137,10 +91,6 @@ function chavePeriodo(tipo, inicio, fim) {
     const f = fim instanceof Date ? fim : new Date(fim);
     return `${tipo}-${i.getFullYear()}-${i.getMonth() + 1}-${i.getDate()}-${f.getFullYear()}-${f.getMonth() + 1}-${f.getDate()}`;
 }
-
-// ========================================================================
-// RANKINGS
-// ========================================================================
 
 function topPor(periodo, propriedade, limite = 3) {
     return Object.values(periodo?.jogadores || {})
@@ -171,10 +121,6 @@ function formatarImperadorContinente(periodo, propriedade, nome, tituloTag) {
     return `${nome}: ${mencionar(vencedor)} — **${tituloTag}** (${numero(vencedor[propriedade])} domínios)`;
 }
 
-// ========================================================================
-// 🏅 OLIMPÍADAS — PAÍS LÍDER ATUAL
-// ========================================================================
-
 function normalizarTexto(valor) {
     return String(valor ?? '')
         .normalize('NFD')
@@ -199,41 +145,25 @@ function obterLiderOlimpiadas() {
             [resultado?.bronze, 'bronze']
         ]) {
             if (!id) continue;
-
             const dupla = porDupla.get(String(id));
             if (!dupla?.pais) continue;
 
             const chave = normalizarTexto(dupla.pais);
             if (!ranking.has(chave)) {
-                ranking.set(chave, {
-                    pais: dupla.pais,
-                    vitorias: 0,
-                    ouro: 0,
-                    prata: 0,
-                    bronze: 0,
-                    desempate: 0
-                });
+                ranking.set(chave, { pais: dupla.pais, vitorias: 0, ouro: 0, prata: 0, bronze: 0, desempate: 0 });
             }
 
             const item = ranking.get(chave);
             item[medalha]++;
-
-            if (medalha === 'ouro') {
-                item.vitorias++;
-            } else if (medalha === 'prata') {
-                item.desempate += 3;
-            } else if (medalha === 'bronze') {
-                item.desempate += 1;
-            }
+            if (medalha === 'ouro') item.vitorias++;
+            else if (medalha === 'prata') item.desempate += 3;
+            else if (medalha === 'bronze') item.desempate += 1;
         }
     }
 
     return [...ranking.values()].sort((a, b) =>
-        b.vitorias - a.vitorias ||
-        b.ouro - a.ouro ||
-        b.prata - a.prata ||
-        b.bronze - a.bronze ||
-        b.desempate - a.desempate ||
+        b.vitorias - a.vitorias || b.ouro - a.ouro || b.prata - a.prata ||
+        b.bronze - a.bronze || b.desempate - a.desempate ||
         normalizarTexto(a.pais).localeCompare(normalizarTexto(b.pais))
     )[0] || null;
 }
@@ -241,36 +171,27 @@ function obterLiderOlimpiadas() {
 function formatarLiderOlimpiadas() {
     const lider = obterLiderOlimpiadas();
     if (!lider) return '🌎 **Ainda não há resultados nas Olimpíadas.**';
-
     return [
         `🌎 **${lider.pais}** está na liderança!`,
         `🏆 **${lider.vitorias} vitória${lider.vitorias === 1 ? '' : 's'}** • 🥇 ${lider.ouro} • 🥈 ${lider.prata} • 🥉 ${lider.bronze}`
     ].join('\n');
 }
 
-// ========================================================================
-// RODÍZIO DE CARGO
-// ========================================================================
-
 async function rotacionarCargo(guild, roleId, vencedorId) {
-    if (!roleId || roleId.startsWith('COLOQUE_ID_AQUI')) return { configurado: false, alterado: false };
-
+    if (!roleId) return { configurado: false, alterado: false };
     try {
         const role = await guild.roles.fetch(roleId).catch(() => null);
         if (!role) {
             console.error(`[BOLETIM] Cargo não encontrado: ${roleId}`);
             return { configurado: true, alterado: false };
         }
-
         for (const [memberId, member] of role.members) {
             if (memberId !== vencedorId) await member.roles.remove(roleId).catch(() => {});
         }
-
         if (vencedorId) {
             const membro = await guild.members.fetch(vencedorId).catch(() => null);
             if (membro) await membro.roles.add(roleId).catch(() => {});
         }
-
         return { configurado: true, alterado: Boolean(vencedorId) };
     } catch (erro) {
         console.error('[BOLETIM] Erro no rodízio:', erro);
@@ -278,26 +199,16 @@ async function rotacionarCargo(guild, roleId, vencedorId) {
     }
 }
 
-// ========================================================================
-// HISTÓRICO / RECORDS
-// ========================================================================
-
 function registrarHistoricoSemanal(semana, destaques) {
     const historico = carregarHistorico();
     const chave = chavePeriodo('semanal', semana.inicio, semana.fim);
-
     if (!historico.imperador.some(item => item?.chave === chave)) {
         historico.imperador.push({
-            chave,
-            inicio: semana.inicio,
-            fim: semana.fim,
+            chave, inicio: semana.inicio, fim: semana.fim,
             imperadores: {
-                europa: destaques.europa?.id || null,
-                asia: destaques.asia?.id || null,
-                africa: destaques.africa?.id || null,
-                amnorte: destaques.amnorte?.id || null,
-                amsul: destaques.amsul?.id || null,
-                oceania: destaques.oceania?.id || null
+                europa: destaques.europa?.id || null, asia: destaques.asia?.id || null,
+                africa: destaques.africa?.id || null, amnorte: destaques.amnorte?.id || null,
+                amsul: destaques.amsul?.id || null, oceania: destaques.oceania?.id || null
             },
             olimpíadas: destaques.olimpiadas?.pais || null,
             kills: destaques.kills?.[0]?.id || null,
@@ -313,35 +224,22 @@ function registrarHistoricoSemanal(semana, destaques) {
 function registrarHistoricoMensal(mes, destaques) {
     const historico = carregarHistorico();
     const chave = chavePeriodo('mensal', mes.inicio, mes.fim);
-
     if (!historico.liga.some(item => item?.chave === chave)) {
         historico.liga.push({
-            chave,
-            inicio: mes.inicio,
-            fim: mes.fim,
+            chave, inicio: mes.inicio, fim: mes.fim,
             temporada: `${mes.inicio.getFullYear()}-${String(mes.inicio.getMonth() + 1).padStart(2, '0')}`,
             vencedor: destaques.reiLiga?.id || null,
             campeao: destaques.reiLiga?.id || null,
             rankingCompleto: Object.values(mes.jogadores || {}).sort((a, b) =>
-                numero(b?.pontos) - numero(a?.pontos) ||
-                numero(b?.vitorias) - numero(a?.vitorias) ||
-                numero(b?.kills) - numero(a?.kills)
+                numero(b?.pontos) - numero(a?.pontos) || numero(b?.vitorias) - numero(a?.vitorias) || numero(b?.kills) - numero(a?.kills)
             ),
             resumo: destaques.resumo
         });
         salvarHistorico(historico);
     }
-
-    try {
-        recordsLiga.obterRecords();
-    } catch (erro) {
-        console.error('[BOLETIM] Erro ao recalcular records:', erro);
-    }
+    try { recordsLiga.obterRecords(); }
+    catch (erro) { console.error('[BOLETIM] Erro ao recalcular records:', erro); }
 }
-
-// ========================================================================
-// 📰 BOLETIM SEMANAL / IMPERADOR MUNDIAL
-// ========================================================================
 
 async function emitirBoletimSemanal(client) {
     const canal = await client.channels.fetch(CANAL_RELATORIO_ID).catch(() => null);
@@ -356,7 +254,6 @@ async function emitirBoletimSemanal(client) {
     const kills = topPor(semana, 'kills', 3);
     const partidas = topPor(semana, 'partidas', 3);
     const mortes = topPor(semana, 'mortes', 3);
-
     const europa = vencedorDe(semana, 'europa');
     const asia = vencedorDe(semana, 'asia');
     const africa = vencedorDe(semana, 'africa');
@@ -364,7 +261,6 @@ async function emitirBoletimSemanal(client) {
     const amsul = vencedorDe(semana, 'amsul');
     const oceania = vencedorDe(semana, 'oceania');
     const liderOlimpiadas = obterLiderOlimpiadas();
-
     const streaks = periodosLiga.rankingStreak(semana, 3);
     const maiorStreak = streaks[0] || null;
     const evolucao = periodosLiga.calcularEvolucaoSemanal();
@@ -385,10 +281,8 @@ async function emitirBoletimSemanal(client) {
         .setColor('#E67E22')
         .setTitle('👑 EVENTO ESPECIAL — IMPERADOR MUNDIAL 🌍')
         .setDescription([
-            '📡 **RESULTADOS DO DOMÍNIO GLOBAL**',
-            '',
-            `📅 ${dataBonita(semana.inicio)} → ${dataBonita(semana.fim)}`,
-            '',
+            '📡 **RESULTADOS DO DOMÍNIO GLOBAL**', '',
+            `📅 ${dataBonita(semana.inicio)} → ${dataBonita(semana.fim)}`, '',
             `🏟️ **${resumo.partidas} partidas de guerra jogadas**`,
             `👥 **${resumo.jogadores} combatentes ativos**`,
             `💀 **${resumo.kills} kills** • ☠️ **${resumo.mortes} mortes**`
@@ -403,55 +297,34 @@ async function emitirBoletimSemanal(client) {
                     formatarImperadorContinente(semana, 'amsul', '🌎 América do Sul', 'Imperador Sul-Americano'),
                     formatarImperadorContinente(semana, 'asia', '⛩️ Ásia', 'Imperador Asiático'),
                     formatarImperadorContinente(semana, 'oceania', '🦘 Oceania', 'Imperador da Oceania')
-                ].join('\n'),
-                inline: false
+                ].join('\n'), inline: false
             },
             {
                 name: '🏅 OLIMPÍADAS DE DUPLAS',
-                value: formatarLiderOlimpiadas(),
-                inline: false
+                value: formatarLiderOlimpiadas(), inline: false
             },
             {
                 name: '🏆 DESTAQUES DA LIGA',
-                value: [
-                    '✅ **TOP 3 — VITÓRIAS**',
-                    formatarTop(vitorias, 'vitorias', 'vitórias')
-                ].join('\n'),
-                inline: false
+                value: ['✅ **TOP 3 — VITÓRIAS**', formatarTop(vitorias, 'vitorias', 'vitórias')].join('\n'), inline: false
             },
             {
                 name: '⚔️ DESTAQUES DE COMBATE',
                 value: [
-                    '💀 **Açougueiro**',
-                    formatarTop(kills.slice(0, 1), 'kills', 'kills'),
-                    '',
-                    '☠️ **Ímã de Bala**',
-                    formatarTop(mortes.slice(0, 1), 'mortes', 'mortes'),
-                    '',
-                    '⚔️ **Veterano de Guerra**',
-                    formatarTop(partidas.slice(0, 1), 'partidas', 'partidas')
-                ].join('\n'),
-                inline: false
+                    '💀 **Açougueiro**', formatarTop(kills.slice(0, 1), 'kills', 'kills'), '',
+                    '☠️ **Ímã de Bala**', formatarTop(mortes.slice(0, 1), 'mortes', 'mortes'), '',
+                    '⚔️ **Veterano de Guerra**', formatarTop(partidas.slice(0, 1), 'partidas', 'partidas')
+                ].join('\n'), inline: false
             },
             {
                 name: '🔥 STREAK',
-                value: maiorStreak
-                    ? `<@${maiorStreak.id}> — **${numero(maiorStreak.maiorStreak)} vitórias consecutivas**`
-                    : '*Nenhum streak registrado.*',
-                inline: true
+                value: maiorStreak ? `<@${maiorStreak.id}> — **${numero(maiorStreak.maiorStreak)} vitórias consecutivas**` : '*Nenhum streak registrado.*', inline: true
             },
             {
                 name: '📈 ASCENSÃO DA SEMANA',
-                value: maiorEvolucao
-                    ? `<@${maiorEvolucao.id}> — **+${numero(maiorEvolucao.variacao)} pts**`
-                    : '*Nenhuma evolução positiva.*',
-                inline: true
+                value: maiorEvolucao ? `<@${maiorEvolucao.id}> — **+${numero(maiorEvolucao.variacao)} pts**` : '*Nenhuma evolução positiva.*', inline: true
             }
         )
-        .setFooter({
-            text: 'WorldWarBR • Evento Especial Imperador Mundial concluído.',
-            iconURL: guild.iconURL()
-        })
+        .setFooter({ text: 'WorldWarBR • Evento Especial Imperador Mundial concluído.', iconURL: guild.iconURL() })
         .setTimestamp();
 
     await canal.send({
@@ -460,27 +333,13 @@ async function emitirBoletimSemanal(client) {
     });
 
     registrarHistoricoSemanal(semana, {
-        olimpiadas: liderOlimpiadas,
-        europa,
-        asia,
-        africa,
-        amnorte,
-        amsul,
-        oceania,
-        kills,
-        mortes,
-        partidas,
-        maiorStreak,
-        maiorEvolucao
+        europa, asia, africa, amnorte, amsul, oceania,
+        olimpiadas: liderOlimpiadas, kills, mortes, partidas, maiorStreak, maiorEvolucao
     });
 
     console.log('[BOLETIM] Boletim do Evento Especial publicado com sucesso.');
     return true;
 }
-
-// ========================================================================
-// 🏆 FECHAMENTO MENSAL REAL
-// ========================================================================
 
 async function emitirRelatorioMensal(client) {
     const canal = await client.channels.fetch(CANAL_RELATORIO_ID).catch(() => null);
@@ -500,76 +359,34 @@ async function emitirRelatorioMensal(client) {
     const resumo = periodosLiga.resumoPeriodo(mes);
     const evolucao = periodosLiga.calcularEvolucaoMensal(new Date(mes.fim.getTime() - 1));
     const maiorEvolucao = evolucao.find(item => numero(item?.variacao) > 0) || null;
-
     const mesNome = mes.inicio.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
 
     const embed = new EmbedBuilder()
         .setColor('#F1C40F')
         .setTitle('🏆 FECHAMENTO MENSAL — WORLDWARBR')
         .setDescription([
-            '📊 **TEMPORADA MENSAL ENCERRADA**',
-            '',
+            '📊 **TEMPORADA MENSAL ENCERRADA**', '',
             `📅 **${mesNome.charAt(0).toUpperCase() + mesNome.slice(1)}**`,
-            `🗓️ ${dataBonita(mes.inicio)} → ${dataBonita(new Date(mes.fim.getTime() - 1))}`,
-            '',
-            `🏟️ **${resumo.partidas} partidas**`,
-            `👥 **${resumo.jogadores} jogadores ativos**`,
+            `🗓️ ${dataBonita(mes.inicio)} → ${dataBonita(new Date(mes.fim.getTime() - 1))}`, '',
+            `🏟️ **${resumo.partidas} partidas**`, `👥 **${resumo.jogadores} jogadores ativos**`,
             `💀 **${resumo.kills} kills** • ☠️ **${resumo.mortes} mortes**`,
             `🌍 **${resumo.continentes} conquistas de continente**`
         ].join('\n'))
         .addFields(
             {
                 name: '👑 CAMPEÃO DO MÊS',
-                value: reiLiga
-                    ? `${mencionar(reiLiga)} — **${numero(reiLiga.pontos)} pts**\n🏆 ${numero(reiLiga.vitorias)} vitórias • 💀 ${numero(reiLiga.kills)} kills • ⚔️ ${numero(reiLiga.partidas)} partidas`
-                    : '*Nenhum jogador com pontuação registrada.*',
+                value: reiLiga ? `${mencionar(reiLiga)} — **${numero(reiLiga.pontos)} pts**\n🏆 ${numero(reiLiga.vitorias)} vitórias • 💀 ${numero(reiLiga.kills)} kills • ⚔️ ${numero(reiLiga.partidas)} partidas` : '*Nenhum jogador com pontuação registrada.*',
                 inline: false
             },
-            {
-                name: '🥇 TOP 3 — VITÓRIAS',
-                value: formatarTop(vitorias, 'vitorias', 'vitórias'),
-                inline: true
-            },
-            {
-                name: '💀 TOP 3 — KILLS',
-                value: formatarTop(kills, 'kills', 'kills'),
-                inline: true
-            },
-            {
-                name: '⚔️ TOP 3 — PARTIDAS',
-                value: formatarTop(partidas, 'partidas', 'partidas'),
-                inline: true
-            },
-            {
-                name: '🌍 TOP 3 — CONTINENTES',
-                value: formatarTop(continentes, 'continentes', 'conquistas'),
-                inline: true
-            },
-            {
-                name: '☠️ TOP 3 — MORTES',
-                value: formatarTop(mortes, 'mortes', 'mortes'),
-                inline: true
-            },
-            {
-                name: '📈 EVOLUÇÃO',
-                value: maiorEvolucao
-                    ? `<@${maiorEvolucao.id}> — **+${numero(maiorEvolucao.variacao)} pts** em relação ao mês anterior`
-                    : '*Nenhuma evolução positiva registrada.*',
-                inline: true
-            },
-            {
-                name: '📊 RECORDS HISTÓRICOS',
-                value: (() => {
-                    try { return recordsLiga.gerarTextoRecords(); }
-                    catch { return '*Records ainda não disponíveis.*'; }
-                })(),
-                inline: false
-            }
+            { name: '🥇 TOP 3 — VITÓRIAS', value: formatarTop(vitorias, 'vitorias', 'vitórias'), inline: true },
+            { name: '💀 TOP 3 — KILLS', value: formatarTop(kills, 'kills', 'kills'), inline: true },
+            { name: '⚔️ TOP 3 — PARTIDAS', value: formatarTop(partidas, 'partidas', 'partidas'), inline: true },
+            { name: '🌍 TOP 3 — CONTINENTES', value: formatarTop(continentes, 'continentes', 'conquistas'), inline: true },
+            { name: '☠️ TOP 3 — MORTES', value: formatarTop(mortes, 'mortes', 'mortes'), inline: true },
+            { name: '📈 EVOLUÇÃO', value: maiorEvolucao ? `<@${maiorEvolucao.id}> — **+${numero(maiorEvolucao.variacao)} pts** em relação ao mês anterior` : '*Nenhuma evolução positiva registrada.*', inline: true },
+            { name: '📊 RECORDS HISTÓRICOS', value: (() => { try { return recordsLiga.gerarTextoRecords(); } catch { return '*Records ainda não disponíveis.*'; } })(), inline: false }
         )
-        .setFooter({
-            text: 'WorldWarBR • Fechamento mensal registrado no histórico.',
-            iconURL: guild.iconURL()
-        })
+        .setFooter({ text: 'WorldWarBR • Fechamento mensal registrado no histórico.', iconURL: guild.iconURL() })
         .setTimestamp();
 
     await canal.send({
@@ -578,24 +395,17 @@ async function emitirRelatorioMensal(client) {
     });
 
     registrarHistoricoMensal(mes, { reiLiga, resumo });
-
     console.log('[BOLETIM] Fechamento mensal publicado com sucesso.');
     return true;
 }
 
-// ========================================================================
-// AGENDADOR
-// ========================================================================
-
 function iniciarMuralGuerra(client) {
     console.log('✅ Sistema de Relatórios do Imperador Mundial ativado.');
-
     let executando = false;
 
     const verificar = async () => {
         if (executando) return;
         executando = true;
-
         try {
             const agora = new Date();
             const diaSemana = agora.getDay();
@@ -603,31 +413,21 @@ function iniciarMuralGuerra(client) {
             const hora = agora.getHours();
             const controle = carregarControle();
 
-            // Domingo às 20h: relatório semanal / Imperador Mundial.
             if (diaSemana === 0 && hora === 20) {
                 const semana = periodosLiga.calcularSemanaAtual(agora);
                 const chave = chavePeriodo('semanal', semana.inicio, semana.fim);
-
                 if (controle.ultimoSemanal !== chave) {
                     const sucesso = await emitirBoletimSemanal(client);
-                    if (sucesso) {
-                        controle.ultimoSemanal = chave;
-                        salvarControle(controle);
-                    }
+                    if (sucesso) { controle.ultimoSemanal = chave; salvarControle(controle); }
                 }
             }
 
-            // Dia 1 às 00h: fecha o mês anterior, nunca o mês que acabou de começar.
             if (diaMes === 1 && hora === 0) {
                 const mesAnterior = calcularMesAnterior(agora);
                 const chave = chavePeriodo('mensal', mesAnterior.inicio, mesAnterior.fim);
-
                 if (controle.ultimoMensal !== chave) {
                     const sucesso = await emitirRelatorioMensal(client);
-                    if (sucesso) {
-                        controle.ultimoMensal = chave;
-                        salvarControle(controle);
-                    }
+                    if (sucesso) { controle.ultimoMensal = chave; salvarControle(controle); }
                 }
             }
         } catch (erro) {
@@ -640,10 +440,6 @@ function iniciarMuralGuerra(client) {
     verificar().catch(erro => console.error('[BOLETIM] Erro na verificação inicial:', erro));
     setInterval(verificar, INTERVALO_VERIFICACAO);
 }
-
-// ========================================================================
-// EXPORTAÇÕES
-// ========================================================================
 
 iniciarMuralGuerra.emitirBoletimSemanal = emitirBoletimSemanal;
 iniciarMuralGuerra.emitirRelatorioMensal = emitirRelatorioMensal;

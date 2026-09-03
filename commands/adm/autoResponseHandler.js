@@ -1,5 +1,5 @@
 /* ========================================================================
-   WORLDWARBR — AUTO RESPOSTA INTELIGENTE V2
+   WORLDWARBR — AUTO RESPOSTA INTELIGENTE V3
 
    Integração:
    - Liga das Nações
@@ -7,7 +7,10 @@
 
    Recursos:
    - somente na categoria configurada;
-   - respostas tradicionais do auto_respostas.json;
+   - respostas tradicionais do auto_respostas.json preservadas;
+   - gatilhos com pontuação, prioridade e variações naturais;
+   - reconhecimento de acentos, abreviações e pequenas variações;
+   - contexto curto por canal para respostas menos robóticas;
    - análise dinâmica do ranking;
    - jogadores subindo/caindo;
    - ultrapassagens detectadas entre snapshots;
@@ -35,11 +38,14 @@ const CONFIG = {
     cooldownCanalMs: 90 * 1000,
     chanceOlimpiadas: 0.45,
     chanceRespostaInteligente: 0.82,
-    maxRankingSnapshot: 50
+    chanceTradicional: 0.78,
+    maxRankingSnapshot: 50,
+    contextoExpiraMs: 15 * 60 * 1000
 };
 
 const cooldownCanais = new Map();
 const ultimoModelo = new Map();
+const contextoCanais = new Map();
 let timerEspontaneo = null;
 let clienteAtual = null;
 
@@ -71,6 +77,8 @@ function normalizar(valor) {
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
         .toLowerCase()
+        .replace(/[\u200B-\u200D\uFEFF]/g, '')
+        .replace(/\s+/g, ' ')
         .trim();
 }
 
@@ -284,7 +292,6 @@ function gerarAnaliseMovimento(ranking) {
     else tipo = { jogador: queda, de: queda.de, para: queda.para, delta: queda.delta };
 
     let mensagem = escolher(MODELOS_MOVIMENTO, 'movimento');
-    // Corrige o tom do modelo 3 quando o escolhido for queda.
     if (mensagem.includes('TEM GENTE SUBINDO') && tipo.jogador && tipo.jogador.delta < 0) {
         mensagem = MODELOS_MOVIMENTO[2];
     }
@@ -327,7 +334,7 @@ function gerarMensagemLiga() {
     salvarSnapshot(ranking);
     if (mensagemMovimento && Math.random() < 0.60) return mensagemMovimento;
 
-    return escolher(MODELOS_LIGA, 'liga').({
+    return escolher(MODELOS_LIGA, 'liga')({
         lider, segundo, terceiro, kills, vitorias, winrate, destaque, resumo
     });
 }
@@ -428,24 +435,191 @@ function gerarMensagemOlimpiadas() {
     ], 'olimpiadas');
 }
 
-function gerarRespostaTradicional(texto) {
+/* ========================================================================
+   AUTO RESPOSTA TRADICIONAL — V3
+   Mantém o auto_respostas.json intacto e melhora a forma de encontrá-lo.
+   ======================================================================== */
+
+const ALIASES_TRADICIONAIS = {
+    'oi': ['oi bot', 'oi'],
+    'ola': ['oi bot', 'ola'],
+    'olá': ['oi bot'],
+    'eai': ['oi bot'],
+    'e ai': ['oi bot'],
+    'bomdia': ['bom dia'],
+    'boatarde': ['boa tarde'],
+    'boanoite': ['boa noite'],
+    'obrigado': ['parabens'],
+    'obrigada': ['parabens'],
+    'valeu': ['parabens'],
+    'kkkk': ['kkk'],
+    'kkkkk': ['kkk'],
+    'haha': ['kkk'],
+    'hahaha': ['kkk'],
+    'fudeu': ['f'],
+    'morreu': ['f'],
+    'morre': ['f'],
+    'lagado': ['lag'],
+    'travando': ['lag'],
+    'travou': ['lag'],
+    'regras da liga': ['regras'],
+    'como sobe de patente': ['patente'],
+    'subir patente': ['patente'],
+    'denunciar': ['denuncia'],
+    'denunciar alguem': ['denuncia'],
+    'denunciar alguém': ['denuncia'],
+    'staff': ['staff'],
+    'moderacao': ['staff'],
+    'moderação': ['staff'],
+    'suporte': ['ticket'],
+    'ajuda': ['ticket'],
+    'jogar war': ['war'],
+    'partida': ['war'],
+    'evento': ['evento'],
+    'eventos': ['evento'],
+    'call': ['call'],
+    'musica': ['musica'],
+    'música': ['musica'],
+    'som': ['musica'],
+    'parabens': ['parabens'],
+    'parabéns': ['parabens'],
+    'sextou': ['sextou']
+};
+
+function contemGatilhoSeguro(texto, gatilho) {
+    const t = normalizar(texto);
+    const g = normalizar(gatilho);
+    if (!g) return false;
+
+    // Gatilhos muito curtos nunca fazem busca por substring.
+    // Isso evita o antigo problema de "f" disparar em qualquer palavra com F.
+    if (g.length <= 2) {
+        const escaped = g.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        return new RegExp(`(?:^|\\s|[^a-z0-9])${escaped}(?:$|\\s|[^a-z0-9])`, 'i').test(t);
+    }
+
+    return t.includes(g);
+}
+
+function pontuarGatilho(texto, gatilho) {
+    const t = normalizar(texto);
+    const g = normalizar(gatilho);
+    if (!g || !contemGatilhoSeguro(t, g)) return 0;
+
+    let pontos = 1;
+    if (t === g) pontos += 8;
+    if (t.startsWith(`${g} `) || t.endsWith(` ${g}`)) pontos += 3;
+    if (g.includes(' ')) pontos += 2;
+    if (g.length >= 6) pontos += 1;
+    return pontos;
+}
+
+function possiveisGatilhos(chave) {
+    const normalizada = normalizar(chave);
+    const aliases = Object.entries(ALIASES_TRADICIONAIS)
+        .filter(([, valores]) => valores.some(v => normalizar(v) === normalizada))
+        .map(([alias]) => alias);
+    return [chave, ...aliases];
+}
+
+function identificarClima(texto) {
+    const n = normalizar(texto);
+    if (/^(kkkk+|rs+|haha+|hahaha+|mds kkk)/i.test(n)) return 'risada';
+    if (/(obrigad[oa]|valeu|tmj|tamo junto)/i.test(n)) return 'positivo';
+    if (/(triste|desanimad[oa]|perdi|perdeu|deu ruim|que azar)/i.test(n)) return 'frustracao';
+    if (/(ganhei|ganhamos|venci|vitoria|vitória|gg|campeao|campeão)/i.test(n)) return 'vitoria';
+    if (/(bom dia|boa tarde|boa noite|oi|ola|olá|e ai|eai)/i.test(n)) return 'saudacao';
+    return 'neutro';
+}
+
+function respostaTradicionalContextual(opcoes, clima, chave, texto) {
+    if (!Array.isArray(opcoes)) return opcoes;
+    if (!opcoes.length) return null;
+
+    // Pequenas preferências de contexto sem alterar o conteúdo do JSON.
+    // O objetivo é apenas evitar uma resposta inadequada ao clima da conversa.
+    let candidatos = opcoes;
+    if (clima === 'risada' && chave === 'kkk') candidatos = opcoes;
+    if (clima === 'vitoria' && chave === 'gg') candidatos = opcoes;
+    if (clima === 'frustracao' && chave === 'triste') candidatos = opcoes;
+
+    // Para mensagens muito longas, prioriza respostas diferentes da anterior.
+    const anterior = ultimoModelo.get(`tradicional:${chave}`);
+    if (candidatos.length > 1 && anterior) {
+        const semAnterior = candidatos.filter(r => r !== anterior);
+        if (semAnterior.length) candidatos = semAnterior;
+    }
+
+    return escolher(candidatos, `tradicional:${chave}`);
+}
+
+function gerarRespostaTradicional(texto, channelId) {
     try {
         const db = safeReadJson(dbPath, {});
         if (!db || typeof db !== 'object') return null;
 
         const respostas = Array.isArray(db) ? db : (db.respostas || db);
+        const clima = identificarClima(texto);
+        const contextoAnterior = contextoCanais.get(String(channelId));
+        const agora = Date.now();
+        const contextoValido = contextoAnterior && agora - contextoAnterior.em < CONFIG.contextoExpiraMs;
+
+        const candidatos = [];
+
         if (Array.isArray(respostas)) {
             for (const item of respostas) {
                 const gatilhos = item.gatilhos || item.palavras || item.keywords || [];
                 const lista = Array.isArray(gatilhos) ? gatilhos : [gatilhos];
-                if (lista.some(g => normalizar(texto).includes(normalizar(g)))) {
-                    const opcoes = item.respostas || item.mensagens || item.resposta;
-                    return Array.isArray(opcoes) ? escolher(opcoes, 'tradicional') : opcoes;
+                const chave = String(item.chave || item.nome || lista[0] || 'tradicional');
+                let melhor = 0;
+                for (const gatilho of lista) {
+                    melhor = Math.max(melhor, pontuarGatilho(texto, gatilho));
+                }
+                if (melhor > 0) {
+                    candidatos.push({ item, chave, pontos: melhor });
+                }
+            }
+        } else if (respostas && typeof respostas === 'object') {
+            for (const [chave, opcoes] of Object.entries(respostas)) {
+                const gatilhos = [chave, ...possiveisGatilhos(chave)];
+                let melhor = 0;
+                for (const gatilho of gatilhos) {
+                    melhor = Math.max(melhor, pontuarGatilho(texto, gatilho));
+                }
+                if (melhor > 0) {
+                    candidatos.push({ chave, opcoes, pontos: melhor });
                 }
             }
         }
 
-        return null;
+        // O JSON atual é um objeto { "gatilho": [respostas] }, então esta é a
+        // rota principal. Em empate, escolhemos aleatoriamente entre os gatilhos
+        // mais fortes para a conversa não ficar previsível.
+        if (!candidatos.length) return null;
+
+        const maiorPontuacao = Math.max(...candidatos.map(c => c.pontos));
+        let melhores = candidatos.filter(c => c.pontos === maiorPontuacao);
+
+        // Se a mensagem continua um assunto recente, favorece o mesmo tema.
+        if (contextoValido && contextoAnterior.chave) {
+            const doMesmoTema = melhores.filter(c => normalizar(c.chave) === normalizar(contextoAnterior.chave));
+            if (doMesmoTema.length) melhores = doMesmoTema;
+        }
+
+        const escolhido = melhores[Math.floor(Math.random() * melhores.length)];
+        const chave = escolhido.chave;
+        const opcoes = escolhido.opcoes || escolhido.item?.respostas || escolhido.item?.mensagens || escolhido.item?.resposta;
+        const resposta = respostaTradicionalContextual(opcoes, clima, chave, texto);
+        if (!resposta) return null;
+
+        contextoCanais.set(String(channelId), {
+            chave,
+            clima,
+            texto: String(texto).slice(0, 300),
+            em: agora
+        });
+
+        return String(resposta);
     } catch (erro) {
         console.error('[Auto-Resposta] Sistema tradicional:', erro.message);
         return null;
@@ -496,8 +670,8 @@ module.exports = client => {
                 return;
             }
 
-            const tradicional = gerarRespostaTradicional(message.content);
-            if (tradicional && podeResponder(message.channelId)) {
+            const tradicional = gerarRespostaTradicional(message.content, message.channelId);
+            if (tradicional && Math.random() <= CONFIG.chanceTradicional && podeResponder(message.channelId)) {
                 await message.reply(String(tradicional));
             }
         } catch (erro) {
@@ -506,8 +680,9 @@ module.exports = client => {
     });
 
     client.once(Events.ClientReady, () => {
-        console.log('🤖 Auto-Resposta Inteligente V2 ativado.');
+        console.log('🤖 Auto-Resposta Inteligente V3 ativado.');
         console.log(`📁 Categoria monitorada: ${CONFIG.categoriaId}`);
+        console.log('🧠 Respostas tradicionais: pontuação de gatilhos, contexto, aliases e anti-repetição.');
         console.log('📈 Análise ativa: subidas, quedas, ultrapassagens, streaks e comparações.');
         agendarProximaEspontanea();
     });

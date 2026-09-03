@@ -6,6 +6,7 @@
    - 🏆 Fechamento mensal REAL
    - 🌍 Ranking por continentes
    - 👑 Evento Especial: Imperador Mundial (Domingo)
+   - 🏅 Líder atual das Olimpíadas de Duplas
    - 💀 Kills / ☠️ Mortes
    - ⚔️ Partidas
    - 🔥 Streak
@@ -61,8 +62,7 @@ const CARGOS_SEMANAIS = {
     OCEANIA: 'COLOQUE_ID_AQUI_IMPERADOR_OCEANIA',
     ACOUGUEIRO: 'COLOQUE_ID_AQUI_ACOUGUEIRO',
     IMA_BALA: 'COLOQUE_ID_AQUI_IMA_BALA',
-    VETERANO: 'COLOQUE_ID_AQUI_VETERANO',
-    REI_LIGA: 'COLOQUE_ID_AQUI_REI_LIGA'
+    VETERANO: 'COLOQUE_ID_AQUI_VETERANO'
 };
 
 // ========================================================================
@@ -75,7 +75,8 @@ const paths = {
     pontuacao: path.join(__dirname, '../liga/pontuacao.json'),
     partidas: path.join(__dirname, '../liga/partidas.json'),
     historico: path.join(__dirname, '../promocao/historico.json'),
-    controle: path.join(__dirname, '../liga/controleRelatorios.json')
+    controle: path.join(__dirname, '../liga/controleRelatorios.json'),
+    olimpiadas: path.join(__dirname, '../olimpiadas/olimpiadas.json')
 };
 
 // ========================================================================
@@ -171,6 +172,83 @@ function formatarImperadorContinente(periodo, propriedade, nome, tituloTag) {
 }
 
 // ========================================================================
+// 🏅 OLIMPÍADAS — PAÍS LÍDER ATUAL
+// ========================================================================
+
+function normalizarTexto(valor) {
+    return String(valor ?? '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .trim();
+}
+
+function obterLiderOlimpiadas() {
+    const dados = safeReadJson(paths.olimpiadas);
+    if (!dados || typeof dados !== 'object') return null;
+
+    const duplas = Array.isArray(dados.duplas) ? dados.duplas : [];
+    const resultados = Array.isArray(dados.resultados) ? dados.resultados : [];
+    const porDupla = new Map(duplas.map(dupla => [String(dupla.id), dupla]));
+    const ranking = new Map();
+
+    for (const resultado of resultados) {
+        for (const [id, medalha] of [
+            [resultado?.ouro, 'ouro'],
+            [resultado?.prata, 'prata'],
+            [resultado?.bronze, 'bronze']
+        ]) {
+            if (!id) continue;
+
+            const dupla = porDupla.get(String(id));
+            if (!dupla?.pais) continue;
+
+            const chave = normalizarTexto(dupla.pais);
+            if (!ranking.has(chave)) {
+                ranking.set(chave, {
+                    pais: dupla.pais,
+                    vitorias: 0,
+                    ouro: 0,
+                    prata: 0,
+                    bronze: 0,
+                    desempate: 0
+                });
+            }
+
+            const item = ranking.get(chave);
+            item[medalha]++;
+
+            if (medalha === 'ouro') {
+                item.vitorias++;
+            } else if (medalha === 'prata') {
+                item.desempate += 3;
+            } else if (medalha === 'bronze') {
+                item.desempate += 1;
+            }
+        }
+    }
+
+    return [...ranking.values()].sort((a, b) =>
+        b.vitorias - a.vitorias ||
+        b.ouro - a.ouro ||
+        b.prata - a.prata ||
+        b.bronze - a.bronze ||
+        b.desempate - a.desempate ||
+        normalizarTexto(a.pais).localeCompare(normalizarTexto(b.pais))
+    )[0] || null;
+}
+
+function formatarLiderOlimpiadas() {
+    const lider = obterLiderOlimpiadas();
+    if (!lider) return '🌎 **Ainda não há resultados nas Olimpíadas.**';
+
+    return [
+        `🌎 **${lider.pais}** está na liderança!`,
+        `🏆 **${lider.vitorias} vitória${lider.vitorias === 1 ? '' : 's'}** • 🥇 ${lider.ouro} • 🥈 ${lider.prata} • 🥉 ${lider.bronze}`
+    ].join('\n');
+}
+
+// ========================================================================
 // RODÍZIO DE CARGO
 // ========================================================================
 
@@ -213,7 +291,6 @@ function registrarHistoricoSemanal(semana, destaques) {
             chave,
             inicio: semana.inicio,
             fim: semana.fim,
-            vencedorLiga: destaques.reiLiga?.id || null,
             imperadores: {
                 europa: destaques.europa?.id || null,
                 asia: destaques.asia?.id || null,
@@ -222,6 +299,7 @@ function registrarHistoricoSemanal(semana, destaques) {
                 amsul: destaques.amsul?.id || null,
                 oceania: destaques.oceania?.id || null
             },
+            olimpíadas: destaques.olimpiadas?.pais || null,
             kills: destaques.kills?.[0]?.id || null,
             mortes: destaques.mortes?.[0]?.id || null,
             partidas: destaques.partidas?.[0]?.id || null,
@@ -254,7 +332,6 @@ function registrarHistoricoMensal(mes, destaques) {
         salvarHistorico(historico);
     }
 
-    // Recalcula os records a partir do histórico consolidado.
     try {
         recordsLiga.obterRecords();
     } catch (erro) {
@@ -275,7 +352,6 @@ async function emitirBoletimSemanal(client) {
 
     const guild = canal.guild;
     const semana = periodosLiga.calcularSemanaAtual();
-    const reiLiga = vencedorDe(semana, 'pontos');
     const vitorias = topPor(semana, 'vitorias', 3);
     const kills = topPor(semana, 'kills', 3);
     const partidas = topPor(semana, 'partidas', 3);
@@ -287,6 +363,7 @@ async function emitirBoletimSemanal(client) {
     const amnorte = vencedorDe(semana, 'amnorte');
     const amsul = vencedorDe(semana, 'amsul');
     const oceania = vencedorDe(semana, 'oceania');
+    const liderOlimpiadas = obterLiderOlimpiadas();
 
     const streaks = periodosLiga.rankingStreak(semana, 3);
     const maiorStreak = streaks[0] || null;
@@ -303,7 +380,6 @@ async function emitirBoletimSemanal(client) {
     await rotacionarCargo(guild, CARGOS_SEMANAIS.ACOUGUEIRO, kills[0]?.id);
     await rotacionarCargo(guild, CARGOS_SEMANAIS.IMA_BALA, mortes[0]?.id);
     await rotacionarCargo(guild, CARGOS_SEMANAIS.VETERANO, partidas[0]?.id);
-    await rotacionarCargo(guild, CARGOS_SEMANAIS.REI_LIGA, reiLiga?.id);
 
     const embed = new EmbedBuilder()
         .setColor('#E67E22')
@@ -331,10 +407,13 @@ async function emitirBoletimSemanal(client) {
                 inline: false
             },
             {
+                name: '🏅 OLIMPÍADAS DE DUPLAS',
+                value: formatarLiderOlimpiadas(),
+                inline: false
+            },
+            {
                 name: '🏆 DESTAQUES DA LIGA',
                 value: [
-                    `👑 **Rei da Semana:** ${reiLiga ? `${mencionar(reiLiga)} — **${numero(reiLiga.pontos)} pts**` : '*Sem registros.*'}`,
-                    '',
                     '✅ **TOP 3 — VITÓRIAS**',
                     formatarTop(vitorias, 'vitorias', 'vitórias')
                 ].join('\n'),
@@ -381,7 +460,7 @@ async function emitirBoletimSemanal(client) {
     });
 
     registrarHistoricoSemanal(semana, {
-        reiLiga,
+        olimpiadas: liderOlimpiadas,
         europa,
         asia,
         africa,
@@ -558,7 +637,6 @@ function iniciarMuralGuerra(client) {
         }
     };
 
-    // Executa uma verificação imediata e depois continua a cada hora.
     verificar().catch(erro => console.error('[BOLETIM] Erro na verificação inicial:', erro));
     setInterval(verificar, INTERVALO_VERIFICACAO);
 }

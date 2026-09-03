@@ -1,24 +1,7 @@
 /* ========================================================================
-   WORLDWARBR — AUTO RESPOSTA INTELIGENTE V3
-
-   Integração:
-   - Liga das Nações
-   - Olimpíadas de Duplas
-
-   Recursos:
-   - somente na categoria configurada;
-   - respostas tradicionais do auto_respostas.json preservadas;
-   - gatilhos com pontuação, prioridade e variações naturais;
-   - reconhecimento de acentos, abreviações e pequenas variações;
-   - contexto curto por canal para respostas menos robóticas;
-   - análise dinâmica do ranking;
-   - jogadores subindo/caindo;
-   - ultrapassagens detectadas entre snapshots;
-   - sequência atual e maior sequência de vitórias;
-   - comparação direta entre dois jogadores mencionados;
-   - comentários sobre diferença de pontos, vitórias, kills e winrate;
-   - mensagens espontâneas com variação humana;
-   - anti-spam e anti-repetição.
+   WORLDWARBR — AUTO RESPOSTA V4
+   Conversacional, bem-humorada e integrada à Liga/Olimpíadas.
+   Mantém compatibilidade com commands/adm/auto_respostas.json.
    ======================================================================== */
 
 const { Events } = require('discord.js');
@@ -33,657 +16,374 @@ const olympPath = path.join(__dirname, '..', 'olimpiadas', 'olimpiadas.json');
 
 const CONFIG = {
     categoriaId: '849698902634004510',
-    intervaloMinMs: 10 * 60 * 1000,
-    intervaloMaxMs: 30 * 60 * 1000,
-    cooldownCanalMs: 90 * 1000,
-    chanceOlimpiadas: 0.45,
-    chanceRespostaInteligente: 0.82,
-    chanceTradicional: 0.78,
-    maxRankingSnapshot: 50,
-    contextoExpiraMs: 15 * 60 * 1000
+    cooldownCanalMs: 75 * 1000,
+    respostaChance: 0.88,
+    espontaneaMinMs: 12 * 60 * 1000,
+    espontaneaMaxMs: 28 * 60 * 1000,
+    maxRanking: 50
 };
 
-const cooldownCanais = new Map();
+const cooldown = new Map();
 const ultimoModelo = new Map();
-const contextoCanais = new Map();
-let timerEspontaneo = null;
+const contexto = new Map();
 let clienteAtual = null;
+let timer = null;
 
-function lerJson(caminho, fallback = {}) {
+const HUMOR = {
+    riso: [
+        'KKKKKKKK aí você me quebra 😂',
+        'KKKK isso escalou rápido demais. 😂',
+        'Eu não devia rir disso... mas ri. 🤣',
+        'O servidor perdeu a seriedade oficialmente. 💀'
+    ],
+    derrota: [
+        'Faz parte. Até General já olhou pro dado e pensou: “não é possível”. 🎲💀',
+        'Calma, comandante. Uma derrota não apaga a campanha. A próxima pode ser sua. 🫡',
+        'O War decidiu testar sua estabilidade emocional hoje. 😂',
+        'Respira. Não quebra o teclado. A Liga ainda tem revanche. 😭'
+    ],
+    vitoria: [
+        'Aí sim! Pode comemorar, mas não esquece que o ranking está olhando. 👀🏆',
+        'Vitória registrada. Agora vem a parte difícil: repetir. 😏',
+        'GG! O mapa perdeu mais uma vez para a estratégia. 🌍🔥',
+        'Calma com a confiança... já vi líder virar espectador em uma partida. 😂'
+    ],
+    provocacao: [
+        'Opa... senti cheiro de rivalidade no ar. 👀',
+        'Isso aí já parece início de guerra diplomática. 😂',
+        'Anotado. Vou guardar essa frase para quando o ranking mudar. 📝',
+        'Fala baixo que o rival pode estar lendo. 👁️'
+    ],
+    incentivo: [
+        'Vai na fé. A Liga não se ganha olhando o ranking, se ganha jogando. 🫡',
+        'Ainda dá para virar. Uma boa partida muda muita coisa por aqui. 🔥',
+        'Cabeça fria, objetivo claro e dado na mão. Bora. 🎲',
+        'Não desiste agora. A campanha ainda pode contar outra história. 🏆'
+    ]
+};
+
+function lerJson(file, fallback = {}) {
     try {
-        if (!fs.existsSync(caminho)) return fallback;
-        const bruto = fs.readFileSync(caminho, 'utf8');
-        if (!bruto.trim()) return fallback;
-        const dados = JSON.parse(bruto);
-        return dados && typeof dados === 'object' ? dados : fallback;
-    } catch (erro) {
-        console.error('[Auto-Resposta] Erro lendo JSON:', caminho, erro.message);
+        if (!fs.existsSync(file)) return fallback;
+        const raw = fs.readFileSync(file, 'utf8');
+        if (!raw.trim()) return fallback;
+        const data = JSON.parse(raw);
+        return data && typeof data === 'object' ? data : fallback;
+    } catch (e) {
+        console.error('[Auto-Resposta] JSON:', e.message);
         return fallback;
     }
 }
 
-function salvarJson(caminho, dados) {
+function salvarJson(file, data) {
     try {
-        fs.writeFileSync(caminho, JSON.stringify(dados, null, 2), 'utf8');
-        return true;
-    } catch (erro) {
-        console.error('[Auto-Resposta] Erro salvando JSON:', caminho, erro.message);
-        return false;
+        fs.writeFileSync(file, JSON.stringify(data, null, 2), 'utf8');
+    } catch (e) {
+        console.error('[Auto-Resposta] salvar JSON:', e.message);
     }
 }
 
-function normalizar(valor) {
-    return String(valor ?? '')
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .toLowerCase()
-        .replace(/[\u200B-\u200D\uFEFF]/g, '')
-        .replace(/\s+/g, ' ')
-        .trim();
+function norm(value) {
+    return String(value ?? '')
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase().replace(/\s+/g, ' ').trim();
 }
 
-function numero(valor) {
-    const n = Number(valor);
+function num(value) {
+    const n = Number(value);
     return Number.isFinite(n) ? n : 0;
 }
 
-function fmt(valor) {
-    return numero(valor).toLocaleString('pt-BR');
-}
-
-function mencionar(id) {
-    return id ? `<@${String(id)}>` : 'esse competidor';
-}
-
-function escolher(lista, chave) {
-    if (!Array.isArray(lista) || !lista.length) return '';
-    const anterior = ultimoModelo.get(chave);
-    const candidatos = lista.length > 1 ? lista.filter(x => x !== anterior) : lista;
-    const item = candidatos[Math.floor(Math.random() * candidatos.length)] || lista[0];
-    ultimoModelo.set(chave, item);
-    return item;
-}
-
-function estaNaCategoria(channel) {
-    return String(channel?.parentId || '') === CONFIG.categoriaId;
-}
+function fmt(value) { return num(value).toLocaleString('pt-BR'); }
+function mention(id) { return id ? `<@${id}>` : 'esse jogador'; }
+function categoria(channel) { return String(channel?.parentId || '') === CONFIG.categoriaId; }
 
 function podeResponder(channelId) {
-    const agora = Date.now();
-    const ultimo = cooldownCanais.get(String(channelId)) || 0;
-    if (agora - ultimo < CONFIG.cooldownCanalMs) return false;
-    cooldownCanais.set(String(channelId), agora);
+    const id = String(channelId);
+    const now = Date.now();
+    if (now - (cooldown.get(id) || 0) < CONFIG.cooldownCanalMs) return false;
+    cooldown.set(id, now);
     return true;
 }
 
-function rankingLiga() {
-    try {
-        return estatisticasLiga.rankingPorPontos(CONFIG.maxRankingSnapshot) || [];
-    } catch (erro) {
-        console.error('[Auto-Resposta] Ranking:', erro.message);
-        return [];
-    }
+function escolher(items, key = 'global') {
+    if (!Array.isArray(items) || !items.length) return '';
+    const last = ultimoModelo.get(key);
+    const pool = items.length > 1 ? items.filter(x => x !== last) : items;
+    const value = pool[Math.floor(Math.random() * pool.length)] || items[0];
+    ultimoModelo.set(key, value);
+    return value;
 }
 
-function perfilLiga(id) {
-    try {
-        return estatisticasLiga.calcularPerfil(String(id));
-    } catch {
-        return null;
-    }
-}
-
-function resumoLiga() {
-    try {
-        return estatisticasLiga.resumoLiga() || {};
-    } catch {
-        return {};
-    }
-}
-
-function carregarInteligencia() {
-    const dados = lerJson(inteligenciaPath, {});
-    if (!dados.ultimaClassificacao || typeof dados.ultimaClassificacao !== 'object') {
-        dados.ultimaClassificacao = {};
-    }
-    return dados;
-}
-
-function salvarSnapshot(ranking) {
-    if (!ranking.length) return;
-    const dados = carregarInteligencia();
-    const classificacao = {};
-    ranking.forEach((j, index) => {
-        classificacao[String(j.id)] = {
-            posicao: index + 1,
-            pontos: numero(j.pontos)
-        };
+function tem(text, terms) {
+    const t = norm(text);
+    return terms.some(term => {
+        const x = norm(term);
+        if (!x) return false;
+        if (x.length <= 2) return new RegExp(`(^|\\s)${x}(?=\\s|$)`, 'i').test(t);
+        return t.includes(x);
     });
-    dados.ultimaClassificacao = classificacao;
-    dados.atualizadoEm = new Date().toISOString();
-    salvarJson(inteligenciaPath, dados);
 }
 
-function analisarMovimento(ranking) {
-    const anterior = carregarInteligencia().ultimaClassificacao || {};
-    const atual = {};
-    const subindo = [];
-    const caindo = [];
+function perfil(id) {
+    try { return estatisticasLiga.calcularPerfil(String(id)); } catch { return null; }
+}
+
+function ranking() {
+    try { return estatisticasLiga.rankingPorPontos(CONFIG.maxRanking) || []; } catch { return []; }
+}
+
+function winrate(j) {
+    const p = num(j?.partidas);
+    if (!p) return 0;
+    return num(j?.winrate) || (num(j.vitorias) / p) * 100;
+}
+
+function streak(j) {
+    const atual = num(j?.streakAtual);
+    const maior = num(j?.maiorStreak);
+    if (atual >= 5) return `está em uma sequência MONSTRA de **${fmt(atual)} vitórias** 🔥🔥`;
+    if (atual >= 3) return `vem de **${fmt(atual)} vitórias seguidas** e está embalado 🔥`;
+    if (atual === 2) return 'venceu as **2 últimas partidas** e começou a embalar 👀';
+    if (atual === 1) return 'venceu a partida mais recente e pode iniciar uma sequência';
+    if (maior >= 3) return `está sem sequência ativa, mas já chegou a **${fmt(maior)} vitórias seguidas**`;
+    return 'não está em sequência de vitórias no momento';
+}
+
+function resumo() {
+    try { return estatisticasLiga.resumoLiga() || {}; } catch { return {}; }
+}
+
+function movimento() {
+    const atual = ranking();
+    const db = lerJson(inteligenciaPath, {});
+    const anterior = db.ultimaClassificacao || {};
+    const subindo = [], caindo = [];
+
+    atual.forEach((j, i) => {
+        const old = anterior[String(j.id)];
+        if (!old) return;
+        const pos = i + 1;
+        const delta = num(old.posicao) - pos;
+        if (delta > 0) subindo.push({ ...j, de: old.posicao, para: pos, delta });
+        if (delta < 0) caindo.push({ ...j, de: old.posicao, para: pos, delta: Math.abs(delta) });
+    });
+
     const ultrapassagens = [];
-
-    ranking.forEach((j, index) => {
-        const id = String(j.id);
-        const posicao = index + 1;
-        atual[id] = posicao;
-        const antigo = anterior[id];
-        if (!antigo) return;
-
-        const delta = numero(antigo.posicao) - posicao;
-        if (delta >= 1) subindo.push({ ...j, de: antigo.posicao, para: posicao, delta });
-        if (delta <= -1) caindo.push({ ...j, de: antigo.posicao, para: posicao, delta: Math.abs(delta) });
-    });
-
-    for (let i = 0; i < ranking.length; i++) {
-        for (let j = i + 1; j < ranking.length; j++) {
-            const a = ranking[i];
-            const b = ranking[j];
+    for (let i = 0; i < atual.length; i++) {
+        for (let j = i + 1; j < atual.length; j++) {
+            const a = atual[i], b = atual[j];
             const pa = anterior[String(a.id)]?.posicao;
             const pb = anterior[String(b.id)]?.posicao;
-            if (!pa || !pb) continue;
-            if (pa > pb && i < j) {
-                ultrapassagens.push({ ultrapassou: a, ultrapassado: b });
-            }
-            if (pb > pa && j < i) {
-                ultrapassagens.push({ ultrapassou: b, ultrapassado: a });
-            }
+            if (pa && pb && pa > pb) ultrapassagens.push({ a, b });
         }
     }
-
-    return { subindo, caindo, ultrapassagens, atual };
+    return { atual, subindo, caindo, ultrapassagens };
 }
 
-function melhorMovimento(movimento, tipo) {
-    const lista = tipo === 'subindo' ? movimento.subindo : movimento.caindo;
-    return [...lista].sort((a, b) => b.delta - a.delta)[0] || null;
-}
-
-function streakTexto(jogador) {
-    const atual = numero(jogador?.streakAtual);
-    const maior = numero(jogador?.maiorStreak);
-    if (atual >= 5) return `está em uma sequência absurda de **${fmt(atual)} vitórias seguidas** (melhor marca: **${fmt(maior)}**) 🔥🔥`;
-    if (atual >= 3) return `vem de **${fmt(atual)} vitórias seguidas** e já tem uma sequência de respeito (máxima: **${fmt(maior)}**) 🔥`;
-    if (atual === 2) return `venceu as **2 últimas partidas** e começou a embalar 👀`;
-    if (atual === 1) return `venceu a partida mais recente e pode começar uma sequência`;
-    if (maior >= 3) return `está sem sequência ativa agora, mas já chegou a **${fmt(maior)} vitórias seguidas**`;
-    return 'ainda não tem uma sequência de vitórias relevante registrada';
-}
-
-function taxa(j) {
-    if (numero(j?.partidas) <= 0) return 0;
-    return numero(j?.winrate) || (numero(j.vitorias) / numero(j.partidas)) * 100;
-}
-
-function compararJogadores(a, b) {
-    if (!a || !b) return null;
-    const pontos = numero(a.pontos) - numero(b.pontos);
-    const vitorias = numero(a.vitorias) - numero(b.vitorias);
-    const kills = numero(a.kills) - numero(b.kills);
-    const winrate = taxa(a) - taxa(b);
-    const ranking = rankingLiga();
-    const posA = ranking.findIndex(j => String(j.id) === String(a.id)) + 1;
-    const posB = ranking.findIndex(j => String(j.id) === String(b.id)) + 1;
-
-    const vencedor = pontos > 0 ? a : pontos < 0 ? b : vitorias > 0 ? a : vitorias < 0 ? b : null;
-    const nomeA = mencionar(a.id);
-    const nomeB = mencionar(b.id);
-
-    let abertura;
-    if (pontos === 0) abertura = `${nomeA} e ${nomeB} estão empatados em **${fmt(a.pontos)} pts**.`;
-    else if (vencedor?.id === a.id) abertura = `${nomeA} está na frente de ${nomeB} por **${fmt(Math.abs(pontos))} pts**.`;
-    else abertura = `${nomeB} está na frente de ${nomeA} por **${fmt(Math.abs(pontos))} pts**.`;
-
-    return [
-        `⚔️ **COMPARAÇÃO DIRETA**`,
-        abertura,
-        `📊 **Ranking:** ${nomeA} #${posA || '—'} • ${nomeB} #${posB || '—'}`,
-        `🏆 **Vitórias:** ${fmt(a.vitorias)} x ${fmt(b.vitorias)} • **Kills:** ${fmt(a.kills)} x ${fmt(b.kills)}`,
-        `📈 **Winrate:** ${taxa(a).toFixed(1)}% x ${taxa(b).toFixed(1)}%`,
-        pontos !== 0
-            ? `💡 Hoje, a vantagem é de ${vencedor?.id === a.id ? nomeA : nomeB}. Mas uma boa partida pode virar esse duelo.`
-            : vitorias !== 0
-                ? `💡 Em vitórias, ${vitorias > 0 ? nomeA : nomeB} leva vantagem.`
-                : kills !== 0
-                    ? `💡 Em poder de fogo, ${kills > 0 ? nomeA : nomeB} está na frente.`
-                    : winrate !== 0
-                        ? `💡 Em aproveitamento, ${winrate > 0 ? nomeA : nomeB} está melhor.`
-                        : '💡 Os dois estão praticamente lado a lado nos números.'
-    ].join('\n');
-}
-
-function extrairMencoes(message) {
-    return [...message.mentions.users.keys()].slice(0, 2);
-}
-
-function tem(texto, termos) {
-    const n = normalizar(texto);
-    return termos.some(t => n.includes(normalizar(t)));
-}
-
-const MODELOS_MOVIMENTO = [
-    m => `📈 **TEM GENTE SUBINDO**\n${m.jogador ? mencionar(m.jogador.id) : 'Um competidor'} ganhou **${fmt(m.delta)} posição(ões)** e foi do #${m.de} para o #${m.para}. Isso sim é evolução. 🔥`,
-    m => `👀 **OLHA QUEM APARECEU**\n${m.jogador ? mencionar(m.jogador.id) : 'Um jogador'} está avançando no ranking. Saiu do #${m.de} e agora está no #${m.para}. A próxima partida pode colocar ainda mais pressão no topo.`,
-    m => `📉 **ATENÇÃO NO RANKING**\n${m.jogador ? mencionar(m.jogador.id) : 'Um competidor'} perdeu **${fmt(m.delta)} posição(ões)**. Caiu do #${m.de} para o #${m.para}. Agora é hora de reagir.`,
-    m => `⚔️ **ULTRAPASSAGEM!**\n${m.ultrapassou ? mencionar(m.ultrapassou.id) : 'Um jogador'} passou na frente de ${m.ultrapassado ? mencionar(m.ultrapassado.id) : 'outro competidor'}. O ranking acabou de ganhar mais uma reviravolta.`,
-    m => `🔥 **A BRIGA ESTÁ PEGANDO**\n${m.ultrapassou ? mencionar(m.ultrapassou.id) : 'Um competidor'} ultrapassou ${m.ultrapassado ? mencionar(m.ultrapassado.id) : 'um adversário'}. É exatamente esse tipo de mudança que deixa a Liga viva.`
-];
-
-function gerarAnaliseMovimento(ranking) {
-    if (!ranking.length) return null;
-    const movimento = analisarMovimento(ranking);
-    const subida = melhorMovimento(movimento, 'subindo');
-    const queda = melhorMovimento(movimento, 'caindo');
-    const ultrapassagem = movimento.ultrapassagens[0];
-
-    if (!subida && !queda && !ultrapassagem) return null;
-
-    let tipo;
-    if (ultrapassagem && Math.random() < 0.45) tipo = { ultrapassou: ultrapassagem.ultrapassou, ultrapassado: ultrapassagem.ultrapassado };
-    else if (subida && (!queda || Math.random() < 0.65)) tipo = { jogador: subida, de: subida.de, para: subida.para, delta: subida.delta };
-    else tipo = { jogador: queda, de: queda.de, para: queda.para, delta: queda.delta };
-
-    let mensagem = escolher(MODELOS_MOVIMENTO, 'movimento');
-    if (mensagem.includes('TEM GENTE SUBINDO') && tipo.jogador && tipo.jogador.delta < 0) {
-        mensagem = MODELOS_MOVIMENTO[2];
-    }
-    return mensagem(tipo);
-}
-
-const MODELOS_LIGA = [
-    r => `👑 **A COROA TEM DONO... POR ENQUANTO**\n${mencionar(r.lider.id)} lidera com **${fmt(r.lider.pontos)} pts**. ${mencionar(r.segundo.id)} está a **${fmt(Math.abs(numero(r.lider.pontos) - numero(r.segundo.pontos)))} pontos**.`,
-    r => `⚔️ **CAÇADA AO TOPO**\n${mencionar(r.segundo.id)} está perseguindo ${mencionar(r.lider.id)}. Faltam **${fmt(Math.abs(numero(r.lider.pontos) - numero(r.segundo.pontos)))} pts** para encostar.`,
-    r => `🔥 **SEQUÊNCIA DE VITÓRIAS**\n${mencionar(r.destaque.id)} ${streakTexto(r.destaque)}. Se continuar assim, o ranking vai sentir.`,
-    r => `💀 **PODER DE FOGO**\n${mencionar(r.kills.id)} lidera em kills com **${fmt(r.kills.kills)} eliminações**. Não é só pontuação: combate também está pesando.`,
-    r => `📈 **MOMENTO**\n${mencionar(r.destaque.id)} está com **${fmt(r.destaque.pontos)} pts**, **${fmt(r.destaque.vitorias)} vitórias** e **${fmt(r.destaque.kills)} kills**. É um nome para ficar de olho.`,
-    r => `📊 **TOP 3**\n🥇 ${mencionar(r.lider.id)} — ${fmt(r.lider.pontos)} pts\n🥈 ${mencionar(r.segundo.id)} — ${fmt(r.segundo.pontos)} pts\n🥉 ${mencionar(r.terceiro.id)} — ${fmt(r.terceiro.pontos)} pts`,
-    r => `🧠 **NÚMEROS NÃO MENTEM**\n${mencionar(r.winrate.id)} tem **${taxa(r.winrate).toFixed(1)}% de aproveitamento**. Em ${fmt(r.winrate.partidas)} partidas, isso chama atenção.`,
-    r => `🏆 **CONSISTÊNCIA**\n${mencionar(r.vitorias.id)} já soma **${fmt(r.vitorias.vitorias)} vitórias**. Quem mantém esse ritmo começa a construir uma campanha difícil de alcançar.`,
-    r => `⚡ **A DISTÂNCIA É PEQUENA**\nOs dois primeiros estão separados por **${fmt(Math.abs(numero(r.lider.pontos) - numero(r.segundo.pontos)))} pts**. Uma única partida pode mudar o cenário.`,
-    r => `🌎 **A LIGA ESTÁ VIVA**\nJá são **${fmt(r.resumo.partidasRegistradas)} partidas**, **${fmt(r.resumo.jogadores)} jogadores** e **${fmt(r.resumo.kills)} kills** contabilizadas. Cada resultado pesa.`,
-    r => `🎯 **QUEM ESTÁ MAIS PERTO?**\n${mencionar(r.segundo.id)} precisa superar **${fmt(Math.abs(numero(r.lider.pontos) - numero(r.segundo.pontos)))} pts** de diferença para assumir a liderança.`,
-    r => `🔥 **OLHO NESSE JOGADOR**\n${mencionar(r.destaque.id)} tem **${fmt(r.destaque.pontos)} pts** e ${streakTexto(r.destaque)}. A próxima partida pode mudar bastante a leitura desse ranking.`
-];
-
-function gerarMensagemLiga() {
-    const ranking = rankingLiga();
-    if (!ranking.length) return '🏆 **LIGA DAS NAÇÕES**\nAinda não tenho dados suficientes para fazer uma análise. Assim que houver partidas, eu começo a acompanhar a disputa. 👀';
-
-    const lider = ranking[0];
-    const segundo = ranking[1] || lider;
-    const terceiro = ranking[2] || segundo;
-    const resumo = resumoLiga();
-    const kills = [...ranking].sort((a, b) => numero(b.kills) - numero(a.kills))[0] || lider;
-    const vitorias = [...ranking].sort((a, b) => numero(b.vitorias) - numero(a.vitorias))[0] || lider;
-    const winrate = [...ranking].filter(j => numero(j.partidas) > 0).sort((a, b) => taxa(b) - taxa(a))[0] || lider;
-    const destaque = [...ranking].sort((a, b) => {
-        const sa = numero(a.streakAtual) * 4 + numero(a.vitorias) + numero(a.kills) * 0.2;
-        const sb = numero(b.streakAtual) * 4 + numero(b.vitorias) + numero(b.kills) * 0.2;
-        return sb - sa;
-    })[0] || lider;
-
-    const mensagemMovimento = gerarAnaliseMovimento(ranking);
-    salvarSnapshot(ranking);
-    if (mensagemMovimento && Math.random() < 0.60) return mensagemMovimento;
-
-    return escolher(MODELOS_LIGA, 'liga')({
-        lider, segundo, terceiro, kills, vitorias, winrate, destaque, resumo
+function salvarSnapshot() {
+    const r = ranking();
+    if (!r.length) return;
+    const db = lerJson(inteligenciaPath, {});
+    db.ultimaClassificacao = {};
+    r.forEach((j, i) => {
+        db.ultimaClassificacao[String(j.id)] = { posicao: i + 1, pontos: num(j.pontos) };
     });
+    db.atualizadoEm = new Date().toISOString();
+    salvarJson(inteligenciaPath, db);
 }
 
-function analisarJogador(id) {
-    const ranking = rankingLiga();
-    const jogador = perfilLiga(id);
-    if (!jogador) return `🔎 Não encontrei dados de ${mencionar(id)} na Liga ainda.`;
-    const posicao = ranking.findIndex(j => String(j.id) === String(id)) + 1;
-    const movimento = analisarMovimento(ranking);
-    const subiu = movimento.subindo.find(j => String(j.id) === String(id));
-    const caiu = movimento.caindo.find(j => String(j.id) === String(id));
+function analiseRanking() {
+    const r = ranking();
+    if (!r.length) return '🏆 A Liga ainda está juntando dados. Assim que houver partidas, eu começo a fofoca estatística. 👀';
+    const m = movimento();
+    const up = [...m.subindo].sort((a, b) => b.delta - a.delta)[0];
+    const down = [...m.caindo].sort((a, b) => b.delta - a.delta)[0];
+    const over = m.ultrapassagens[0];
+    const leader = r[0], second = r[1];
 
-    let leitura = 'está mantendo a posição atual';
-    if (subiu) leitura = `subiu **${fmt(subiu.delta)} posição(ões)**, indo do #${subiu.de} para o #${subiu.para}`;
-    if (caiu) leitura = `caiu **${fmt(caiu.delta)} posição(ões)**, indo do #${caiu.de} para o #${caiu.para}`;
+    const opcoes = [];
+    if (over) opcoes.push(`⚔️ **ULTRAPASSAGEM DETECTADA**\n${mention(over.a.id)} passou na frente de ${mention(over.b.id)}. O ranking está começando a ficar pessoal. 👀`);
+    if (up) opcoes.push(`📈 **QUEM ESTÁ SUBINDO?**\n${mention(up.id)} ganhou **${fmt(up.delta)} posição(ões)** e foi do #${up.de} para o #${up.para}. Alguém acordou para a Liga. 🔥`);
+    if (down) opcoes.push(`📉 **ALGUÉM PRECISA REAGIR**\n${mention(down.id)} caiu do #${down.de} para o #${down.para}. O ranking não perdoa vacilo. 😬`);
+    if (second) opcoes.push(`👑 **BRIGA PELO TRONO**\n${mention(leader.id)} lidera com **${fmt(leader.pontos)} pts**. ${mention(second.id)} está só **${fmt(Math.abs(num(leader.pontos) - num(second.pontos)))} pts** atrás. Uma partida e o roteiro muda. 🎬`);
+    if (opcoes.length) return escolher(opcoes, 'movimento-ranking');
+    return `👑 ${mention(leader.id)} está no topo com **${fmt(leader.pontos)} pts**. Ainda não detectei uma grande virada recente, mas isso pode mudar na próxima partida. 👀`;
+}
+
+function raioX(id) {
+    const j = perfil(id);
+    if (!j) return `🔎 Ainda não encontrei histórico suficiente de ${mention(id)} na Liga.`;
+    const r = ranking();
+    const pos = r.findIndex(x => String(x.id) === String(id)) + 1;
+    const m = movimento();
+    const up = m.subindo.find(x => String(x.id) === String(id));
+    const down = m.caindo.find(x => String(x.id) === String(id));
+    let leitura = 'mantendo a posição observada';
+    if (up) leitura = `subindo **${fmt(up.delta)} posição(ões)**`;
+    if (down) leitura = `caindo **${fmt(down.delta)} posição(ões)**`;
 
     return [
-        `📋 **RAIO-X DE ${mencionar(id)}**`,
-        `🏅 Posição: **#${posicao || '—'}** • Pontos: **${fmt(jogador.pontos)}**`,
-        `🏆 Vitórias: **${fmt(jogador.vitorias)}** • Partidas: **${fmt(jogador.partidas)}** • Winrate: **${taxa(jogador).toFixed(1)}%**`,
-        `💀 Kills: **${fmt(jogador.kills)}** • Mortes: **${fmt(jogador.mortes)}**`,
-        `🔥 ${mencionar(id)} ${streakTexto(jogador)}.`,
-        `📈 No movimento mais recente que eu consegui observar, ${leitura}.`
+        `🔎 **RAIO-X DA LIGA — ${mention(id)}**`,
+        `🏅 Posição: **#${pos || '—'}** • **${fmt(j.pontos)} pts**`,
+        `🏆 **${fmt(j.vitorias)} vitórias** em **${fmt(j.partidas)} partidas** • Winrate **${winrate(j).toFixed(1)}%**`,
+        `💀 **${fmt(j.kills)} kills** • **${fmt(j.mortes)} mortes**`,
+        `🔥 ${mention(id)} ${streak(j)}.`,
+        `📈 Momento do ranking: **${leitura}**.`
     ].join('\n');
 }
 
-function gerarRespostaInteligente(message) {
-    const texto = message.content || '';
-    const mencoes = extrairMencoes(message);
-
-    if (mencoes.length === 2 && tem(texto, ['comparar', 'compare', 'versus', 'vs', 'contra', 'duelo'])) {
-        const a = perfilLiga(mencoes[0]);
-        const b = perfilLiga(mencoes[1]);
-        return compararJogadores(a, b);
-    }
-
-    if (mencoes.length === 1 && tem(texto, ['meus pontos', 'minha pontuacao', 'minha pontuação', 'meu ranking', 'meus numeros', 'meus números', 'como estou', 'como to', 'como tô'])) {
-        return analisarJogador(mencoes[0]);
-    }
-
-    if (tem(texto, ['quem subiu', 'quem esta subindo', 'quem está subindo', 'quem caiu', 'quem esta caindo', 'quem está caindo', 'ultrapassou', 'ultrapassagem', 'mudou no ranking', 'movimentacao', 'movimentação'])) {
-        const ranking = rankingLiga();
-        const analise = gerarAnaliseMovimento(ranking);
-        return analise || '📊 Ainda não detectei uma mudança de posição desde a última leitura do ranking. A próxima partida pode mudar isso. 👀';
-    }
-
-    if (tem(texto, ['sequencia', 'sequência', 'vitorias seguidas', 'vitórias seguidas', 'streak', 'embalado', 'embalada'])) {
-        const ranking = rankingLiga();
-        const jogador = [...ranking].sort((a, b) => numero(b.streakAtual) - numero(a.streakAtual))[0];
-        if (!jogador || numero(jogador.streakAtual) <= 0) return '🔥 Ainda não há uma sequência ativa forte registrada. Quero ver quem vai começar a embalar.';
-        return `🔥 **SEQUÊNCIA ATIVA**\n${mencionar(jogador.id)} ${streakTexto(jogador)}.`;
-    }
-
-    if (mencoes.length === 1 && tem(texto, ['pontos', 'pontuacao', 'pontuação', 'ranking', 'estatistica', 'estatística', 'desempenho'])) {
-        return analisarJogador(mencoes[0]);
-    }
-
-    if (tem(texto, ['liga', 'ranking da liga', 'lider', 'líder', 'primeiro', 'quem esta ganhando', 'quem está ganhando', 'quem lidera', 'campeao', 'campeão'])) {
-        return gerarMensagemLiga();
-    }
-
-    if (tem(texto, ['olimpiada', 'olimpíada', 'olimpiadas', 'olimpíadas', 'duplas', 'medalhas', 'ouro', 'prata', 'bronze'])) {
-        return gerarMensagemOlimpiadas();
-    }
-
-    return null;
+function comparar(a, b) {
+    if (!a || !b) return null;
+    const r = ranking();
+    const pa = r.findIndex(x => String(x.id) === String(a.id)) + 1;
+    const pb = r.findIndex(x => String(x.id) === String(b.id)) + 1;
+    const diff = num(a.pontos) - num(b.pontos);
+    const vr = winrate(a) - winrate(b);
+    const vencedor = diff > 0 ? a : diff < 0 ? b : null;
+    const texto = diff === 0
+        ? `estão empatados em **${fmt(a.pontos)} pts**`
+        : `${mention(vencedor.id)} está na frente por **${fmt(Math.abs(diff))} pts**`;
+    return `⚔️ **DUELO DA LIGA**\n${mention(a.id)} #${pa || '—'} x ${mention(b.id)} #${pb || '—'}\n${texto}.\n🏆 Vitórias: **${fmt(a.vitorias)} x ${fmt(b.vitorias)}**\n💀 Kills: **${fmt(a.kills)} x ${fmt(b.kills)}**\n📈 Winrate: **${winrate(a).toFixed(1)}% x ${winrate(b).toFixed(1)}%**\n💡 ${vr === 0 ? 'Nos números de aproveitamento, os dois estão iguais.' : `${mention(vr > 0 ? a.id : b.id)} leva a melhor no aproveitamento.`}`;
 }
 
 function dadosOlimpiadas() {
-    const dados = lerJson(olympPath, {});
-    if (!Array.isArray(dados.duplas)) dados.duplas = [];
-    if (!Array.isArray(dados.resultados)) dados.resultados = [];
-    if (!dados.ranking || typeof dados.ranking !== 'object') dados.ranking = {};
-    return dados;
+    const d = lerJson(olympPath, {});
+    if (!Array.isArray(d.duplas)) d.duplas = [];
+    if (!Array.isArray(d.resultados)) d.resultados = [];
+    if (!d.ranking || typeof d.ranking !== 'object') d.ranking = {};
+    return d;
 }
 
-function gerarMensagemOlimpiadas() {
-    const dados = dadosOlimpiadas();
-    const ranking = Object.entries(dados.ranking)
-        .map(([pais, item]) => ({ pais, ...(item && typeof item === 'object' ? item : { pontos: numero(item) }) }))
-        .sort((a, b) => numero(b.pontos) - numero(a.pontos));
-
-    if (!ranking.length && !dados.duplas.length && !dados.resultados.length) {
-        return '🥇 **OLIMPÍADAS DE DUPLAS**\nAinda estou esperando os primeiros resultados para começar a narrar essa disputa. 👀';
-    }
-
-    const lider = ranking[0];
-    const duplas = dados.duplas.length;
-    const resultados = dados.resultados.length;
-    if (!lider) return `🏅 **OLIMPÍADAS DE DUPLAS**\nJá existem **${fmt(duplas)} duplas** e **${fmt(resultados)} resultados** registrados. A disputa está começando!`;
-
+function olimp() {
+    const d = dadosOlimpiadas();
+    const r = Object.entries(d.ranking)
+        .map(([pais, x]) => ({ pais, ...(x && typeof x === 'object' ? x : { pontos: num(x) }) }))
+        .sort((a, b) => num(b.pontos) - num(a.pontos));
+    if (!r.length) return `🥇 **OLIMPÍADAS DE DUPLAS**\nAinda não tem resultado suficiente para eu começar a provocar os países. 😂`;
+    const l = r[0], s = r[1];
     return escolher([
-        `🥇 **CORRIDA PELO TOPO**\n${lider.pais} está liderando as Olimpíadas com **${fmt(lider.pontos)} pts**. Mas ainda tem muita disputa pela frente.`,
-        `🏅 **OLIMPÍADAS DE DUPLAS**\nO país que aparece na frente agora é **${lider.pais}**, com **${fmt(lider.pontos)} pts**. Já são **${fmt(duplas)} duplas** registradas.`,
-        `👀 **OLHO NO QUADRO**\n${lider.pais} tomou a dianteira com **${fmt(lider.pontos)} pts**. Se o segundo colocado encostar, o cenário muda rapidinho.`,
-        `🔥 **A DISPUTA ESTÁ VIVA**\n**${fmt(resultados)} resultados** já foram registrados e **${fmt(duplas)} duplas** estão no sistema. ${lider.pais} aparece na frente neste momento.`
+        `🥇 **OLIMPÍADAS DE DUPLAS**\n${l.pais} está na frente com **${fmt(l.pontos)} pts**. ${s ? `${s.pais} vem logo atrás.` : 'Ainda não apareceu um perseguidor forte.'} 👀`,
+        `🏅 O quadro olímpico está começando a esquentar. **${l.pais}** lidera com **${fmt(l.pontos)} pts** e já está fazendo pressão. 🔥`,
+        `🌍 **PLACAR DAS DUPLAS**\n${l.pais}: **${fmt(l.pontos)} pts**\nDuplas registradas: **${fmt(d.duplas.length)}**\nResultados: **${fmt(d.resultados.length)}**\nA disputa está oficialmente aberta. 🏆`
     ], 'olimpiadas');
 }
 
-/* ========================================================================
-   AUTO RESPOSTA TRADICIONAL — V3
-   Mantém o auto_respostas.json intacto e melhora a forma de encontrá-lo.
-   ======================================================================== */
-
-const ALIASES_TRADICIONAIS = {
-    'oi': ['oi bot', 'oi'],
-    'ola': ['oi bot', 'ola'],
-    'olá': ['oi bot'],
-    'eai': ['oi bot'],
-    'e ai': ['oi bot'],
-    'bomdia': ['bom dia'],
-    'boatarde': ['boa tarde'],
-    'boanoite': ['boa noite'],
-    'obrigado': ['parabens'],
-    'obrigada': ['parabens'],
-    'valeu': ['parabens'],
-    'kkkk': ['kkk'],
-    'kkkkk': ['kkk'],
-    'haha': ['kkk'],
-    'hahaha': ['kkk'],
-    'fudeu': ['f'],
-    'morreu': ['f'],
-    'morre': ['f'],
-    'lagado': ['lag'],
-    'travando': ['lag'],
-    'travou': ['lag'],
-    'regras da liga': ['regras'],
-    'como sobe de patente': ['patente'],
-    'subir patente': ['patente'],
-    'denunciar': ['denuncia'],
-    'denunciar alguem': ['denuncia'],
-    'denunciar alguém': ['denuncia'],
-    'staff': ['staff'],
-    'moderacao': ['staff'],
-    'moderação': ['staff'],
-    'suporte': ['ticket'],
-    'ajuda': ['ticket'],
-    'jogar war': ['war'],
-    'partida': ['war'],
-    'evento': ['evento'],
-    'eventos': ['evento'],
-    'call': ['call'],
-    'musica': ['musica'],
-    'música': ['musica'],
-    'som': ['musica'],
-    'parabens': ['parabens'],
-    'parabéns': ['parabens'],
-    'sextou': ['sextou']
-};
-
-function contemGatilhoSeguro(texto, gatilho) {
-    const t = normalizar(texto);
-    const g = normalizar(gatilho);
-    if (!g) return false;
-
-    // Gatilhos muito curtos nunca fazem busca por substring.
-    // Isso evita o antigo problema de "f" disparar em qualquer palavra com F.
-    if (g.length <= 2) {
-        const escaped = g.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        return new RegExp(`(?:^|\\s|[^a-z0-9])${escaped}(?:$|\\s|[^a-z0-9])`, 'i').test(t);
+function contextoResposta(message, base) {
+    const id = String(message.channelId);
+    const anterior = contexto.get(id);
+    contexto.set(id, { texto: message.content, autor: String(message.author.id), em: Date.now() });
+    if (!anterior || Date.now() - anterior.em > 10 * 60 * 1000) return base;
+    const atual = norm(message.content);
+    if (tem(atual, ['e agora', 'e ai', 'e aí', 'entao', 'então', 'agora'])) {
+        return `${base}\n\n👀 E sim, eu sei que você quer saber o próximo capítulo. Agora é jogar e deixar o ranking responder.`;
     }
-
-    return t.includes(g);
+    return base;
 }
 
-function pontuarGatilho(texto, gatilho) {
-    const t = normalizar(texto);
-    const g = normalizar(gatilho);
-    if (!g || !contemGatilhoSeguro(t, g)) return 0;
+function respostaInteligente(message) {
+    const t = message.content || '';
+    const ids = [...message.mentions.users.keys()].slice(0, 2);
 
-    let pontos = 1;
-    if (t === g) pontos += 8;
-    if (t.startsWith(`${g} `) || t.endsWith(` ${g}`)) pontos += 3;
-    if (g.includes(' ')) pontos += 2;
-    if (g.length >= 6) pontos += 1;
-    return pontos;
-}
-
-function possiveisGatilhos(chave) {
-    const normalizada = normalizar(chave);
-    const aliases = Object.entries(ALIASES_TRADICIONAIS)
-        .filter(([, valores]) => valores.some(v => normalizar(v) === normalizada))
-        .map(([alias]) => alias);
-    return [chave, ...aliases];
-}
-
-function identificarClima(texto) {
-    const n = normalizar(texto);
-    if (/^(kkkk+|rs+|haha+|hahaha+|mds kkk)/i.test(n)) return 'risada';
-    if (/(obrigad[oa]|valeu|tmj|tamo junto)/i.test(n)) return 'positivo';
-    if (/(triste|desanimad[oa]|perdi|perdeu|deu ruim|que azar)/i.test(n)) return 'frustracao';
-    if (/(ganhei|ganhamos|venci|vitoria|vitória|gg|campeao|campeão)/i.test(n)) return 'vitoria';
-    if (/(bom dia|boa tarde|boa noite|oi|ola|olá|e ai|eai)/i.test(n)) return 'saudacao';
-    return 'neutro';
-}
-
-function respostaTradicionalContextual(opcoes, clima, chave, texto) {
-    if (!Array.isArray(opcoes)) return opcoes;
-    if (!opcoes.length) return null;
-
-    // Pequenas preferências de contexto sem alterar o conteúdo do JSON.
-    // O objetivo é apenas evitar uma resposta inadequada ao clima da conversa.
-    let candidatos = opcoes;
-    if (clima === 'risada' && chave === 'kkk') candidatos = opcoes;
-    if (clima === 'vitoria' && chave === 'gg') candidatos = opcoes;
-    if (clima === 'frustracao' && chave === 'triste') candidatos = opcoes;
-
-    // Para mensagens muito longas, prioriza respostas diferentes da anterior.
-    const anterior = ultimoModelo.get(`tradicional:${chave}`);
-    if (candidatos.length > 1 && anterior) {
-        const semAnterior = candidatos.filter(r => r !== anterior);
-        if (semAnterior.length) candidatos = semAnterior;
+    if (ids.length === 2 && tem(t, ['comparar', 'compare', 'versus', 'vs', 'contra', 'duelo', 'melhor'])) {
+        return comparar(perfil(ids[0]), perfil(ids[1]));
     }
-
-    return escolher(candidatos, `tradicional:${chave}`);
+    if (ids.length === 1 && tem(t, ['pontos', 'pontuacao', 'pontuação', 'ranking', 'estatistica', 'estatística', 'desempenho', 'como estou', 'como to', 'como tô'])) {
+        return raioX(ids[0]);
+    }
+    if (tem(t, ['quem subiu', 'quem caiu', 'quem esta subindo', 'quem está subindo', 'quem esta caindo', 'quem está caindo', 'ultrapassagem', 'ultrapassou', 'movimentacao', 'movimentação'])) return analiseRanking();
+    if (tem(t, ['sequencia', 'sequência', 'streak', 'vitorias seguidas', 'vitórias seguidas', 'embalado'])) {
+        const r = ranking();
+        const j = [...r].sort((a, b) => num(b.streakAtual) - num(a.streakAtual))[0];
+        return j && num(j.streakAtual) > 0 ? `🔥 **STREAK DA LIGA**\n${mention(j.id)} ${streak(j)}.` : '🔥 Ainda não apareceu uma sequência ativa digna de cinema. Quero ver quem vai começar.';
+    }
+    if (tem(t, ['olimpiada', 'olimpíada', 'olimpiadas', 'olimpíadas', 'duplas', 'medalha', 'ouro', 'prata', 'bronze'])) return olimp();
+    if (tem(t, ['liga', 'ranking', 'lider', 'líder', 'primeiro lugar', 'quem lidera', 'quem esta ganhando', 'quem está ganhando', 'campeao', 'campeão'])) return analiseRanking();
+    return null;
 }
 
-function gerarRespostaTradicional(texto, channelId) {
+function tradicional(texto) {
     try {
         const db = safeReadJson(dbPath, {});
         if (!db || typeof db !== 'object') return null;
-
-        const respostas = Array.isArray(db) ? db : (db.respostas || db);
-        const clima = identificarClima(texto);
-        const contextoAnterior = contextoCanais.get(String(channelId));
-        const agora = Date.now();
-        const contextoValido = contextoAnterior && agora - contextoAnterior.em < CONFIG.contextoExpiraMs;
-
+        const t = norm(texto);
         const candidatos = [];
-
-        if (Array.isArray(respostas)) {
-            for (const item of respostas) {
-                const gatilhos = item.gatilhos || item.palavras || item.keywords || [];
-                const lista = Array.isArray(gatilhos) ? gatilhos : [gatilhos];
-                const chave = String(item.chave || item.nome || lista[0] || 'tradicional');
-                let melhor = 0;
-                for (const gatilho of lista) {
-                    melhor = Math.max(melhor, pontuarGatilho(texto, gatilho));
-                }
-                if (melhor > 0) {
-                    candidatos.push({ item, chave, pontos: melhor });
-                }
-            }
-        } else if (respostas && typeof respostas === 'object') {
-            for (const [chave, opcoes] of Object.entries(respostas)) {
-                const gatilhos = [chave, ...possiveisGatilhos(chave)];
-                let melhor = 0;
-                for (const gatilho of gatilhos) {
-                    melhor = Math.max(melhor, pontuarGatilho(texto, gatilho));
-                }
-                if (melhor > 0) {
-                    candidatos.push({ chave, opcoes, pontos: melhor });
-                }
-            }
+        for (const [gatilho, respostas] of Object.entries(db)) {
+            if (!Array.isArray(respostas)) continue;
+            const g = norm(gatilho);
+            if (!g) continue;
+            let pontos = 0;
+            if (g.length <= 2) pontos = new RegExp(`(^|\\s)${g}(?=\\s|$)`, 'i').test(t) ? 10 : 0;
+            else if (t.includes(g)) pontos = g.length + 10;
+            if (pontos) candidatos.push({ gatilho, respostas, pontos });
         }
-
-        // O JSON atual é um objeto { "gatilho": [respostas] }, então esta é a
-        // rota principal. Em empate, escolhemos aleatoriamente entre os gatilhos
-        // mais fortes para a conversa não ficar previsível.
+        candidatos.sort((a, b) => b.pontos - a.pontos);
         if (!candidatos.length) return null;
-
-        const maiorPontuacao = Math.max(...candidatos.map(c => c.pontos));
-        let melhores = candidatos.filter(c => c.pontos === maiorPontuacao);
-
-        // Se a mensagem continua um assunto recente, favorece o mesmo tema.
-        if (contextoValido && contextoAnterior.chave) {
-            const doMesmoTema = melhores.filter(c => normalizar(c.chave) === normalizar(contextoAnterior.chave));
-            if (doMesmoTema.length) melhores = doMesmoTema;
-        }
-
-        const escolhido = melhores[Math.floor(Math.random() * melhores.length)];
-        const chave = escolhido.chave;
-        const opcoes = escolhido.opcoes || escolhido.item?.respostas || escolhido.item?.mensagens || escolhido.item?.resposta;
-        const resposta = respostaTradicionalContextual(opcoes, clima, chave, texto);
-        if (!resposta) return null;
-
-        contextoCanais.set(String(channelId), {
-            chave,
-            clima,
-            texto: String(texto).slice(0, 300),
-            em: agora
-        });
-
-        return String(resposta);
-    } catch (erro) {
-        console.error('[Auto-Resposta] Sistema tradicional:', erro.message);
+        const melhor = candidatos[0];
+        return escolher(melhor.respostas, `tradicional:${melhor.gatilho}`);
+    } catch (e) {
+        console.error('[Auto-Resposta] tradicional:', e.message);
         return null;
     }
 }
 
-function canaisDaCategoria() {
-    if (!clienteAtual?.channels?.cache) return [];
-    return [...clienteAtual.channels.cache.values()].filter(c => {
-        return estaNaCategoria(c) && typeof c.send === 'function' && c.isTextBased?.();
-    });
+function humano(texto) {
+    if (tem(texto, ['kkkk', 'kkk', 'haha', 'hahaha', 'rsrs', '😂', '🤣'])) return escolher(HUMOR.riso, 'humor-riso');
+    if (tem(texto, ['perdi', 'perdemos', 'derrota', 'perdeu', 'morreu', 'morte'])) return escolher(HUMOR.derrota, 'humor-derrota');
+    if (tem(texto, ['ganhei', 'ganhamos', 'ganhou', 'vitoria', 'vitória', 'gg'])) return escolher(HUMOR.vitoria, 'humor-vitoria');
+    if (tem(texto, ['ruim', 'lixo', 'noob', 'fraco', 'humilhar', 'chora'])) return escolher(HUMOR.provocacao, 'humor-provocacao');
+    if (tem(texto, ['desisti', 'desistir', 'nao consigo', 'não consigo', 'to ruim', 'tô ruim'])) return escolher(HUMOR.incentivo, 'humor-incentivo');
+    return null;
 }
 
-function agendarProximaEspontanea() {
-    if (timerEspontaneo) clearTimeout(timerEspontaneo);
-    const atraso = CONFIG.intervaloMinMs + Math.random() * (CONFIG.intervaloMaxMs - CONFIG.intervaloMinMs);
-    timerEspontaneo = setTimeout(async () => {
+function canais() {
+    if (!clienteAtual?.channels?.cache) return [];
+    return [...clienteAtual.channels.cache.values()].filter(c => categoria(c) && typeof c.send === 'function' && c.isTextBased?.());
+}
+
+function agendar() {
+    if (timer) clearTimeout(timer);
+    const atraso = CONFIG.espontaneaMinMs + Math.random() * (CONFIG.espontaneaMaxMs - CONFIG.espontaneaMinMs);
+    timer = setTimeout(async () => {
         try {
-            const canais = canaisDaCategoria();
-            if (canais.length) {
-                const canal = canais[Math.floor(Math.random() * canais.length)];
-                if (podeResponder(canal.id)) {
-                    const texto = Math.random() < CONFIG.chanceOlimpiadas
-                        ? gerarMensagemOlimpiadas()
-                        : gerarMensagemLiga();
-                    if (texto) await canal.send(texto);
-                }
-            }
-        } catch (erro) {
-            console.error('[Auto-Resposta] Espontânea:', erro.message);
-        } finally {
-            agendarProximaEspontanea();
-        }
+            const lista = canais();
+            if (!lista.length) return;
+            const canal = lista[Math.floor(Math.random() * lista.length)];
+            if (!podeResponder(canal.id)) return;
+            const texto = Math.random() < 0.72 ? analiseRanking() : olimp();
+            if (texto) await canal.send(texto);
+        } catch (e) {
+            console.error('[Auto-Resposta] espontânea:', e.message);
+        } finally { agendar(); }
     }, atraso);
 }
 
 module.exports = client => {
     clienteAtual = client;
-
     client.on(Events.MessageCreate, async message => {
         try {
-            if (message.author?.bot || !message.content) return;
-            if (!estaNaCategoria(message.channel)) return;
-
-            const inteligente = gerarRespostaInteligente(message);
-            if (inteligente && Math.random() <= CONFIG.chanceRespostaInteligente && podeResponder(message.channelId)) {
-                await message.reply(inteligente);
+            if (message.author?.bot || !message.content || !categoria(message.channel)) return;
+            const inteligente = respostaInteligente(message);
+            if (inteligente && Math.random() <= CONFIG.respostaChance && podeResponder(message.channelId)) {
+                await message.reply(contextoResposta(message, inteligente));
+                salvarSnapshot();
                 return;
             }
-
-            const tradicional = gerarRespostaTradicional(message.content, message.channelId);
-            if (tradicional && Math.random() <= CONFIG.chanceTradicional && podeResponder(message.channelId)) {
-                await message.reply(String(tradicional));
+            const engraçada = humano(message.content);
+            if (engraçada && Math.random() < 0.72 && podeResponder(message.channelId)) {
+                await message.reply(engraçada);
+                return;
             }
-        } catch (erro) {
-            console.error('[Auto-Resposta] MessageCreate:', erro.message);
+            const antiga = tradicional(message.content);
+            if (antiga && podeResponder(message.channelId)) await message.reply(String(antiga));
+        } catch (e) {
+            console.error('[Auto-Resposta] MessageCreate:', e.message);
         }
     });
-
     client.once(Events.ClientReady, () => {
-        console.log('🤖 Auto-Resposta Inteligente V3 ativado.');
+        console.log('🤖 Auto-Resposta V4 ativado — humor + contexto + Liga + Olimpíadas.');
         console.log(`📁 Categoria monitorada: ${CONFIG.categoriaId}`);
-        console.log('🧠 Respostas tradicionais: pontuação de gatilhos, contexto, aliases e anti-repetição.');
-        console.log('📈 Análise ativa: subidas, quedas, ultrapassagens, streaks e comparações.');
-        agendarProximaEspontanea();
+        console.log('🧠 Inteligência: ranking, ultrapassagens, streaks, duelos e respostas contextuais.');
+        agendar();
     });
 };

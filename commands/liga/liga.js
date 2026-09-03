@@ -12,7 +12,10 @@ const pontuacaoLiga = require('./utils/pontuacaoLiga.js');
 const { isStaff } = require('./utils/helpers.js');
 
 const CANAL_RESULTADOS_LIGA = '1071976981924687912';
+
+// Um resultado só entra no recálculo quando possui este título e um EXTRATO FINAL válido.
 const TITULO_RESULTADO = /LIGA\s+DAS\s+NAÇÕES\s*[—-]\s*RESULTADO\s+REGISTRADO/i;
+const CAMPO_EXTRATO = /EXTRATO\s+FINAL/i;
 
 function idDe(valor) {
     if (valor === null || valor === undefined) return null;
@@ -79,69 +82,27 @@ function textoDosEmbeds(message) {
 function acharField(message, regex) {
     for (const embed of message.embeds || []) {
         for (const field of embed.fields || []) {
-            if (regex.test(String(field.name || ''))) return String(field.value || '');
+            if (regex.test(String(field.name || ''))) {
+                return String(field.value || '');
+            }
         }
     }
     return '';
-}
-
-function acharResultadoPorNome(message, regex) {
-    const valor = acharField(message, regex);
-    return idDe(valor);
 }
 
 function extratoDoResultado(message) {
-    for (const embed of message.embeds || []) {
-        for (const field of embed.fields || []) {
-            const nome = String(field.name || '');
-            if (/EXTRATO\s+FINAL/i.test(nome)) return String(field.value || '');
-        }
-    }
-    return '';
-}
-
-function extrairPontosDoExtrato(message) {
-    const extrato = extratoDoResultado(message);
-    if (!extrato) return [];
-
-    const resultados = [];
-    const linhas = extrato.split(/\r?\n/).map(linha => linha.trim()).filter(Boolean);
-
-    for (const linha of linhas) {
-        const idMatch = linha.match(/<@!?(\d{17,20})>/);
-        if (!idMatch) continue;
-
-        const trecho = linha.slice(idMatch.index + idMatch[0].length);
-        const ptsMatch = trecho.match(/:\s*\*{0,2}([+-]?\d+)\s*pts\*{0,2}/i)
-            || linha.match(/([+-]?\d+)\s*pts/i);
-
-        if (!ptsMatch) continue;
-
-        const id = idMatch[1];
-        const pontos = numero(ptsMatch[1]);
-        const nome = linha
-            .replace(idMatch[0], '')
-            .replace(/^[^A-Za-zÀ-ÿ0-9_]+/, '')
-            .split(':')[0]
-            .replace(/[*_`]/g, '')
-            .trim();
-
-        resultados.push({ id, pontos, nome: nome || 'Desconhecido' });
-    }
-
-    return resultados;
-}
-
-function acharParticipantesDoExtrato(message) {
-    return extrairPontosDoExtrato(message).map(item => item.id);
+    return acharField(message, CAMPO_EXTRATO);
 }
 
 function ehResultadoDaLiga(message) {
-    const titulos = (message.embeds || [])
-        .map(embed => String(embed.title || ''))
-        .join('\n');
+    const temTitulo = (message.embeds || []).some(embed =>
+        TITULO_RESULTADO.test(String(embed.title || ''))
+    ) || TITULO_RESULTADO.test(String(message.content || ''));
 
-    return TITULO_RESULTADO.test(titulos) || TITULO_RESULTADO.test(message.content || '');
+    if (!temTitulo) return false;
+
+    // O título sozinho não basta: precisa ser o embed real de resultado com EXTRATO FINAL.
+    return Boolean(extratoDoResultado(message));
 }
 
 function ehAnulada(message) {
@@ -154,28 +115,132 @@ function obterNome(message, id, fallback) {
     return member?.user?.username || fallback || 'Desconhecido';
 }
 
+function limparNomeDaLinha(linha, idMatch) {
+    const semMencao = linha.replace(idMatch[0], '');
+    const antesDosDoisPontos = semMencao.split(':')[0];
+    return antesDosDoisPontos
+        .replace(/[|•🔹🔸🟢🟡🟠🔴⚪⚫]/g, ' ')
+        .replace(/[*_`]/g, '')
+        .trim();
+}
+
+function extrairPontosDoExtrato(message) {
+    const extrato = extratoDoResultado(message);
+    if (!extrato) return [];
+
+    const resultados = [];
+    const linhas = extrato
+        .split(/\r?\n/)
+        .map(linha => linha.trim())
+        .filter(Boolean);
+
+    for (const linha of linhas) {
+        const idMatch = linha.match(/<@!?(\d{17,20})>/);
+        if (!idMatch) continue;
+
+        // Formato oficial:
+        // <@ID>: +49 pts (+20 Vitória, +5 Mais tropas, +7 Ásia, ...)
+        const trecho = linha.slice(idMatch.index + idMatch[0].length);
+        const ptsMatch = trecho.match(/:\s*\*{0,3}([+-]?\d+)\s*pts\*{0,3}/i)
+            || trecho.match(/\b([+-]?\d+)\s*pts\b/i);
+
+        if (!ptsMatch) continue;
+
+        const pontos = numero(ptsMatch[1]);
+        const detalhamento = trecho.match(/\(([^)]*)\)/)?.[1] || '';
+
+        resultados.push({
+            id: idMatch[1],
+            pontos,
+            nome: limparNomeDaLinha(linha, idMatch),
+            detalhamento,
+            linha
+        });
+    }
+
+    return resultados;
+}
+
+function possuiMotivo(texto, regex) {
+    return regex.test(String(texto || ''));
+}
+
+function contarMotivo(texto, regex) {
+    const match = String(texto || '').match(regex);
+    if (!match) return 0;
+    return numero(match[1] || 1);
+}
+
+function aplicarContinente(perfil, detalhamento, nome, regex, chave) {
+    if (!possuiMotivo(detalhamento, regex)) return;
+    perfil.continentes++;
+    perfil.continentesDetalhes[chave]++;
+}
+
+function aplicarEstatisticasDoExtrato(perfil, item) {
+    const d = item.detalhamento;
+
+    // Colocação e vitória são lidas do próprio EXTRATO FINAL, que é a fonte oficial.
+    if (possuiMotivo(d, /\bVit[oó]ria\b/i)) {
+        perfil.vitorias++;
+        perfil.primeiroLugar++;
+    }
+
+    if (possuiMotivo(d, /\b2º\s*Lugar\b/i)) {
+        perfil.segundoLugar++;
+    }
+
+    if (possuiMotivo(d, /\b3º\s*Lugar\b/i)) {
+        perfil.terceiroLugar++;
+    }
+
+    if (possuiMotivo(d, /\bMais\s+tropas\b/i)) {
+        perfil.maisTropas++;
+    }
+
+    // Abate: o extrato normalmente usa +10 Abate por eliminação.
+    const abates = contarMotivo(d, /[+-](\d+)\s+Abate(?:s)?\b/i);
+    if (abates > 0) {
+        // Se o valor for 10, 20, 30..., cada abate vale 10 pts.
+        perfil.kills += abates >= 10 && abates % 10 === 0 ? abates / 10 : 1;
+    }
+
+    // Morte: o extrato usa o valor total perdido, normalmente -15 por morte.
+    const morte = contarMotivo(d, /-\s*(\d+)\s+Morte(?:s)?\b/i);
+    if (morte > 0) {
+        perfil.mortes += morte >= 15 && morte % 15 === 0 ? morte / 15 : 1;
+    }
+
+    aplicarContinente(perfil, d, nome, /\b[ÁA]sia\b/i, 'asia');
+    aplicarContinente(perfil, d, nome, /\bEuropa\b/i, 'europa');
+    aplicarContinente(perfil, d, nome, /\b[ÁA]frica\b/i, 'africa');
+    aplicarContinente(perfil, d, nome, /\bAm[ée]rica\s+do\s+Norte\b/i, 'amnorte');
+    aplicarContinente(perfil, d, nome, /\bAm[ée]rica\s+do\s+Sul\b/i, 'amsul');
+    aplicarContinente(perfil, d, nome, /\bOceania\b/i, 'oceania');
+}
+
 function aplicarResultado(perfis, message, estatisticas) {
     if (!ehResultadoDaLiga(message)) return false;
+
     if (ehAnulada(message)) {
         estatisticas.anuladas++;
         return false;
     }
 
-    const pontos = extrairPontosDoExtrato(message);
-    if (pontos.length === 0) {
+    const itens = extrairPontosDoExtrato(message);
+    if (itens.length === 0) {
         estatisticas.erros++;
-        estatisticas.errosDetalhes.push(`Mensagem ${message.id}: EXTRATO FINAL não encontrado ou sem jogadores.`);
+        estatisticas.errosDetalhes.push(
+            `Mensagem ${message.id}: EXTRATO FINAL sem jogadores no formato esperado.`
+        );
         return false;
     }
 
-    const vencedor = acharResultadoPorNome(message, /vencedor/i);
-    const segundo = acharResultadoPorNome(message, /2º\s*Lugar|segundo\s*Lugar|runner/i);
-    const terceiro = acharResultadoPorNome(message, /3º\s*Lugar|terceiro\s*Lugar/i);
-    const maisTropas = acharResultadoPorNome(message, /mais\s*Tropas|maior\s*Tropas/i);
+    const idsPartida = new Set();
 
-    const idsPartida = new Set(acharParticipantesDoExtrato(message));
+    for (const item of itens) {
+        idsPartida.add(item.id);
 
-    for (const item of pontos) {
         const perfil = perfis[item.id] || (perfis[item.id] = criarPerfil(
             item.id,
             obterNome(message, item.id, item.nome)
@@ -185,28 +250,32 @@ function aplicarResultado(perfis, message, estatisticas) {
             perfil.nome = obterNome(message, item.id, item.nome);
         }
 
+        // O número principal do EXTRATO FINAL é a única fonte de pontos.
+        // Não recalculamos o total com configPontos e não usamos partidas.json.
         perfil.pontos += item.pontos;
-        perfil.pontosGanhos += item.pontos;
+
+        if (item.pontos >= 0) {
+            perfil.pontosGanhos += item.pontos;
+        } else {
+            perfil.pontosPerdidos += Math.abs(item.pontos);
+        }
+
+        // Cada linha do EXTRATO representa uma participação naquela partida.
         perfil.partidas++;
+        aplicarEstatisticasDoExtrato(perfil, item);
     }
 
-    if (vencedor && perfis[vencedor]) {
-        perfis[vencedor].vitorias++;
-        perfis[vencedor].primeiroLugar++;
-    }
-
-    if (segundo && perfis[segundo]) perfis[segundo].segundoLugar++;
-    if (terceiro && perfis[terceiro]) perfis[terceiro].terceiroLugar++;
-    if (maisTropas && perfis[maisTropas]) perfis[maisTropas].maisTropas++;
-
-    // Guarda os participantes mesmo se algum deles não apareceu no extrato.
+    // Garante que jogadores presentes no extrato sempre sejam tratados como participantes.
     for (const id of idsPartida) {
-        if (!perfis[id]) perfis[id] = criarPerfil(id, obterNome(message, id));
+        if (!perfis[id]) {
+            perfis[id] = criarPerfil(id, obterNome(message, id));
+        }
     }
 
     estatisticas.validas++;
     estatisticas.jogadoresIds.push(...idsPartida);
     estatisticas.mensagensValidas.push(message.id);
+    estatisticas.pontos += itens.reduce((soma, item) => soma + item.pontos, 0);
     return true;
 }
 
@@ -246,6 +315,12 @@ function preservarAjustesManuais(perfisNovos, dadosAntigos) {
         perfil.ajusteManualEm = antigo.ajusteManualEm || null;
         perfil.ajusteManualPor = antigo.ajusteManualPor || null;
         perfil.pontos += ajuste;
+
+        if (ajuste >= 0) {
+            perfil.pontosGanhos += ajuste;
+        } else {
+            perfil.pontosPerdidos += Math.abs(ajuste);
+        }
     }
 }
 
@@ -265,7 +340,7 @@ module.exports = {
         )
         .addSubcommand(subcommand => subcommand
             .setName('recalcular')
-            .setDescription('Lê todos os resultados do canal da Liga e reconstrói a pontuação.')
+            .setDescription('Lê todos os resultados da Liga e reconstrói a pontuação pelos EXTRATOS FINAIS.')
         ),
 
     async execute(interaction) {
@@ -319,7 +394,9 @@ module.exports = {
             const channel = await interaction.guild.channels.fetch(CANAL_RESULTADOS_LIGA);
 
             if (!channel || !channel.isTextBased() || !channel.messages?.fetch) {
-                throw new Error(`O canal ${CANAL_RESULTADOS_LIGA} não é um canal de texto compatível com histórico de mensagens.`);
+                throw new Error(
+                    `O canal ${CANAL_RESULTADOS_LIGA} não é um canal de texto compatível com histórico de mensagens.`
+                );
             }
 
             const perms = channel.permissionsFor(interaction.guild.members.me);
@@ -331,13 +408,13 @@ module.exports = {
             }
 
             await interaction.editReply({
-                content: '🔎 **Lendo todos os prints/resultados da Liga...**\n\nIsso pode demorar se o canal tiver muitas mensagens.'
+                content: '🔎 **Lendo todos os prints/resultados...**\n\nSó mensagens com o resultado oficial da **Liga das Nações** e **EXTRATO FINAL** serão contabilizadas.'
             });
 
             const mensagens = await buscarTodasMensagens(channel, async total => {
                 if (total % 500 === 0) {
                     await interaction.editReply({
-                        content: `🔎 **Lendo o histórico da Liga...**\n\n📨 Mensagens verificadas: **${total}**`
+                        content: `🔎 **Lendo o histórico...**\n\n📨 Mensagens verificadas: **${total}**\n🏆 Só resultados oficiais da Liga serão contabilizados.`
                     }).catch(() => {});
                 }
             });
@@ -350,14 +427,16 @@ module.exports = {
                 erros: 0,
                 errosDetalhes: [],
                 jogadoresIds: [],
-                mensagensValidas: []
+                mensagensValidas: [],
+                pontos: 0
             };
 
             const vistos = new Set();
             let encontradas = 0;
             let duplicadas = 0;
 
-            // As mensagens são processadas do mais antigo para o mais novo.
+            // Discord entrega o histórico do mais novo para o mais antigo.
+            // Ordenamos para reconstruir cronologicamente.
             mensagens.sort((a, b) => a.createdTimestamp - b.createdTimestamp);
 
             for (const message of mensagens) {
@@ -368,28 +447,30 @@ module.exports = {
                     duplicadas++;
                     continue;
                 }
-                vistos.add(message.id);
 
+                vistos.add(message.id);
                 aplicarResultado(perfis, message, estatisticas);
             }
 
             if (estatisticas.validas === 0) {
                 throw new Error(
                     `Nenhum resultado válido foi encontrado no canal <#${CANAL_RESULTADOS_LIGA}>. ` +
-                    `Foram analisadas ${mensagens.length} mensagens e ${encontradas} pareciam ser resultados da Liga.`
+                    `Foram analisadas ${mensagens.length} mensagens e ${encontradas} mensagens possuíam o título da Liga.`
                 );
             }
 
             preservarAjustesManuais(perfis, dadosAtuais);
 
             for (const perfil of Object.values(perfis)) {
+                perfil.derrotas = Math.max(0, numero(perfil.partidas) - numero(perfil.vitorias));
+
                 const partidas = numero(perfil.partidas);
                 perfil.winrate = partidas > 0
                     ? Number(((numero(perfil.vitorias) / partidas) * 100).toFixed(2))
                     : 0;
             }
 
-            // Backup local antes da substituição.
+            // Backup local antes de substituir o pontuacao.json.
             if (fs.existsSync(pontuacaoPath)) {
                 const backupPath = path.join(
                     __dirname,
@@ -404,29 +485,39 @@ module.exports = {
 
             const jogadores = Object.values(perfis);
             const totalPontos = jogadores.reduce((soma, jogador) => soma + numero(jogador.pontos), 0);
+            const totalPontosGanhos = jogadores.reduce((soma, jogador) => soma + numero(jogador.pontosGanhos), 0);
+            const totalPontosPerdidos = jogadores.reduce((soma, jogador) => soma + numero(jogador.pontosPerdidos), 0);
             const totalVitorias = jogadores.reduce((soma, jogador) => soma + numero(jogador.vitorias), 0);
             const totalPrimeiros = jogadores.reduce((soma, jogador) => soma + numero(jogador.primeiroLugar), 0);
             const totalSegundos = jogadores.reduce((soma, jogador) => soma + numero(jogador.segundoLugar), 0);
             const totalTerceiros = jogadores.reduce((soma, jogador) => soma + numero(jogador.terceiroLugar), 0);
+            const totalKills = jogadores.reduce((soma, jogador) => soma + numero(jogador.kills), 0);
+            const totalMortes = jogadores.reduce((soma, jogador) => soma + numero(jogador.mortes), 0);
             const manual = jogadores.filter(j => j.ajusteManual === true).length;
 
             return interaction.editReply({
                 content:
-                    '✅ **PONTUAÇÃO DA LIGA RECONSTRUÍDA PELOS PRINTS!**\n\n' +
+                    '✅ **PONTUAÇÃO DA LIGA RECONSTRUÍDA PELOS EXTRATOS!**\n\n' +
                     `📺 Canal analisado: <#${CANAL_RESULTADOS_LIGA}>\n` +
                     `📨 Mensagens lidas: **${mensagens.length}**\n` +
-                    `🏆 Resultados encontrados: **${encontradas}**\n` +
+                    `🏆 Resultados oficiais encontrados: **${encontradas}**\n` +
                     `⚔️ Resultados válidos contabilizados: **${estatisticas.validas}**\n` +
                     `🚫 Resultados anulados ignorados: **${estatisticas.anuladas}**\n` +
                     `⚠️ Resultados com erro: **${estatisticas.erros}**\n` +
+                    `♻️ Duplicados ignorados: **${duplicadas}**\n` +
                     `👥 Jogadores no ranking: **${jogadores.length}**\n` +
                     `🏆 Vitórias: **${totalVitorias}**\n` +
                     `🥇 1º lugares: **${totalPrimeiros}**\n` +
                     `🥈 2º lugares: **${totalSegundos}**\n` +
                     `🥉 3º lugares: **${totalTerceiros}**\n` +
-                    `💠 Pontos recalculados: **${totalPontos}**\n` +
+                    `⚔️ Abates: **${totalKills}**\n` +
+                    `💀 Mortes: **${totalMortes}**\n` +
+                    `💠 Pontos líquidos: **${totalPontos}**\n` +
+                    `📈 Pontos ganhos: **${totalPontosGanhos}**\n` +
+                    `📉 Pontos perdidos: **${totalPontosPerdidos}**\n` +
                     `🔒 Ajustes manuais preservados: **${manual}**\n\n` +
-                    '📌 **Fonte usada:** histórico real de mensagens do canal de resultados. O `partidas.json` não é usado para decidir a pontuação desta reconstrução.' +
+                    '📌 **Fonte da pontuação:** somente o `EXTRATO FINAL` dos resultados oficiais da Liga.\n' +
+                    '🚫 `partidas.json` não participa deste recálculo.' +
                     (estatisticas.errosDetalhes.length
                         ? `\n\n⚠️ Primeiro erro: ${estatisticas.errosDetalhes[0]}`
                         : '')

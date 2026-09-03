@@ -12,17 +12,8 @@ const pontuacaoLiga = require('./utils/pontuacaoLiga.js');
 const { isStaff } = require('./utils/helpers.js');
 
 const CANAL_RESULTADOS_LIGA = '1071976981924687912';
-
-// Um resultado só entra no recálculo quando possui este título e um EXTRATO FINAL válido.
 const TITULO_RESULTADO = /LIGA\s+DAS\s+NAÇÕES\s*[—-]\s*RESULTADO\s+REGISTRADO/i;
 const CAMPO_EXTRATO = /EXTRATO\s+FINAL/i;
-
-function idDe(valor) {
-    if (valor === null || valor === undefined) return null;
-    const texto = String(valor);
-    const mencao = texto.match(/<@!?(\d{17,20})>/);
-    return mencao ? mencao[1] : null;
-}
 
 function numero(valor) {
     const n = Number(valor);
@@ -42,14 +33,7 @@ function criarPerfil(id, nome = 'Desconhecido') {
         kills: 0,
         mortes: 0,
         continentes: 0,
-        continentesDetalhes: {
-            asia: 0,
-            europa: 0,
-            africa: 0,
-            amnorte: 0,
-            amsul: 0,
-            oceania: 0
-        },
+        continentesDetalhes: { asia: 0, europa: 0, africa: 0, amnorte: 0, amsul: 0, oceania: 0 },
         primeiroLugar: 0,
         segundoLugar: 0,
         terceiroLugar: 0,
@@ -61,30 +45,24 @@ function criarPerfil(id, nome = 'Desconhecido') {
 
 function textoDosEmbeds(message) {
     const partes = [];
-
     if (message.content) partes.push(message.content);
-
     for (const embed of message.embeds || []) {
         if (embed.title) partes.push(embed.title);
         if (embed.description) partes.push(embed.description);
         if (embed.author?.name) partes.push(embed.author.name);
         if (embed.footer?.text) partes.push(embed.footer.text);
-
         for (const field of embed.fields || []) {
             if (field.name) partes.push(field.name);
             if (field.value) partes.push(field.value);
         }
     }
-
     return partes.join('\n');
 }
 
 function acharField(message, regex) {
     for (const embed of message.embeds || []) {
         for (const field of embed.fields || []) {
-            if (regex.test(String(field.name || ''))) {
-                return String(field.value || '');
-            }
+            if (regex.test(String(field.name || ''))) return String(field.value || '');
         }
     }
     return '';
@@ -95,19 +73,14 @@ function extratoDoResultado(message) {
 }
 
 function ehResultadoDaLiga(message) {
-    const temTitulo = (message.embeds || []).some(embed =>
+    const titulo = (message.embeds || []).some(embed =>
         TITULO_RESULTADO.test(String(embed.title || ''))
     ) || TITULO_RESULTADO.test(String(message.content || ''));
-
-    if (!temTitulo) return false;
-
-    // O título sozinho não basta: precisa ser o embed real de resultado com EXTRATO FINAL.
-    return Boolean(extratoDoResultado(message));
+    return titulo && Boolean(extratoDoResultado(message));
 }
 
 function ehAnulada(message) {
-    const texto = textoDosEmbeds(message);
-    return /\b(anulad[ao]|cancelad[ao])\b/i.test(texto);
+    return /\b(anulad[ao]|cancelad[ao])\b/i.test(textoDosEmbeds(message));
 }
 
 function obterNome(message, id, fallback) {
@@ -116,9 +89,9 @@ function obterNome(message, id, fallback) {
 }
 
 function limparNomeDaLinha(linha, idMatch) {
-    const semMencao = linha.replace(idMatch[0], '');
-    const antesDosDoisPontos = semMencao.split(':')[0];
-    return antesDosDoisPontos
+    return linha
+        .replace(idMatch[0], '')
+        .split(':')[0]
         .replace(/[|•🔹🔸🟢🟡🟠🔴⚪⚫]/g, ' ')
         .replace(/[*_`]/g, '')
         .trim();
@@ -129,35 +102,22 @@ function extrairPontosDoExtrato(message) {
     if (!extrato) return [];
 
     const resultados = [];
-    const linhas = extrato
-        .split(/\r?\n/)
-        .map(linha => linha.trim())
-        .filter(Boolean);
-
-    for (const linha of linhas) {
+    for (const linha of extrato.split(/\r?\n/).map(v => v.trim()).filter(Boolean)) {
         const idMatch = linha.match(/<@!?(\d{17,20})>/);
         if (!idMatch) continue;
 
-        // Formato oficial:
-        // <@ID>: +49 pts (+20 Vitória, +5 Mais tropas, +7 Ásia, ...)
         const trecho = linha.slice(idMatch.index + idMatch[0].length);
         const ptsMatch = trecho.match(/:\s*\*{0,3}([+-]?\d+)\s*pts\*{0,3}/i)
             || trecho.match(/\b([+-]?\d+)\s*pts\b/i);
-
         if (!ptsMatch) continue;
-
-        const pontos = numero(ptsMatch[1]);
-        const detalhamento = trecho.match(/\(([^)]*)\)/)?.[1] || '';
 
         resultados.push({
             id: idMatch[1],
-            pontos,
+            pontos: numero(ptsMatch[1]),
             nome: limparNomeDaLinha(linha, idMatch),
-            detalhamento,
-            linha
+            detalhamento: trecho.match(/\(([^)]*)\)/)?.[1] || ''
         });
     }
-
     return resultados;
 }
 
@@ -167,11 +127,10 @@ function possuiMotivo(texto, regex) {
 
 function contarMotivo(texto, regex) {
     const match = String(texto || '').match(regex);
-    if (!match) return 0;
-    return numero(match[1] || 1);
+    return match ? numero(match[1] || 1) : 0;
 }
 
-function aplicarContinente(perfil, detalhamento, nome, regex, chave) {
+function aplicarContinente(perfil, detalhamento, regex, chave) {
     if (!possuiMotivo(detalhamento, regex)) return;
     perfil.continentes++;
     perfil.continentesDetalhes[chave]++;
@@ -180,43 +139,26 @@ function aplicarContinente(perfil, detalhamento, nome, regex, chave) {
 function aplicarEstatisticasDoExtrato(perfil, item) {
     const d = item.detalhamento;
 
-    // Colocação e vitória são lidas do próprio EXTRATO FINAL, que é a fonte oficial.
     if (possuiMotivo(d, /\bVit[oó]ria\b/i)) {
         perfil.vitorias++;
         perfil.primeiroLugar++;
     }
+    if (possuiMotivo(d, /\b2º\s*Lugar\b/i)) perfil.segundoLugar++;
+    if (possuiMotivo(d, /\b3º\s*Lugar\b/i)) perfil.terceiroLugar++;
+    if (possuiMotivo(d, /\bMais\s+tropas\b/i)) perfil.maisTropas++;
 
-    if (possuiMotivo(d, /\b2º\s*Lugar\b/i)) {
-        perfil.segundoLugar++;
-    }
-
-    if (possuiMotivo(d, /\b3º\s*Lugar\b/i)) {
-        perfil.terceiroLugar++;
-    }
-
-    if (possuiMotivo(d, /\bMais\s+tropas\b/i)) {
-        perfil.maisTropas++;
-    }
-
-    // Abate: o extrato normalmente usa +10 Abate por eliminação.
     const abates = contarMotivo(d, /[+-](\d+)\s+Abate(?:s)?\b/i);
-    if (abates > 0) {
-        // Se o valor for 10, 20, 30..., cada abate vale 10 pts.
-        perfil.kills += abates >= 10 && abates % 10 === 0 ? abates / 10 : 1;
-    }
+    if (abates > 0) perfil.kills += abates >= 10 && abates % 10 === 0 ? abates / 10 : 1;
 
-    // Morte: o extrato usa o valor total perdido, normalmente -15 por morte.
-    const morte = contarMotivo(d, /-\s*(\d+)\s+Morte(?:s)?\b/i);
-    if (morte > 0) {
-        perfil.mortes += morte >= 15 && morte % 15 === 0 ? morte / 15 : 1;
-    }
+    const mortes = contarMotivo(d, /-\s*(\d+)\s+Morte(?:s)?\b/i);
+    if (mortes > 0) perfil.mortes += mortes >= 15 && mortes % 15 === 0 ? mortes / 15 : 1;
 
-    aplicarContinente(perfil, d, nome, /\b[ÁA]sia\b/i, 'asia');
-    aplicarContinente(perfil, d, nome, /\bEuropa\b/i, 'europa');
-    aplicarContinente(perfil, d, nome, /\b[ÁA]frica\b/i, 'africa');
-    aplicarContinente(perfil, d, nome, /\bAm[ée]rica\s+do\s+Norte\b/i, 'amnorte');
-    aplicarContinente(perfil, d, nome, /\bAm[ée]rica\s+do\s+Sul\b/i, 'amsul');
-    aplicarContinente(perfil, d, nome, /\bOceania\b/i, 'oceania');
+    aplicarContinente(perfil, d, /\b[ÁA]sia\b/i, 'asia');
+    aplicarContinente(perfil, d, /\bEuropa\b/i, 'europa');
+    aplicarContinente(perfil, d, /\b[ÁA]frica\b/i, 'africa');
+    aplicarContinente(perfil, d, /\bAm[ée]rica\s+do\s+Norte\b/i, 'amnorte');
+    aplicarContinente(perfil, d, /\bAm[ée]rica\s+do\s+Sul\b/i, 'amsul');
+    aplicarContinente(perfil, d, /\bOceania\b/i, 'oceania');
 }
 
 function aplicarResultado(perfis, message, estatisticas) {
@@ -228,48 +170,30 @@ function aplicarResultado(perfis, message, estatisticas) {
     }
 
     const itens = extrairPontosDoExtrato(message);
-    if (itens.length === 0) {
+    if (!itens.length) {
         estatisticas.erros++;
-        estatisticas.errosDetalhes.push(
-            `Mensagem ${message.id}: EXTRATO FINAL sem jogadores no formato esperado.`
-        );
+        estatisticas.errosDetalhes.push(`Mensagem ${message.id}: EXTRATO FINAL sem jogadores no formato esperado.`);
         return false;
     }
 
     const idsPartida = new Set();
-
     for (const item of itens) {
         idsPartida.add(item.id);
-
         const perfil = perfis[item.id] || (perfis[item.id] = criarPerfil(
             item.id,
             obterNome(message, item.id, item.nome)
         ));
 
-        if (perfil.nome === 'Desconhecido' || !perfil.nome) {
+        if (!perfil.nome || perfil.nome === 'Desconhecido') {
             perfil.nome = obterNome(message, item.id, item.nome);
         }
 
-        // O número principal do EXTRATO FINAL é a única fonte de pontos.
-        // Não recalculamos o total com configPontos e não usamos partidas.json.
+        // O total do EXTRATO FINAL é a fonte oficial dos pontos.
         perfil.pontos += item.pontos;
-
-        if (item.pontos >= 0) {
-            perfil.pontosGanhos += item.pontos;
-        } else {
-            perfil.pontosPerdidos += Math.abs(item.pontos);
-        }
-
-        // Cada linha do EXTRATO representa uma participação naquela partida.
+        if (item.pontos >= 0) perfil.pontosGanhos += item.pontos;
+        else perfil.pontosPerdidos += Math.abs(item.pontos);
         perfil.partidas++;
         aplicarEstatisticasDoExtrato(perfil, item);
-    }
-
-    // Garante que jogadores presentes no extrato sempre sejam tratados como participantes.
-    for (const id of idsPartida) {
-        if (!perfis[id]) {
-            perfis[id] = criarPerfil(id, obterNome(message, id));
-        }
     }
 
     estatisticas.validas++;
@@ -279,7 +203,8 @@ function aplicarResultado(perfis, message, estatisticas) {
     return true;
 }
 
-async function buscarTodasMensagens(channel, onProgress) {
+// Busca do mais novo para o mais antigo e PARA assim que chega antes do início do mês.
+async function buscarMensagensDoMes(channel, inicioMesTimestamp, onProgress) {
     const mensagens = [];
     let before;
 
@@ -291,15 +216,29 @@ async function buscarTodasMensagens(channel, onProgress) {
         if (!lote.size) break;
 
         mensagens.push(...lote.values());
-
-        const ultima = lote.last();
-        before = ultima?.id;
+        const menorTimestamp = Math.min(...lote.map(m => m.createdTimestamp));
+        before = lote.last()?.id;
 
         if (onProgress) await onProgress(mensagens.length);
+
+        // Como o histórico vem do mais novo para o mais antigo, não há motivo
+        // para continuar lendo milhares de mensagens históricas.
+        if (menorTimestamp < inicioMesTimestamp) break;
         if (lote.size < 100 || !before) break;
     }
 
-    return mensagens;
+    return mensagens.filter(m => m.createdTimestamp >= inicioMesTimestamp);
+}
+
+function obterPeriodoAtual() {
+    const agora = new Date();
+    const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1, 0, 0, 0, 0);
+    const inicioProximoMes = new Date(agora.getFullYear(), agora.getMonth() + 1, 1, 0, 0, 0, 0);
+    return { agora, inicioMes, inicioProximoMes };
+}
+
+function formatarData(data) {
+    return data.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
 }
 
 function preservarAjustesManuais(perfisNovos, dadosAntigos) {
@@ -309,18 +248,13 @@ function preservarAjustesManuais(perfisNovos, dadosAntigos) {
 
         const perfil = perfisNovos[id] || (perfisNovos[id] = criarPerfil(id, antigo.nome));
         const ajuste = numero(antigo.ajusteManualValor);
-
         perfil.ajusteManual = true;
         perfil.ajusteManualValor = ajuste;
         perfil.ajusteManualEm = antigo.ajusteManualEm || null;
         perfil.ajusteManualPor = antigo.ajusteManualPor || null;
         perfil.pontos += ajuste;
-
-        if (ajuste >= 0) {
-            perfil.pontosGanhos += ajuste;
-        } else {
-            perfil.pontosPerdidos += Math.abs(ajuste);
-        }
+        if (ajuste >= 0) perfil.pontosGanhos += ajuste;
+        else perfil.pontosPerdidos += Math.abs(ajuste);
     }
 }
 
@@ -340,7 +274,7 @@ module.exports = {
         )
         .addSubcommand(subcommand => subcommand
             .setName('recalcular')
-            .setDescription('Lê todos os resultados da Liga e reconstrói a pontuação pelos EXTRATOS FINAIS.')
+            .setDescription('Reconstrói a pontuação usando somente os resultados da Liga do mês atual.')
         ),
 
     async execute(interaction) {
@@ -356,47 +290,36 @@ module.exports = {
         if (subcommand === 'painel') {
             const canal = interaction.options.getChannel('canal');
             if (!canal) {
-                return interaction.reply({
-                    content: '❌ Canal da Liga não informado.',
-                    flags: MessageFlags.Ephemeral
-                });
+                return interaction.reply({ content: '❌ Canal da Liga não informado.', flags: MessageFlags.Ephemeral });
             }
 
             await interaction.deferReply({ flags: MessageFlags.Ephemeral }).catch(() => {});
-
             if (typeof painel !== 'function') {
-                console.error('[LIGA] painel.js não exportou uma função válida.');
-                return interaction.editReply({
-                    content: '❌ O `painel.js` não está exportando uma função válida.'
-                });
+                return interaction.editReply({ content: '❌ O `painel.js` não está exportando uma função válida.' });
             }
 
             try {
                 await painel(interaction.guild, canal.id);
-                return interaction.editReply({
-                    content: `✅ **Painel da Liga criado/atualizado com sucesso!**\n\n📍 Canal: ${canal}`
-                });
+                return interaction.editReply({ content: `✅ **Painel da Liga criado/atualizado com sucesso!**\n\n📍 Canal: ${canal}` });
             } catch (erro) {
                 console.error('[LIGA] Erro ao criar painel:', erro);
-                return interaction.editReply({
-                    content: '❌ **Não foi possível criar o painel da Liga.**\nVerifique o console para o erro detalhado.'
-                });
+                return interaction.editReply({ content: '❌ **Não foi possível criar o painel da Liga.**\nVerifique o console para o erro detalhado.' });
             }
         }
 
         if (subcommand !== 'recalcular') return;
 
         await interaction.deferReply({ flags: MessageFlags.Ephemeral }).catch(() => {});
-
         const pontuacaoPath = path.join(__dirname, 'pontuacao.json');
 
         try {
-            const channel = await interaction.guild.channels.fetch(CANAL_RESULTADOS_LIGA);
+            const { inicioMes, inicioProximoMes } = obterPeriodoAtual();
+            const inicioTimestamp = inicioMes.getTime();
+            const fimTimestamp = inicioProximoMes.getTime();
 
+            const channel = await interaction.guild.channels.fetch(CANAL_RESULTADOS_LIGA);
             if (!channel || !channel.isTextBased() || !channel.messages?.fetch) {
-                throw new Error(
-                    `O canal ${CANAL_RESULTADOS_LIGA} não é um canal de texto compatível com histórico de mensagens.`
-                );
+                throw new Error(`O canal ${CANAL_RESULTADOS_LIGA} não é um canal de texto compatível com histórico de mensagens.`);
             }
 
             const perms = channel.permissionsFor(interaction.guild.members.me);
@@ -408,13 +331,20 @@ module.exports = {
             }
 
             await interaction.editReply({
-                content: '🔎 **Lendo todos os prints/resultados...**\n\nSó mensagens com o resultado oficial da **Liga das Nações** e **EXTRATO FINAL** serão contabilizadas.'
+                content:
+                    '🔎 **Recalculando a Liga...**\n\n' +
+                    `📅 Período considerado: **${formatarData(inicioMes)} até ${formatarData(new Date(fimTimestamp - 1))}**\n` +
+                    '🏆 Somente resultados oficiais da **Liga das Nações** com **EXTRATO FINAL** serão contabilizados.'
             });
 
-            const mensagens = await buscarTodasMensagens(channel, async total => {
+            const mensagens = await buscarMensagensDoMes(channel, inicioTimestamp, async total => {
                 if (total % 500 === 0) {
                     await interaction.editReply({
-                        content: `🔎 **Lendo o histórico...**\n\n📨 Mensagens verificadas: **${total}**\n🏆 Só resultados oficiais da Liga serão contabilizados.`
+                        content:
+                            '🔎 **Lendo somente o mês atual...**\n\n' +
+                            `📅 Período: **${formatarData(inicioMes)} até ${formatarData(new Date(fimTimestamp - 1))}**\n` +
+                            `📨 Mensagens verificadas no período: **${total}**\n` +
+                            '🚫 Histórico anterior ao mês atual não entra no recálculo.'
                     }).catch(() => {});
                 }
             });
@@ -435,14 +365,15 @@ module.exports = {
             let encontradas = 0;
             let duplicadas = 0;
 
-            // Discord entrega o histórico do mais novo para o mais antigo.
-            // Ordenamos para reconstruir cronologicamente.
             mensagens.sort((a, b) => a.createdTimestamp - b.createdTimestamp);
 
             for (const message of mensagens) {
+                // Proteção dupla: mesmo que o fetch retorne algo fora da janela,
+                // somente mensagens dentro do mês atual podem ser contabilizadas.
+                if (message.createdTimestamp < inicioTimestamp || message.createdTimestamp >= fimTimestamp) continue;
                 if (!ehResultadoDaLiga(message)) continue;
-                encontradas++;
 
+                encontradas++;
                 if (vistos.has(message.id)) {
                     duplicadas++;
                     continue;
@@ -454,8 +385,8 @@ module.exports = {
 
             if (estatisticas.validas === 0) {
                 throw new Error(
-                    `Nenhum resultado válido foi encontrado no canal <#${CANAL_RESULTADOS_LIGA}>. ` +
-                    `Foram analisadas ${mensagens.length} mensagens e ${encontradas} mensagens possuíam o título da Liga.`
+                    `Nenhum resultado válido da Liga foi encontrado entre ${formatarData(inicioMes)} e ${formatarData(new Date(fimTimestamp - 1))}. ` +
+                    `Foram verificadas ${mensagens.length} mensagens do mês atual.`
                 );
             }
 
@@ -463,20 +394,14 @@ module.exports = {
 
             for (const perfil of Object.values(perfis)) {
                 perfil.derrotas = Math.max(0, numero(perfil.partidas) - numero(perfil.vitorias));
-
                 const partidas = numero(perfil.partidas);
                 perfil.winrate = partidas > 0
                     ? Number(((numero(perfil.vitorias) / partidas) * 100).toFixed(2))
                     : 0;
             }
 
-            // Backup local antes de substituir o pontuacao.json.
             if (fs.existsSync(pontuacaoPath)) {
-                const backupPath = path.join(
-                    __dirname,
-                    `pontuacao.backup-${Date.now()}.json`
-                );
-                fs.copyFileSync(pontuacaoPath, backupPath);
+                fs.copyFileSync(pontuacaoPath, path.join(__dirname, `pontuacao.backup-${Date.now()}.json`));
             }
 
             if (!pontuacaoLiga.salvar(pontuacaoPath, perfis)) {
@@ -484,48 +409,39 @@ module.exports = {
             }
 
             const jogadores = Object.values(perfis);
-            const totalPontos = jogadores.reduce((soma, jogador) => soma + numero(jogador.pontos), 0);
-            const totalPontosGanhos = jogadores.reduce((soma, jogador) => soma + numero(jogador.pontosGanhos), 0);
-            const totalPontosPerdidos = jogadores.reduce((soma, jogador) => soma + numero(jogador.pontosPerdidos), 0);
-            const totalVitorias = jogadores.reduce((soma, jogador) => soma + numero(jogador.vitorias), 0);
-            const totalPrimeiros = jogadores.reduce((soma, jogador) => soma + numero(jogador.primeiroLugar), 0);
-            const totalSegundos = jogadores.reduce((soma, jogador) => soma + numero(jogador.segundoLugar), 0);
-            const totalTerceiros = jogadores.reduce((soma, jogador) => soma + numero(jogador.terceiroLugar), 0);
-            const totalKills = jogadores.reduce((soma, jogador) => soma + numero(jogador.kills), 0);
-            const totalMortes = jogadores.reduce((soma, jogador) => soma + numero(jogador.mortes), 0);
+            const soma = campo => jogadores.reduce((total, jogador) => total + numero(jogador[campo]), 0);
             const manual = jogadores.filter(j => j.ajusteManual === true).length;
 
             return interaction.editReply({
                 content:
-                    '✅ **PONTUAÇÃO DA LIGA RECONSTRUÍDA PELOS EXTRATOS!**\n\n' +
+                    '✅ **PONTUAÇÃO DA LIGA RECONSTRUÍDA!**\n\n' +
+                    `📅 Mês analisado: **${formatarData(inicioMes)} até ${formatarData(new Date(fimTimestamp - 1))}**\n` +
                     `📺 Canal analisado: <#${CANAL_RESULTADOS_LIGA}>\n` +
-                    `📨 Mensagens lidas: **${mensagens.length}**\n` +
+                    `📨 Mensagens verificadas no mês: **${mensagens.length}**\n` +
                     `🏆 Resultados oficiais encontrados: **${encontradas}**\n` +
                     `⚔️ Resultados válidos contabilizados: **${estatisticas.validas}**\n` +
                     `🚫 Resultados anulados ignorados: **${estatisticas.anuladas}**\n` +
                     `⚠️ Resultados com erro: **${estatisticas.erros}**\n` +
                     `♻️ Duplicados ignorados: **${duplicadas}**\n` +
                     `👥 Jogadores no ranking: **${jogadores.length}**\n` +
-                    `🏆 Vitórias: **${totalVitorias}**\n` +
-                    `🥇 1º lugares: **${totalPrimeiros}**\n` +
-                    `🥈 2º lugares: **${totalSegundos}**\n` +
-                    `🥉 3º lugares: **${totalTerceiros}**\n` +
-                    `⚔️ Abates: **${totalKills}**\n` +
-                    `💀 Mortes: **${totalMortes}**\n` +
-                    `💠 Pontos líquidos: **${totalPontos}**\n` +
-                    `📈 Pontos ganhos: **${totalPontosGanhos}**\n` +
-                    `📉 Pontos perdidos: **${totalPontosPerdidos}**\n` +
+                    `🏆 Vitórias: **${soma('vitorias')}**\n` +
+                    `🥇 1º lugares: **${soma('primeiroLugar')}**\n` +
+                    `🥈 2º lugares: **${soma('segundoLugar')}**\n` +
+                    `🥉 3º lugares: **${soma('terceiroLugar')}**\n` +
+                    `⚔️ Abates: **${soma('kills')}**\n` +
+                    `💀 Mortes: **${soma('mortes')}**\n` +
+                    `💠 Pontos líquidos: **${soma('pontos')}**\n` +
+                    `📈 Pontos ganhos: **${soma('pontosGanhos')}**\n` +
+                    `📉 Pontos perdidos: **${soma('pontosPerdidos')}**\n` +
                     `🔒 Ajustes manuais preservados: **${manual}**\n\n` +
-                    '📌 **Fonte da pontuação:** somente o `EXTRATO FINAL` dos resultados oficiais da Liga.\n' +
+                    '📌 **Fonte:** somente o `EXTRATO FINAL` dos resultados oficiais da Liga.\n' +
                     '🚫 `partidas.json` não participa deste recálculo.' +
-                    (estatisticas.errosDetalhes.length
-                        ? `\n\n⚠️ Primeiro erro: ${estatisticas.errosDetalhes[0]}`
-                        : '')
+                    (estatisticas.errosDetalhes.length ? `\n\n⚠️ Primeiro erro: ${estatisticas.errosDetalhes[0]}` : '')
             });
         } catch (erro) {
-            console.error('[LIGA] Erro ao reconstruir pontuacao.json pelo canal:', erro);
+            console.error('[LIGA] Erro ao reconstruir pontuacao.json:', erro);
             return interaction.editReply({
-                content: `❌ **Falha ao reconstruir a pontuação pelos prints.**\n\n${String(erro.message || erro).slice(0, 1800)}`
+                content: `❌ **Falha ao reconstruir a pontuação pelos resultados do mês atual.**\n\n${String(erro.message || erro).slice(0, 1800)}`
             }).catch(() => {});
         }
     }

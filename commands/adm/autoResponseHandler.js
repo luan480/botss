@@ -1,13 +1,13 @@
 /* ========================================================================
-   WORLDWARBR — AUTO RESPOSTA V4
-   Conversacional, bem-humorada e integrada à Liga/Olimpíadas.
-   Mantém compatibilidade com commands/adm/auto_respostas.json.
+   WORLDWARBR — AUTO RESPOSTA V5
+   Respostas conversacionais, inteligentes e contextuais.
+   IMPORTANTE: jogadores/duplas são sempre apresentados por MENÇÃO Discord
+   quando houver um ID válido. Nunca exibe IDs crus como nome.
    ======================================================================== */
 
 const { Events } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
-const { safeReadJson } = require('../liga/utils/helpers.js');
 const estatisticasLiga = require('../liga/utils/estatisticasLiga.js');
 
 const dbPath = path.join(__dirname, 'auto_respostas.json');
@@ -38,15 +38,15 @@ const HUMOR = {
     ],
     derrota: [
         'Faz parte. Até General já olhou pro dado e pensou: “não é possível”. 🎲💀',
-        'Calma, comandante. Uma derrota não apaga a campanha. A próxima pode ser sua. 🫡',
+        'Calma, comandante. Uma derrota não apaga a campanha. 🫡',
         'O War decidiu testar sua estabilidade emocional hoje. 😂',
         'Respira. Não quebra o teclado. A Liga ainda tem revanche. 😭'
     ],
     vitoria: [
-        'Aí sim! Pode comemorar, mas não esquece que o ranking está olhando. 👀🏆',
+        'Aí sim! Pode comemorar, mas o ranking está olhando. 👀🏆',
         'Vitória registrada. Agora vem a parte difícil: repetir. 😏',
         'GG! O mapa perdeu mais uma vez para a estratégia. 🌍🔥',
-        'Calma com a confiança... já vi líder virar espectador em uma partida. 😂'
+        'Calma com a confiança... já vi líder virar espectador. 😂'
     ],
     provocacao: [
         'Opa... senti cheiro de rivalidade no ar. 👀',
@@ -76,11 +76,8 @@ function lerJson(file, fallback = {}) {
 }
 
 function salvarJson(file, data) {
-    try {
-        fs.writeFileSync(file, JSON.stringify(data, null, 2), 'utf8');
-    } catch (e) {
-        console.error('[Auto-Resposta] salvar JSON:', e.message);
-    }
+    try { fs.writeFileSync(file, JSON.stringify(data, null, 2), 'utf8'); }
+    catch (e) { console.error('[Auto-Resposta] salvar JSON:', e.message); }
 }
 
 function norm(value) {
@@ -95,29 +92,29 @@ function num(value) {
 }
 
 function fmt(value) { return num(value).toLocaleString('pt-BR'); }
-function mention(id) { return id ? `<@${id}>` : 'esse jogador'; }
+function mention(id) { return id ? `<@${String(id)}>` : 'esse jogador'; }
 function categoria(channel) { return String(channel?.parentId || '') === CONFIG.categoriaId; }
 
 function podeResponder(channelId) {
     const id = String(channelId);
-    const now = Date.now();
-    if (now - (cooldown.get(id) || 0) < CONFIG.cooldownCanalMs) return false;
-    cooldown.set(id, now);
+    const agora = Date.now();
+    if (agora - (cooldown.get(id) || 0) < CONFIG.cooldownCanalMs) return false;
+    cooldown.set(id, agora);
     return true;
 }
 
 function escolher(items, key = 'global') {
     if (!Array.isArray(items) || !items.length) return '';
-    const last = ultimoModelo.get(key);
-    const pool = items.length > 1 ? items.filter(x => x !== last) : items;
-    const value = pool[Math.floor(Math.random() * pool.length)] || items[0];
-    ultimoModelo.set(key, value);
-    return value;
+    const ultimo = ultimoModelo.get(key);
+    const pool = items.length > 1 ? items.filter(x => x !== ultimo) : items;
+    const valor = pool[Math.floor(Math.random() * pool.length)] || items[0];
+    ultimoModelo.set(key, valor);
+    return valor;
 }
 
-function tem(text, terms) {
-    const t = norm(text);
-    return terms.some(term => {
+function tem(texto, termos) {
+    const t = norm(texto);
+    return termos.some(term => {
         const x = norm(term);
         if (!x) return false;
         if (x.length <= 2) return new RegExp(`(^|\\s)${x}(?=\\s|$)`, 'i').test(t);
@@ -126,39 +123,74 @@ function tem(text, terms) {
 }
 
 function perfil(id) {
-    try { return estatisticasLiga.calcularPerfil(String(id)); } catch { return null; }
+    try { return estatisticasLiga.calcularPerfil(String(id)); }
+    catch { return null; }
 }
 
 function ranking() {
-    try { return estatisticasLiga.rankingPorPontos(CONFIG.maxRanking) || []; } catch { return []; }
+    try { return estatisticasLiga.rankingPorPontos(CONFIG.maxRanking) || []; }
+    catch { return []; }
 }
 
 function winrate(j) {
-    const p = num(j?.partidas);
-    if (!p) return 0;
-    return num(j?.winrate) || (num(j.vitorias) / p) * 100;
+    const partidas = num(j?.partidas);
+    if (!partidas) return 0;
+    return num(j?.winrate) || (num(j?.vitorias) / partidas) * 100;
 }
 
-function streak(j) {
+function streakTexto(j) {
     const atual = num(j?.streakAtual);
     const maior = num(j?.maiorStreak);
     if (atual >= 5) return `está em uma sequência MONSTRA de **${fmt(atual)} vitórias** 🔥🔥`;
     if (atual >= 3) return `vem de **${fmt(atual)} vitórias seguidas** e está embalado 🔥`;
     if (atual === 2) return 'venceu as **2 últimas partidas** e começou a embalar 👀';
     if (atual === 1) return 'venceu a partida mais recente e pode iniciar uma sequência';
-    if (maior >= 3) return `está sem sequência ativa, mas já chegou a **${fmt(maior)} vitórias seguidas**`;
+    if (maior >= 3) return `já chegou a **${fmt(maior)} vitórias seguidas** anteriormente`;
     return 'não está em sequência de vitórias no momento';
 }
 
+/* Resolve qualquer nome/ID citado para um membro real do Discord. */
+async function resolverJogador(guild, valor) {
+    if (!guild || !valor) return null;
+    const bruto = String(valor).trim();
+    const id = bruto.match(/<@!?(\d{15,25})>/)?.[1] || (\d{15,25}/.test(bruto) ? bruto : null);
+    if (id) {
+        try { return await guild.members.fetch(id); } catch {}
+    }
+
+    const alvo = norm(bruto.replace(/^@/, ''));
+    if (!alvo) return null;
+    try {
+        return guild.members.cache.find(m =>
+            norm(m.user.username) === alvo ||
+            norm(m.displayName) === alvo ||
+            norm(m.user.globalName) === alvo ||
+            norm(m.user.username).includes(alvo) ||
+            norm(m.displayName).includes(alvo)
+        ) || null;
+    } catch { return null; }
+}
+
+async function mentionarJogador(guild, id) {
+    if (!id) return 'esse jogador';
+    const membro = await resolverJogador(guild, String(id));
+    return membro ? `<@${membro.id}>` : mention(id);
+}
+
+function extrairMencoes(message) {
+    return [...message.mentions.users.values()].map(u => String(u.id));
+}
+
 function resumo() {
-    try { return estatisticasLiga.resumoLiga() || {}; } catch { return {}; }
+    try { return estatisticasLiga.resumoLiga() || {}; }
+    catch { return {}; }
 }
 
 function movimento() {
     const atual = ranking();
     const db = lerJson(inteligenciaPath, {});
     const anterior = db.ultimaClassificacao || {};
-    const subindo = [], caindo = [];
+    const subindo = [], caindo = [], ultrapassagens = [];
 
     atual.forEach((j, i) => {
         const old = anterior[String(j.id)];
@@ -169,7 +201,6 @@ function movimento() {
         if (delta < 0) caindo.push({ ...j, de: old.posicao, para: pos, delta: Math.abs(delta) });
     });
 
-    const ultrapassagens = [];
     for (let i = 0; i < atual.length; i++) {
         for (let j = i + 1; j < atual.length; j++) {
             const a = atual[i], b = atual[j];
@@ -178,6 +209,7 @@ function movimento() {
             if (pa && pb && pa > pb) ultrapassagens.push({ a, b });
         }
     }
+
     return { atual, subindo, caindo, ultrapassagens };
 }
 
@@ -193,27 +225,41 @@ function salvarSnapshot() {
     salvarJson(inteligenciaPath, db);
 }
 
-function analiseRanking() {
+async function analiseRanking(guild) {
     const r = ranking();
-    if (!r.length) return '🏆 A Liga ainda está juntando dados. Assim que houver partidas, eu começo a fofoca estatística. 👀';
+    if (!r.length) return '🏆 A Liga ainda está juntando dados. Assim que houver partidas, começa a fofoca estatística. 👀';
+
     const m = movimento();
     const up = [...m.subindo].sort((a, b) => b.delta - a.delta)[0];
     const down = [...m.caindo].sort((a, b) => b.delta - a.delta)[0];
     const over = m.ultrapassagens[0];
-    const leader = r[0], second = r[1];
+    const leader = r[0];
+    const second = r[1];
 
     const opcoes = [];
-    if (over) opcoes.push(`⚔️ **ULTRAPASSAGEM DETECTADA**\n${mention(over.a.id)} passou na frente de ${mention(over.b.id)}. O ranking está começando a ficar pessoal. 👀`);
-    if (up) opcoes.push(`📈 **QUEM ESTÁ SUBINDO?**\n${mention(up.id)} ganhou **${fmt(up.delta)} posição(ões)** e foi do #${up.de} para o #${up.para}. Alguém acordou para a Liga. 🔥`);
-    if (down) opcoes.push(`📉 **ALGUÉM PRECISA REAGIR**\n${mention(down.id)} caiu do #${down.de} para o #${down.para}. O ranking não perdoa vacilo. 😬`);
-    if (second) opcoes.push(`👑 **BRIGA PELO TRONO**\n${mention(leader.id)} lidera com **${fmt(leader.pontos)} pts**. ${mention(second.id)} está só **${fmt(Math.abs(num(leader.pontos) - num(second.pontos)))} pts** atrás. Uma partida e o roteiro muda. 🎬`);
+    if (over) {
+        opcoes.push(`⚔️ **ULTRAPASSAGEM DETECTADA**\n${await mentionarJogador(guild, over.a.id)} passou na frente de ${await mentionarJogador(guild, over.b.id)}. O ranking está começando a ficar pessoal. 👀`);
+    }
+    if (up) {
+        opcoes.push(`📈 **QUEM ESTÁ SUBINDO?**\n${await mentionarJogador(guild, up.id)} ganhou **${fmt(up.delta)} posição(ões)** e foi do #${up.de} para o #${up.para}. Alguém acordou para a Liga. 🔥`);
+    }
+    if (down) {
+        opcoes.push(`📉 **ALGUÉM PRECISA REAGIR**\n${await mentionarJogador(guild, down.id)} caiu do #${down.de} para o #${down.para}. O ranking não perdoa vacilo. 😬`);
+    }
+    if (second) {
+        const gap = Math.abs(num(leader.pontos) - num(second.pontos));
+        opcoes.push(`👑 **BRIGA PELO TRONO**\n${await mentionarJogador(guild, leader.id)} lidera com **${fmt(leader.pontos)} pts**. ${await mentionarJogador(guild, second.id)} está só **${fmt(gap)} pts** atrás. Uma partida e o roteiro muda. 🎬`);
+    }
     if (opcoes.length) return escolher(opcoes, 'movimento-ranking');
-    return `👑 ${mention(leader.id)} está no topo com **${fmt(leader.pontos)} pts**. Ainda não detectei uma grande virada recente, mas isso pode mudar na próxima partida. 👀`;
+
+    return `👑 ${await mentionarJogador(guild, leader.id)} está no topo com **${fmt(leader.pontos)} pts**. Ainda não detectei uma grande virada recente. 👀`;
 }
 
-function raioX(id) {
+async function raioX(guild, id) {
     const j = perfil(id);
-    if (!j) return `🔎 Ainda não encontrei histórico suficiente de ${mention(id)} na Liga.`;
+    const tag = await mentionarJogador(guild, id);
+    if (!j) return `🔎 Ainda não encontrei histórico suficiente de ${tag} na Liga.`;
+
     const r = ranking();
     const pos = r.findIndex(x => String(x.id) === String(id)) + 1;
     const m = movimento();
@@ -224,166 +270,286 @@ function raioX(id) {
     if (down) leitura = `caindo **${fmt(down.delta)} posição(ões)**`;
 
     return [
-        `🔎 **RAIO-X DA LIGA — ${mention(id)}**`,
+        `🔎 **RAIO-X DA LIGA — ${tag}**`,
         `🏅 Posição: **#${pos || '—'}** • **${fmt(j.pontos)} pts**`,
         `🏆 **${fmt(j.vitorias)} vitórias** em **${fmt(j.partidas)} partidas** • Winrate **${winrate(j).toFixed(1)}%**`,
         `💀 **${fmt(j.kills)} kills** • **${fmt(j.mortes)} mortes**`,
-        `🔥 ${mention(id)} ${streak(j)}.`,
+        `🔥 ${tag} ${streakTexto(j)}.`,
         `📈 Momento do ranking: **${leitura}**.`
     ].join('\n');
 }
 
-function comparar(a, b) {
+async function comparar(guild, a, b) {
     if (!a || !b) return null;
     const r = ranking();
     const pa = r.findIndex(x => String(x.id) === String(a.id)) + 1;
     const pb = r.findIndex(x => String(x.id) === String(b.id)) + 1;
     const diff = num(a.pontos) - num(b.pontos);
     const vr = winrate(a) - winrate(b);
-    const vencedor = diff > 0 ? a : diff < 0 ? b : null;
-    const texto = diff === 0
-        ? `estão empatados em **${fmt(a.pontos)} pts**`
-        : `${mention(vencedor.id)} está na frente por **${fmt(Math.abs(diff))} pts**`;
-    return `⚔️ **DUELO DA LIGA**\n${mention(a.id)} #${pa || '—'} x ${mention(b.id)} #${pb || '—'}\n${texto}.\n🏆 Vitórias: **${fmt(a.vitorias)} x ${fmt(b.vitorias)}**\n💀 Kills: **${fmt(a.kills)} x ${fmt(b.kills)}**\n📈 Winrate: **${winrate(a).toFixed(1)}% x ${winrate(b).toFixed(1)}%**\n💡 ${vr === 0 ? 'Nos números de aproveitamento, os dois estão iguais.' : `${mention(vr > 0 ? a.id : b.id)} leva a melhor no aproveitamento.`}`;
+    const ma = await mentionarJogador(guild, a.id);
+    const mb = await mentionarJogador(guild, b.id);
+    const vencedor = diff > 0 ? ma : diff < 0 ? mb : null;
+    const texto = diff === 0 ? `estão empatados em **${fmt(a.pontos)} pts**` : `${vencedor} está na frente por **${fmt(Math.abs(diff))} pts**`;
+
+    return `⚔️ **DUELO DA LIGA**\n${ma} #${pa || '—'} x ${mb} #${pb || '—'}\n${texto}.\n🏆 Vitórias: **${fmt(a.vitorias)} x ${fmt(b.vitorias)}**\n💀 Kills: **${fmt(a.kills)} x ${fmt(b.kills)}**\n📈 Winrate: **${winrate(a).toFixed(1)}% x ${winrate(b).toFixed(1)}%**\n💡 ${vr === 0 ? 'Nos números de aproveitamento, os dois estão iguais.' : `${vr > 0 ? ma : mb} leva a melhor no aproveitamento.`}`;
 }
 
+/* ======================== OLIMPÍADAS ======================== */
 function dadosOlimpiadas() {
     const d = lerJson(olympPath, {});
     if (!Array.isArray(d.duplas)) d.duplas = [];
     if (!Array.isArray(d.resultados)) d.resultados = [];
-    if (!d.ranking || typeof d.ranking !== 'object') d.ranking = {};
     return d;
 }
 
-function olimp() {
+function rankingOlimpiadas() {
     const d = dadosOlimpiadas();
-    const r = Object.entries(d.ranking)
-        .map(([pais, x]) => ({ pais, ...(x && typeof x === 'object' ? x : { pontos: num(x) }) }))
-        .sort((a, b) => num(b.pontos) - num(a.pontos));
-    if (!r.length) return `🥇 **OLIMPÍADAS DE DUPLAS**\nAinda não tem resultado suficiente para eu começar a provocar os países. 😂`;
-    const l = r[0], s = r[1];
+    const duplas = new Map(d.duplas.map(x => [String(x.id), x]));
+    const mapa = new Map();
+
+    for (const resultado of d.resultados) {
+        const medalhas = [
+            [resultado?.ouro, 'ouro', 1],
+            [resultado?.prata, 'prata', 0],
+            [resultado?.bronze, 'bronze', 0]
+        ];
+        for (const [id, medalha, vitoria] of medalhas) {
+            if (!id) continue;
+            const dupla = duplas.get(String(id));
+            if (!dupla?.pais) continue;
+            const chave = norm(dupla.pais);
+            if (!mapa.has(chave)) mapa.set(chave, { pais: dupla.pais, vitorias: 0, ouro: 0, prata: 0, bronze: 0, desempate: 0 });
+            const item = mapa.get(chave);
+            item[medalha]++;
+            if (vitoria) item.vitorias++;
+            if (medalha === 'prata') item.desempate += 3;
+            if (medalha === 'bronze') item.desempate += 1;
+        }
+    }
+
+    return [...mapa.values()].sort((a, b) =>
+        b.vitorias - a.vitorias || b.ouro - a.ouro || b.prata - a.prata || b.bronze - a.bronze || b.desempate - a.desempate
+    );
+}
+
+function pontuacaoOlimpica(item) {
+    return num(item?.ouro) * 3 + num(item?.prata) * 2 + num(item?.bronze);
+}
+
+async function formatarDupla(guild, dupla) {
+    if (!dupla) return 'dupla não identificada';
+    const p1 = await mentionarJogador(guild, dupla.jogador1);
+    const p2 = await mentionarJogador(guild, dupla.jogador2);
+    return `${p1} + ${p2}`;
+}
+
+async function olimp(guild) {
+    const d = dadosOlimpiadas();
+    const rankingPais = rankingOlimpiadas();
+    if (!rankingPais.length) return `🥇 **OLIMPÍADAS DE DUPLAS**\nAinda não tem resultado suficiente para eu começar a provocar os países. 😂`;
+
+    const l = rankingPais[0];
+    const s = rankingPais[1];
+    const duplasPais = d.duplas.filter(x => norm(x.pais) === norm(l.pais));
+    const dupla = duplasPais[0];
+    const pontos = pontuacaoOlimpica(l);
+    const duplaTexto = dupla ? await formatarDupla(guild, dupla) : '';
+
     return escolher([
-        `🥇 **OLIMPÍADAS DE DUPLAS**\n${l.pais} está na frente com **${fmt(l.pontos)} pts**. ${s ? `${s.pais} vem logo atrás.` : 'Ainda não apareceu um perseguidor forte.'} 👀`,
-        `🏅 O quadro olímpico está começando a esquentar. **${l.pais}** lidera com **${fmt(l.pontos)} pts** e já está fazendo pressão. 🔥`,
-        `🌍 **PLACAR DAS DUPLAS**\n${l.pais}: **${fmt(l.pontos)} pts**\nDuplas registradas: **${fmt(d.duplas.length)}**\nResultados: **${fmt(d.resultados.length)}**\nA disputa está oficialmente aberta. 🏆`
+        `🥇 **OLIMPÍADAS DE DUPLAS**\n${l.pais} está na frente com **${pontos} pts olímpicos** — 🥇 ${l.ouro} • 🥈 ${l.prata} • 🥉 ${l.bronze}. ${s ? `${s.pais} vem logo atrás.` : 'Ainda não apareceu um perseguidor forte.'} 👀`,
+        `🏅 O quadro olímpico está esquentando. **${l.pais}** lidera com **${pontos} pts**. ${duplaTexto ? `A dupla registrada do país: ${duplaTexto}.` : ''} 🔥`,
+        `🌍 **PLACAR DAS DUPLAS**\n${l.pais}: **${pontos} pts** • 🥇 ${l.ouro} • 🥈 ${l.prata} • 🥉 ${l.bronze}\nDuplas registradas: **${fmt(d.duplas.length)}**\nResultados: **${fmt(d.resultados.length)}** 🏆`
     ], 'olimpiadas');
 }
 
-function contextoResposta(message, base) {
+/* ======================== CONTEXTO ======================== */
+function salvarContexto(message) {
     const id = String(message.channelId);
-    const anterior = contexto.get(id);
-    contexto.set(id, { texto: message.content, autor: String(message.author.id), em: Date.now() });
-    if (!anterior || Date.now() - anterior.em > 10 * 60 * 1000) return base;
-    const atual = norm(message.content);
-    if (tem(atual, ['e agora', 'e ai', 'e aí', 'entao', 'então', 'agora'])) {
-        return `${base}\n\n👀 E sim, eu sei que você quer saber o próximo capítulo. Agora é jogar e deixar o ranking responder.`;
-    }
-    return base;
+    contexto.set(id, {
+        autorId: String(message.author?.id || ''),
+        texto: String(message.content || '').slice(0, 180),
+        quando: Date.now()
+    });
 }
 
-function respostaInteligente(message) {
-    const t = message.content || '';
-    const ids = [...message.mentions.users.keys()].slice(0, 2);
-
-    if (ids.length === 2 && tem(t, ['comparar', 'compare', 'versus', 'vs', 'contra', 'duelo', 'melhor'])) {
-        return comparar(perfil(ids[0]), perfil(ids[1]));
-    }
-    if (ids.length === 1 && tem(t, ['pontos', 'pontuacao', 'pontuação', 'ranking', 'estatistica', 'estatística', 'desempenho', 'como estou', 'como to', 'como tô'])) {
-        return raioX(ids[0]);
-    }
-    if (tem(t, ['quem subiu', 'quem caiu', 'quem esta subindo', 'quem está subindo', 'quem esta caindo', 'quem está caindo', 'ultrapassagem', 'ultrapassou', 'movimentacao', 'movimentação'])) return analiseRanking();
-    if (tem(t, ['sequencia', 'sequência', 'streak', 'vitorias seguidas', 'vitórias seguidas', 'embalado'])) {
-        const r = ranking();
-        const j = [...r].sort((a, b) => num(b.streakAtual) - num(a.streakAtual))[0];
-        return j && num(j.streakAtual) > 0 ? `🔥 **STREAK DA LIGA**\n${mention(j.id)} ${streak(j)}.` : '🔥 Ainda não apareceu uma sequência ativa digna de cinema. Quero ver quem vai começar.';
-    }
-    if (tem(t, ['olimpiada', 'olimpíada', 'olimpiadas', 'olimpíadas', 'duplas', 'medalha', 'ouro', 'prata', 'bronze'])) return olimp();
-    if (tem(t, ['liga', 'ranking', 'lider', 'líder', 'primeiro lugar', 'quem lidera', 'quem esta ganhando', 'quem está ganhando', 'campeao', 'campeão'])) return analiseRanking();
-    return null;
+function temFollowUp(texto) {
+    return tem(texto, ['e agora', 'então', 'entao', 'e ai', 'e aí', 'agora']);
 }
 
-function tradicional(texto) {
-    try {
-        const db = safeReadJson(dbPath, {});
-        if (!db || typeof db !== 'object') return null;
-        const t = norm(texto);
-        const candidatos = [];
-        for (const [gatilho, respostas] of Object.entries(db)) {
-            if (!Array.isArray(respostas)) continue;
-            const g = norm(gatilho);
-            if (!g) continue;
-            let pontos = 0;
-            if (g.length <= 2) pontos = new RegExp(`(^|\\s)${g}(?=\\s|$)`, 'i').test(t) ? 10 : 0;
-            else if (t.includes(g)) pontos = g.length + 10;
-            if (pontos) candidatos.push({ gatilho, respostas, pontos });
+/* ======================== RESPOSTAS INTELIGENTES ======================== */
+async function respostaInteligente(message) {
+    const texto = String(message.content || '');
+    const t = norm(texto);
+    const guild = message.guild;
+    const mencoes = extrairMencoes(message);
+    const r = ranking();
+
+    if (mencoes.length >= 2 && tem(t, ['vs', 'versus', 'contra', 'comparar', 'duelo', 'quem é melhor', 'quem ganha'])) {
+        const a = perfil(mencoes[0]);
+        const b = perfil(mencoes[1]);
+        if (a && b) return comparar(guild, a, b);
+    }
+
+    if (mencoes.length >= 1 && tem(t, ['pontos', 'pontuacao', 'pontuação', 'estatistica', 'estatísticas', 'stats', 'raio x', 'desempenho', 'ranking'])) {
+        return raioX(guild, mencoes[0]);
+    }
+
+    if (tem(t, ['sequencia', 'sequência', 'vitórias seguidas', 'streak', 'embalado'])) {
+        const alvo = mencoes[0] || String(message.author?.id || '');
+        const j = perfil(alvo);
+        if (j) return `🔥 ${await mentionarJogador(guild, alvo)} ${streakTexto(j)}.`;
+    }
+
+    if (tem(t, ['quem esta subindo', 'quem está subindo', 'subindo no ranking', 'quem subiu', 'quem caiu', 'caindo', 'ultrapassagem', 'ultrapassou', 'ranking']) && r.length) {
+        return analiseRanking(guild);
+    }
+
+    if (tem(t, ['olimpiada', 'olimpíada', 'olimpiadas', 'olimpíadas', 'duplas', 'medalha', 'ouro', 'prata', 'bronze'])) {
+        return olimp(guild);
+    }
+
+    if (tem(t, ['liga', 'liga das nacoes', 'liga das nações', 'pontuacao da liga', 'pontuação da liga', 'classificacao', 'classificação'])) {
+        const s = resumo();
+        if (r.length) {
+            const lider = r[0];
+            const segundo = r[1];
+            const gap = segundo ? Math.abs(num(lider.pontos) - num(segundo.pontos)) : 0;
+            const liderTag = await mentionarJogador(guild, lider.id);
+            const segundoTag = segundo ? await mentionarJogador(guild, segundo.id) : null;
+            return escolher([
+                `🏆 **LIGA DAS NAÇÕES**\n${liderTag} está no topo com **${fmt(lider.pontos)} pts**.${segundoTag ? ` ${segundoTag} está ${fmt(gap)} pts atrás.` : ''}\n${s.partidas ? `📊 Já temos **${fmt(s.partidas)} partidas** registradas.` : '📊 A temporada ainda está começando.'} 👀`,
+                `📊 Dei uma olhada na Liga: ${liderTag} lidera. ${segundoTag ? `Mas ${segundoTag} está na cola.` : 'Ainda falta alguém apertar a liderança.'} Uma partida pode bagunçar tudo. 😂`
+            ], 'liga-geral');
         }
-        candidatos.sort((a, b) => b.pontos - a.pontos);
-        if (!candidatos.length) return null;
-        const melhor = candidatos[0];
-        return escolher(melhor.respostas, `tradicional:${melhor.gatilho}`);
-    } catch (e) {
-        console.error('[Auto-Resposta] tradicional:', e.message);
-        return null;
     }
-}
 
-function humano(texto) {
-    if (tem(texto, ['kkkk', 'kkk', 'haha', 'hahaha', 'rsrs', '😂', '🤣'])) return escolher(HUMOR.riso, 'humor-riso');
-    if (tem(texto, ['perdi', 'perdemos', 'derrota', 'perdeu', 'morreu', 'morte'])) return escolher(HUMOR.derrota, 'humor-derrota');
-    if (tem(texto, ['ganhei', 'ganhamos', 'ganhou', 'vitoria', 'vitória', 'gg'])) return escolher(HUMOR.vitoria, 'humor-vitoria');
-    if (tem(texto, ['ruim', 'lixo', 'noob', 'fraco', 'humilhar', 'chora'])) return escolher(HUMOR.provocacao, 'humor-provocacao');
-    if (tem(texto, ['desisti', 'desistir', 'nao consigo', 'não consigo', 'to ruim', 'tô ruim'])) return escolher(HUMOR.incentivo, 'humor-incentivo');
+    if (temFollowUp(texto)) {
+        const ctx = contexto.get(String(message.channelId));
+        if (ctx && Date.now() - ctx.quando < 5 * 60 * 1000) {
+            const p = perfil(ctx.autorId);
+            if (p) return `👀 E agora? ${await mentionarJogador(guild, ctx.autorId)} continua com **${fmt(p.pontos)} pts** na Liga. O próximo capítulo depende do dado. 🎲`;
+        }
+    }
+
     return null;
 }
 
-function canais() {
-    if (!clienteAtual?.channels?.cache) return [];
-    return [...clienteAtual.channels.cache.values()].filter(c => categoria(c) && typeof c.send === 'function' && c.isTextBased?.());
+/* ======================== AUTO RESPOSTA TRADICIONAL ======================== */
+function tradicional(texto) {
+    const db = lerJson(dbPath, {});
+    if (!db || typeof db !== 'object') return null;
+
+    const entradas = Object.entries(db);
+    const candidatas = [];
+    const t = norm(texto);
+
+    for (const [chave, respostas] of entradas) {
+        const gatilhos = [chave];
+        if (Array.isArray(respostas)) {
+            for (const item of respostas) {
+                if (item && typeof item === 'object') {
+                    if (Array.isArray(item.gatilhos)) gatilhos.push(...item.gatilhos);
+                    if (Array.isArray(item.palavras)) gatilhos.push(...item.palavras);
+                }
+            }
+        }
+        const encontrados = gatilhos.filter(g => tem(t, [g]));
+        if (encontrados.length) candidatas.push({ chave, respostas, peso: encontrados.reduce((n, g) => n + norm(g).length, 0) });
+    }
+
+    candidatas.sort((a, b) => b.peso - a.peso);
+    const melhor = candidatas[0];
+    if (!melhor) return null;
+
+    if (Array.isArray(melhor.respostas)) {
+        const validas = melhor.respostas.map(x => typeof x === 'string' ? x : x?.resposta).filter(Boolean);
+        return escolher(validas, `tradicional-${melhor.chave}`);
+    }
+    if (typeof melhor.respostas === 'string') return melhor.respostas;
+    return null;
+}
+
+function humor(texto) {
+    if (tem(texto, ['kkkk', 'kkk', 'haha', 'hahaha', 'rsrs', '🤣', '😂'])) return escolher(HUMOR.riso, 'humor-riso');
+    if (tem(texto, ['perdi', 'perdeu', 'derrota', 'perder', 'fui derrotado', 'morreu'])) return escolher(HUMOR.derrota, 'humor-derrota');
+    if (tem(texto, ['ganhei', 'ganhou', 'venci', 'venceu', 'vitória', 'vitoria', 'win'])) return escolher(HUMOR.vitoria, 'humor-vitoria');
+    if (tem(texto, ['traidor', 'traiu', 'rival', 'inimigo', 'vou pegar', 'vou atacar'])) return escolher(HUMOR.provocacao, 'humor-provocacao');
+    if (tem(texto, ['desistir', 'desisti', 'não consigo', 'nao consigo', 'triste', 'azar'])) return escolher(HUMOR.incentivo, 'humor-incentivo');
+    return null;
+}
+
+/* ======================== ESPONTÂNEA ======================== */
+async function enviarEspontanea() {
+    if (!clienteAtual) return;
+    try {
+        const guilds = [...clienteAtual.guilds.cache.values()];
+        for (const guild of guilds) {
+            const canais = [...guild.channels.cache.values()].filter(c => categoria(c) && c.isTextBased?.());
+            if (!canais.length) continue;
+            const canal = canais[Math.floor(Math.random() * canais.length)];
+            if (!canal || !podeResponder(canal.id)) continue;
+
+            const opcoes = [
+                await analiseRanking(guild),
+                await olimp(guild),
+                '👀 A Liga está quieta demais... isso nunca é um bom sinal.',
+                '🎲 Estou começando a desconfiar que o dado tem favoritos.',
+                '🏆 Tem gente olhando o ranking em silêncio e fingindo que não está preocupado. 😂'
+            ];
+            await canal.send(escolher(opcoes, `espontanea-${canal.id}`));
+            break;
+        }
+    } catch (e) {
+        console.error('[Auto-Resposta] espontânea:', e.message);
+    }
 }
 
 function agendar() {
     if (timer) clearTimeout(timer);
-    const atraso = CONFIG.espontaneaMinMs + Math.random() * (CONFIG.espontaneaMaxMs - CONFIG.espontaneaMinMs);
+    const intervalo = CONFIG.espontaneaMinMs + Math.floor(Math.random() * (CONFIG.espontaneaMaxMs - CONFIG.espontaneaMinMs));
     timer = setTimeout(async () => {
-        try {
-            const lista = canais();
-            if (!lista.length) return;
-            const canal = lista[Math.floor(Math.random() * lista.length)];
-            if (!podeResponder(canal.id)) return;
-            const texto = Math.random() < 0.72 ? analiseRanking() : olimp();
-            if (texto) await canal.send(texto);
-        } catch (e) {
-            console.error('[Auto-Resposta] espontânea:', e.message);
-        } finally { agendar(); }
-    }, atraso);
+        await enviarEspontanea();
+        agendar();
+    }, intervalo);
 }
 
-module.exports = client => {
+module.exports = function iniciarAutoResposta(client) {
+    if (!client) return;
     clienteAtual = client;
+
     client.on(Events.MessageCreate, async message => {
         try {
-            if (message.author?.bot || !message.content || !categoria(message.channel)) return;
-            const inteligente = respostaInteligente(message);
-            if (inteligente && Math.random() <= CONFIG.respostaChance && podeResponder(message.channelId)) {
-                await message.reply(contextoResposta(message, inteligente));
+            if (!message.guild || message.author?.bot) return;
+            if (!categoria(message.channel)) return;
+
+            salvarContexto(message);
+
+            if (Math.random() > CONFIG.respostaChance) return;
+            if (!podeResponder(message.channelId)) return;
+
+            const inteligente = await respostaInteligente(message);
+            if (inteligente) {
+                await message.reply(inteligente);
                 salvarSnapshot();
                 return;
             }
-            const engraçada = humano(message.content);
-            if (engraçada && Math.random() < 0.72 && podeResponder(message.channelId)) {
+
+            const engraçada = humor(message.content);
+            if (engraçada) {
                 await message.reply(engraçada);
                 return;
             }
+
             const antiga = tradicional(message.content);
-            if (antiga && podeResponder(message.channelId)) await message.reply(String(antiga));
+            if (antiga) await message.reply(String(antiga));
         } catch (e) {
             console.error('[Auto-Resposta] MessageCreate:', e.message);
         }
     });
+
     client.once(Events.ClientReady, () => {
-        console.log('🤖 Auto-Resposta V4 ativado — humor + contexto + Liga + Olimpíadas.');
-        console.log(`📁 Categoria monitorada: ${CONFIG.categoriaId}`);
-        console.log('🧠 Inteligência: ranking, ultrapassagens, streaks, duelos e respostas contextuais.');
+        console.log('🤖 Auto Resposta V5 ativada — Liga/Olimpíadas + mentions inteligentes.');
+        salvarSnapshot();
         agendar();
     });
 };

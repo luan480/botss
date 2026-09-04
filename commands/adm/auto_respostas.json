@@ -16,7 +16,7 @@
   ],
   "boa noite": [
     "Boa noite! Descanse, amanhã a guerra continua. 🌙",
-    "Dispensado, soldado. Boa noite!",
+    "Dispensado, soldado. Boa noite.",
     "Boa noite! Cuidado com os ataques noturnos...",
     "Cambio desligo. Boa noite. 💤",
     "Durma com um olho aberto... seus territórios estão em perigo.",
@@ -118,7 +118,7 @@
   ],
   "war": [
     "War é jogo de paciência e traição.",
-    "Bora uma partida? Entre nas calls de <#849698902634004510>.",
+    "Bora uma partida? Entre na call {CANAL_VOZ_WAR} e use {CANAL_TEXTO_WAR} para combinar a partida.",
     "World War BR: O melhor lugar pra destruir amizades. 🌍",
     "War não é só sorte, é psicologia."
   ],
@@ -173,9 +173,9 @@
     "Bora pro evento galera!"
   ],
   "call": [
-    "Entra na call aí: <#849698902634004510>",
+    "Entra na call aí: {CANAL_VOZ_WAR}",
     "Bora call?",
-    "Onde tá a galera? Provavelmente em <#1228772042179084370>.",
+    "Onde tá a galera? Provavelmente em {CANAL_VOZ_WAR}.",
     "Sem call, sem estratégia."
   ],
   "asia": [

@@ -6,10 +6,13 @@
    - partidas.json é a fonte de verdade para partidas, vitórias, colocações,
      kills, mortes, continentes e pontos de partidas.
    - Partidas anuladas NÃO entram no histórico.
-   - pontuacao.json é a fonte de verdade para o SALDO ATUAL de pontos.
-     Assim, uma alteração manual em "pontos" permanece no painel e ranking.
-   - Contadores derivados (1º/2º/3º lugar, etc.) são reconstruídos do histórico
-     e não podem ficar dependentes do estado anterior do pontuacao.json.
+   - pontuacao.json guarda o estado materializado da temporada e os ajustes
+     manuais. O saldo de pontos é SEMPRE reconstruído como:
+       pontos históricos válidos + ajusteManualValor
+   - Nunca preservamos um "pontos" antigo que contradiga o histórico. Isso é
+     o que torna a anulação equivalente a remover a partida do histórico.
+   - Contadores derivados (1º/2º/3º lugar, etc.) também são reconstruídos do
+     histórico e não ficam dependentes do estado anterior do pontuacao.json.
    ======================================================================== */
 
 const fs = require('fs');
@@ -284,7 +287,7 @@ function adicionarResultado(perfis, partida, nomes) {
         if (vitima) garantir(perfis, vitima, nomes[vitima]).mortes++;
     }
 
-    const continentes = Array.isArray(respostas.continentes) ? respostas.continentes : [];
+    const continentes = Array.isArray(respostas.continentes) ? respostas.continentes : (Array.isArray(respostas.territorios) ? respostas.territorios : []);
     for (const continente of continentes) {
         const id = idDe(continente?.dono || continente?.jogador || continente?.jogadorId || continente?.userId);
         if (!id) continue;
@@ -343,21 +346,16 @@ function ajusteManual(dados, id, historicoPontos) {
 function aplicarPontosHistoricos(resultado, dadosOriginais, historico) {
     for (const [id, perfil] of Object.entries(resultado)) {
         const salvo = dadosOriginais?.[id];
-        const h = historico[id];
+        const baseHistorica = historico[id] ? numero(historico[id].pontos) : 0;
+        const deltaManual = ajusteManual(dadosOriginais, id, baseHistorica);
 
-        // O saldo atual salvo continua soberano. Apenas estatísticas derivadas
-        // são reconstruídas a partir do histórico.
-        if (salvo !== undefined) {
-            perfil.pontos = pontosAtuais(dadosOriginais, id) ?? 0;
-        } else {
-            perfil.pontos = h ? numero(h.pontos) : 0;
-        }
+        // O saldo materializado é sempre a soma do histórico válido com o
+        // delta manual. O campo "pontos" antigo não é uma fonte de verdade.
+        perfil.pontos = baseHistorica + deltaManual;
 
         if (salvo?.ajusteManual === true) {
-            const base = h ? numero(h.pontos) : 0;
-            const delta = ajusteManual(dadosOriginais, id, base);
             perfil.ajusteManual = true;
-            perfil.ajusteManualValor = delta;
+            perfil.ajusteManualValor = deltaManual;
             perfil.ajusteManualEm = salvo.ajusteManualEm;
             perfil.ajusteManualPor = salvo.ajusteManualPor;
         }
@@ -386,21 +384,29 @@ function normalizarTodos(dados, partidasPath = PARTIDAS_PADRAO, temporadaPath = 
 
 function paraFormatoEstruturado(legacy, partidasPath = PARTIDAS_PADRAO, temporadaPath = TEMPORADA_PADRAO) {
     const historico = calcularEstatisticasTemporada(partidasPath, temporadaPath);
-    const ids = new Set([...Object.keys(historico), ...Object.keys(legacy || {}).map(id => idDe(id)).filter(Boolean)]);
+    const ids = new Set([
+        ...Object.keys(historico),
+        ...Object.keys(legacy || {}).map(id => idDe(id)).filter(Boolean)
+    ]);
     const resultado = {};
 
     for (const id of ids) {
         const h = historico[id] || criarPerfil(id);
         const salvo = legacy?.[id];
-        const perfil = { ...criarPerfil(id, h.nome), ...h, id, nome: h.nome || (ehPerfil(salvo) ? salvo.nome : 'Desconhecido') };
+        const perfil = {
+            ...criarPerfil(id, h.nome),
+            ...h,
+            id,
+            nome: h.nome || (ehPerfil(salvo) ? salvo.nome : 'Desconhecido')
+        };
 
-        // Conversões e registros de partidas preservam o saldo que chegou do core.
-        // Não recalcular/substituir o valor salvo pelo histórico.
-        perfil.pontos = salvo !== undefined ? pontosAtuais(legacy, id) ?? 0 : numero(h.pontos);
+        // Histórico válido + ajuste manual é a única fórmula de pontos.
+        const deltaManual = ajusteManual(legacy, id, numero(h.pontos));
+        perfil.pontos = numero(h.pontos) + deltaManual;
 
         if (salvo?.ajusteManual === true) {
             perfil.ajusteManual = true;
-            perfil.ajusteManualValor = numero(salvo.ajusteManualValor ?? (perfil.pontos - numero(h.pontos)));
+            perfil.ajusteManualValor = deltaManual;
             perfil.ajusteManualEm = salvo.ajusteManualEm;
             perfil.ajusteManualPor = salvo.ajusteManualPor;
         }

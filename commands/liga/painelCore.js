@@ -27,21 +27,47 @@ const temporadaPath = path.join(base, 'temporada.json');
 const painelPath = path.join(base, 'painel.json');
 const CANAL_PAINEL_LIGA = '1543636868682354748';
 
-function rankingAtual() {
+// A integridade é reparada uma vez por processo, e nunca a cada renderização
+// do painel. Isso elimina a repetição de "pontos de partidas foram reparados"
+// causada por múltiplas chamadas concorrentes de rankingAtual().
+let migracaoExecutada = false;
+
+function executarMigracaoUmaVez() {
+    if (migracaoExecutada) return;
+    migracaoExecutada = true;
+
     try {
         const reparados = migracaoLiga.executar();
-        if (reparados > 0) console.log(`[LIGA] ${reparados} registros com pontos ausentes foram reparados.`);
+        if (reparados > 0) {
+            console.log(`[LIGA] ${reparados} registros com pontos ausentes foram reparados.`);
+        }
     } catch (erro) {
+        migracaoExecutada = false;
         console.error('[LIGA] Migração automática de integridade falhou:', erro);
     }
+}
+
+function rankingAtual() {
+    executarMigracaoUmaVez();
 
     const dados = safeReadJson(pontuacaoPath) || {};
     const perfis = pontuacaoLiga.normalizarTodos(dados, partidasPath, temporadaPath);
 
     return Object.values(perfis)
-        .map(j => ({ ...j, id: String(j.id), pontos: Number(j.pontos) || 0, vitorias: Number(j.vitorias) || 0, partidas: Number(j.partidas) || 0 }))
+        .map(j => ({
+            ...j,
+            id: String(j.id),
+            pontos: Number(j.pontos) || 0,
+            vitorias: Number(j.vitorias) || 0,
+            partidas: Number(j.partidas) || 0
+        }))
         .filter(j => j.partidas > 0 || j.pontos !== 0 || j.vitorias > 0)
-        .sort((a, b) => b.pontos - a.pontos || b.vitorias - a.vitorias || b.partidas - a.partidas || String(a.id).localeCompare(String(b.id)));
+        .sort((a, b) =>
+            b.pontos - a.pontos ||
+            b.vitorias - a.vitorias ||
+            b.partidas - a.partidas ||
+            String(a.id).localeCompare(String(b.id))
+        );
 }
 
 module.exports = async function criarPainelDashboard(guild, canalId) {
@@ -53,7 +79,10 @@ module.exports = async function criarPainelDashboard(guild, canalId) {
     if (!canal.isTextBased()) throw new Error('O canal informado não é de texto.');
 
     const ranking = rankingAtual();
-    const linha = (j, emoji, posicao) => j ? `${emoji} **${posicao}º** <@${j.id}> — **${j.pontos} pts**` : `${emoji} **${posicao}º** ⏳ *Vago*`;
+    const linha = (j, emoji, posicao) =>
+        j
+            ? `${emoji} **${posicao}º** <@${j.id}> — **${j.pontos} pts**`
+            : `${emoji} **${posicao}º** ⏳ *Vago*`;
 
     const containerPainel = new ContainerBuilder()
         .setAccentColor(0x9B59B6)

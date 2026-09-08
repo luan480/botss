@@ -105,11 +105,11 @@ function dominioFavorito(c) {
 }
 
 async function mostrarJogador(interaction, userId) {
-    const dados = pontuacaoLiga.normalizarTodos(
-        pontuacaoLiga.carregar(pontuacaoPath),
-        partidasPath,
-        temporadaPath
-    );
+    // A tela de estatísticas usa EXATAMENTE o mesmo estado canônico
+    // que o ranking/pontuação persistem em pontuacao.json.
+    // A anulação já reconstrói esse arquivo a partir de partidas válidas,
+    // portanto não existe uma segunda fonte de cálculo aqui.
+    const dados = pontuacaoLiga.carregar(pontuacaoPath);
     const jogador = dados[String(userId)];
     const membro = await interaction.guild.members.fetch(userId).catch(() => null);
 

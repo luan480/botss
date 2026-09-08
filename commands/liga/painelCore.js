@@ -27,28 +27,43 @@ const temporadaPath = path.join(base, 'temporada.json');
 const painelPath = path.join(base, 'painel.json');
 const CANAL_PAINEL_LIGA = '1543636868682354748';
 
-// A integridade é reparada uma vez por processo, e nunca a cada renderização
-// do painel. Isso elimina a repetição de "pontos de partidas foram reparados"
-// causada por múltiplas chamadas concorrentes de rankingAtual().
-let migracaoExecutada = false;
+// A integridade e a pontuação materializada são sincronizadas uma vez por
+// processo. Assim o painel não mantém um saldo antigo depois de uma mudança
+// no histórico, inclusive após anulação de partida.
+let integridadeExecutada = false;
+let pontuacaoSincronizada = false;
 
-function executarMigracaoUmaVez() {
-    if (migracaoExecutada) return;
-    migracaoExecutada = true;
-
-    try {
-        const reparados = migracaoLiga.executar();
-        if (reparados > 0) {
-            console.log(`[LIGA] ${reparados} registros com pontos ausentes foram reparados.`);
+function prepararEstadoUmaVez() {
+    if (!integridadeExecutada) {
+        try {
+            const reparados = migracaoLiga.executar();
+            if (reparados > 0) {
+                console.log(`[LIGA] ${reparados} registros com pontos ausentes foram reparados.`);
+            }
+            integridadeExecutada = true;
+        } catch (erro) {
+            console.error('[LIGA] Migração automática de integridade falhou:', erro);
+            throw erro;
         }
-    } catch (erro) {
-        migracaoExecutada = false;
-        console.error('[LIGA] Migração automática de integridade falhou:', erro);
+    }
+
+    if (!pontuacaoSincronizada) {
+        try {
+            pontuacaoLiga.sincronizarArquivo(
+                pontuacaoPath,
+                partidasPath,
+                temporadaPath
+            );
+            pontuacaoSincronizada = true;
+        } catch (erro) {
+            console.error('[LIGA] Sincronização automática da pontuação falhou:', erro);
+            throw erro;
+        }
     }
 }
 
 function rankingAtual() {
-    executarMigracaoUmaVez();
+    prepararEstadoUmaVez();
 
     const dados = safeReadJson(pontuacaoPath) || {};
     const perfis = pontuacaoLiga.normalizarTodos(dados, partidasPath, temporadaPath);
@@ -90,7 +105,7 @@ module.exports = async function criarPainelDashboard(guild, canalId) {
         .addSeparatorComponents(new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small))
         .addTextDisplayComponents(new TextDisplayBuilder().setContent(
             `📆 **Temporada atual**\n` +
-            `⚔️ **Saldo de pontos lido diretamente do pontuacao.json.**\n\n` +
+            `⚔️ **Estado calculado pelo histórico válido + ajustes manuais.**\n\n` +
             `__**PREMIAÇÃO:**__\n` +
             `🥇 **1º Lugar:** R$ 30,00 + <@&1429934221216186458>\n` +
             `🥈 **2º Lugar:** R$ 20,00 + <@&938174095470772305>\n` +

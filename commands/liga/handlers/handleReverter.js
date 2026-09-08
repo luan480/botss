@@ -2,8 +2,10 @@
    LIGA — HANDLER DE ANULAÇÃO
 
    REGRA DA REVERSÃO:
-   - A partida NÃO é apagada: fica anulada para auditoria.
-   - O histórico válido deixa de considerar a partida anulada.
+   - A partida é marcada como anulada no partidas.json para não voltar a ser
+     contabilizada.
+   - A mensagem do resultado é APAGADA do canal da Liga para que o comando
+     /liga recalcular nunca volte a ler essa partida.
    - A pontuação NÃO é subtraída manualmente: o histórico válido é a fonte
      de verdade e a sincronização reconstrói o total.
    - Ajustes manuais são preservados pelo pontuacaoLiga como delta.
@@ -116,6 +118,19 @@ function marcarAnulada(partida, interaction) {
 function diminuir(objeto, chave, quantidade = 1) {
     if (!objeto || objeto[chave] === undefined) return;
     objeto[chave] = Math.max(0, numero(objeto[chave]) - numero(quantidade));
+}
+
+async function apagarMensagemDoResultado(interaction) {
+    const mensagem = interaction?.message;
+    if (!mensagem?.deletable) return false;
+
+    try {
+        await mensagem.delete();
+        return true;
+    } catch (erro) {
+        console.error('[LIGA] Não foi possível apagar a mensagem da partida anulada:', erro);
+        return false;
+    }
 }
 
 module.exports = async function handleReverter(
@@ -276,12 +291,24 @@ module.exports = async function handleReverter(
             TEMPORADA
         );
 
+        /* ================================================================
+           7. APAGAR O RESULTADO DO CANAL
+
+           O /liga recalcular lê diretamente o histórico de mensagens do
+           canal. Portanto, manter o resultado anulado lá faria essa partida
+           voltar a ser lida no recálculo. A partida continua preservada no
+           partidas.json como registro interno de auditoria.
+           ================================================================ */
+        const mensagemApagada = await apagarMensagemDoResultado(interaction);
+
         await interaction.editReply({
             content:
                 '✅ **Partida anulada com sucesso.**\n' +
                 '📊 A pontuação foi reconstruída pelo histórico válido.\n' +
                 '📈 O ranking/estatísticas foram atualizados sem essa partida.\n' +
-                '🗃️ O registro foi preservado para auditoria.'
+                (mensagemApagada
+                    ? '🗑️ O resultado também foi apagado do canal da Liga.'
+                    : '⚠️ A partida foi anulada, mas não consegui apagar a mensagem do canal.')
         });
 
         await painelLiga(interaction.guild, '1543636868682354748').catch(erro => {

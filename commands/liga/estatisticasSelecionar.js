@@ -105,12 +105,12 @@ function dominioFavorito(c) {
 }
 
 async function mostrarJogador(interaction, userId) {
-    // A tela de estatísticas usa EXATAMENTE o mesmo estado canônico
-    // que o ranking/pontuação persistem em pontuacao.json.
-    // A anulação já reconstrói esse arquivo a partir de partidas válidas,
-    // portanto não existe uma segunda fonte de cálculo aqui.
+    // O painel, o ranking e esta tela precisam consultar exatamente a mesma
+    // projeção. normalizarTodos reconstrói partidas/estatísticas das partidas
+    // válidas e calcula pontos como histórico + ajuste manual.
     const dados = pontuacaoLiga.carregar(pontuacaoPath);
-    const jogador = dados[String(userId)];
+    const perfis = pontuacaoLiga.normalizarTodos(dados, partidasPath, temporadaPath);
+    const jogador = perfis[String(userId)];
     const membro = await interaction.guild.members.fetch(userId).catch(() => null);
 
     if (!jogador) {
@@ -168,7 +168,7 @@ async function mostrarJogador(interaction, userId) {
             value: titulos.length ? titulos.join(' • ') : '⚔️ Guerreiro em formação — continue jogando para construir seu histórico.',
             inline: false
         })
-        .setFooter({ text: 'Liga das Nações • Estatísticas derivadas do histórico da temporada atual' });
+        .setFooter({ text: 'Liga das Nações • Estatísticas derivadas do histórico válido + ajustes manuais' });
 
     return interaction.update({ content: '', embeds: [embed], components: [criarBotoes()] });
 }

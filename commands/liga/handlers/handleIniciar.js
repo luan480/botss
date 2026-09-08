@@ -12,6 +12,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { ThreadChannel } = require('discord.js');
 const { safeReadJson, safeWriteJson } = require('../utils/helpers.js');
 const core = require('./handleIniciarCore.js');
 const pontuacaoLiga = require('../utils/pontuacaoLiga.js');
@@ -82,6 +83,49 @@ function partidasDaTemporada(partidas) {
     return saida;
 }
 
+/*
+ * Compatibilidade defensiva para o core legado:
+ * em algumas situações awaitMessages() pode retornar uma Collection vazia
+ * depois de um timeout/race. O core acessava .first().mentions diretamente.
+ * No segundo estágio (jogadores), devolvemos uma mensagem vazia somente para
+ * que o próprio loop do core peça novamente os 6 jogadores, em vez de cair.
+ */
+const chamadasPorThread = new WeakMap();
+let patchAwaitMessagesAtivo = false;
+let awaitMessagesOriginal = null;
+
+function ativarProtecaoAwaitMessages() {
+    if (patchAwaitMessagesAtivo || !ThreadChannel?.prototype?.awaitMessages) return;
+
+    awaitMessagesOriginal = ThreadChannel.prototype.awaitMessages;
+    ThreadChannel.prototype.awaitMessages = async function (options) {
+        const chamadas = (chamadasPorThread.get(this) || 0) + 1;
+        chamadasPorThread.set(this, chamadas);
+
+        const resultado = await awaitMessagesOriginal.call(this, options);
+        if (resultado?.first?.() || chamadas < 2) return resultado;
+
+        return {
+            first() {
+                return {
+                    mentions: {
+                        users: new Map()
+                    }
+                };
+            }
+        };
+    };
+
+    patchAwaitMessagesAtivo = true;
+}
+
+function desativarProtecaoAwaitMessages() {
+    if (!patchAwaitMessagesAtivo || !awaitMessagesOriginal) return;
+    ThreadChannel.prototype.awaitMessages = awaitMessagesOriginal;
+    awaitMessagesOriginal = null;
+    patchAwaitMessagesAtivo = false;
+}
+
 module.exports = async function handleIniciar(...args) {
     const pontuacaoPath = typeof args[2] === 'string' && args[2].trim() ? args[2] : PONTUACAO_PADRAO;
     const partidasPath = typeof args[3] === 'string' && args[3].trim() ? args[3] : PARTIDAS_PADRAO;
@@ -102,8 +146,6 @@ module.exports = async function handleIniciar(...args) {
         throw new Error('Não foi possível preparar o histórico temporário da partida.');
     }
 
-    // O core antigo precisa de números simples. O arquivo real permanece
-    // estruturado e intocado até a operação terminar com sucesso.
     if (!safeWriteJson(tempPontuacaoPath, pontosAtuaisParaCore(snapshot.pontuacao))) {
         try { fs.unlinkSync(tempPartidasPath); } catch {}
         throw new Error('Não foi possível preparar a pontuação temporária.');
@@ -115,10 +157,13 @@ module.exports = async function handleIniciar(...args) {
 
     let erro = null;
     try {
+        ativarProtecaoAwaitMessages();
         await core(...argsCorrigidos);
     } catch (e) {
         erro = e;
         console.error('[LIGA] Falha no motor de contabilização:', e);
+    } finally {
+        desativarProtecaoAwaitMessages();
     }
 
     const tempDepois = safeReadJson(tempPartidasPath) || {};
@@ -149,7 +194,6 @@ module.exports = async function handleIniciar(...args) {
         return;
     }
 
-    // Mescla somente o registro novo no histórico permanente.
     const historicoAtual = safeReadJson(partidasPath) || {};
     const [novoId, novoRegistro] = novas[0];
     historicoAtual[novoId] = novoRegistro;
@@ -163,8 +207,6 @@ module.exports = async function handleIniciar(...args) {
         throw new Error('Não foi possível salvar a partida no histórico permanente.');
     }
 
-    // Converte os pontos numéricos produzidos pelo core para o formato atual.
-    // A função de migração agora preserva esse saldo atual, inclusive punições.
     const estruturado = pontuacaoLiga.paraFormatoEstruturado(
         pontuacaoDepois,
         partidasPath,
@@ -180,18 +222,10 @@ module.exports = async function handleIniciar(...args) {
         throw new Error('Não foi possível salvar a pontuação da Liga.');
     }
 
-    // ============================================================
-    // PAINEL DA LIGA — ATUALIZAR SOMENTE DEPOIS DE TUDO SALVO
-    // ============================================================
-    // O core trabalha com arquivos temporários. Portanto, atualizar o painel
-    // dentro do core fazia o painel ler os pontos antigos. Agora o painel só
-    // é atualizado depois que partidas.json e pontuacao.json permanentes já
-    // foram gravados com sucesso.
     try {
         await painelMod(args[0]?.guild || args[1]?.guild);
         console.log('[LIGA] Painel principal atualizado após contabilização.');
     } catch (erroPainel) {
-        // A partida já foi salva; falha no painel não deve desfazer o resultado.
         console.error('[LIGA] Erro ao atualizar painel após contabilização:', erroPainel);
     }
 };

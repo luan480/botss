@@ -1,0 +1,152 @@
+name: Reparar Liga e Interacoes
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    if: "!contains(github.event.head_commit.message, '[skip repair]')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Aplicar correcoes
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace(path, old, new):
+              p = Path(path)
+              s = p.read_text(encoding='utf-8')
+              if old not in s:
+                  raise SystemExit(f'Padrao nao encontrado em {path}')
+              p.write_text(s.replace(old, new, 1), encoding='utf-8')
+
+          replace('commands/liga/handlers/handleIniciarCore.js', '''            const mentions = msgJogadores
+                .first()
+                .mentions
+                .users
+                .filter(usuario => !usuario.bot);
+
+            if (mentions.size === 6) {''', '''            const mensagemJogadores = msgJogadores?.first();
+
+            if (!mensagemJogadores) {
+                await topico.send('❌ Não recebi a mensagem dos jogadores. Tente novamente.');
+                continue;
+            }
+
+            const mentions = mensagemJogadores.mentions?.users
+                ?.filter(usuario => !usuario.bot) || new Map();
+
+            if (mentions.size === 6) {''')
+
+          replace('commands/promocao/promotionHandler.js', '''            if (interaction.isAutocomplete() && interaction.commandName === 'hall-gerenciar') {
+                const comando = client.commands?.get('hall-gerenciar');
+                if (comando?.autocomplete) {
+                    return await comando.autocomplete(interaction);
+                }
+                return interaction.respond([]).catch(() => {});
+            }
+
+''', '')
+
+          replace('commands/promocao/promotionHandler.js', '''            if (interaction.isAutocomplete()) {
+                return interaction.respond([]).catch(() => {});
+            }
+
+''', '')
+
+          replace('commands/promocao/statusHandler.js', '''    if (interaction.isUserSelectMenu() && customId === 'stt_menu_sel') {
+        const targetUserId = interaction.values[0];''', '''    if (interaction.isUserSelectMenu() && customId === 'stt_menu_sel') {
+        if (interaction.replied || interaction.deferred) return;
+        await interaction.deferUpdate().catch(() => {});
+        if (interaction.replied && !interaction.deferred) return;
+
+        const targetUserId = interaction.values[0];''')
+
+          replace('commands/promocao/statusHandler.js', '''            return interaction.update({
+                content: `❌ <@${targetUserId}> não possui facção ou registro na Carreira Militar.`,
+                components: [],
+                embeds: []
+            });''', '''            return interaction.editReply({
+                content: `❌ <@${targetUserId}> não possui facção ou registro na Carreira Militar.`,
+                components: [],
+                embeds: []
+            });''')
+
+          replace('commands/promocao/statusHandler.js', '''        await interaction.update({
+            content: '', // Limpa a pergunta
+            embeds: [embedFicha],
+            components: [] // Remove o menu
+        });''', '''        await interaction.editReply({
+            content: '', // Limpa a pergunta
+            embeds: [embedFicha],
+            components: [] // Remove o menu
+        });''')
+
+          replace('commands/adm/autoResponseHandler.js', '''        } catch (e) { console.error('[Auto-Resposta] MessageCreate:', e.message); }
+    });''', '''        } catch (e) {
+            // A mensagem pode ser apagada entre o evento e o reply.
+            // 10008 / MESSAGE_REFERENCE_UNKNOWN_MESSAGE não é erro funcional.
+            if (e?.code !== 10008 && !String(e?.message || '').includes('MESSAGE_REFERENCE_UNKNOWN_MESSAGE')) {
+                console.error('[Auto-Resposta] MessageCreate:', e.message);
+            }
+        }
+    });''')
+
+          replace('commands/liga/painelCore.js', '''const CANAL_PAINEL_LIGA = '1543636868682354748';
+
+function rankingAtual() {
+    try {
+        const reparados = migracaoLiga.executar();
+        if (reparados > 0) console.log(`[LIGA] ${reparados} registros com pontos ausentes foram reparados.`);
+    } catch (erro) {
+        console.error('[LIGA] Migração automática de integridade falhou:', erro);
+    }
+
+    const dados = safeReadJson(pontuacaoPath) || {};''', '''const CANAL_PAINEL_LIGA = '1543636868682354748';
+
+let migracaoExecutada = false;
+
+function executarMigracaoUmaVez() {
+    if (migracaoExecutada) return;
+    migracaoExecutada = true;
+    try {
+        const reparados = migracaoLiga.executar();
+        if (reparados > 0) console.log(`[LIGA] ${reparados} registros com pontos ausentes foram reparados.`);
+    } catch (erro) {
+        migracaoExecutada = false;
+        console.error('[LIGA] Migração automática de integridade falhou:', erro);
+    }
+}
+
+function rankingAtual() {
+    executarMigracaoUmaVez();
+    const dados = safeReadJson(pontuacaoPath) || {};''')
+          PY
+
+      - name: Verificar sintaxe
+        run: |
+          node --check commands/liga/handlers/handleIniciarCore.js
+          node --check commands/promocao/promotionHandler.js
+          node --check commands/promocao/statusHandler.js
+          node --check commands/adm/autoResponseHandler.js
+          node --check commands/liga/painelCore.js
+
+      - name: Commit das correcoes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add commands .github/workflows/reparar-liga.yml
+          git diff --cached --quiet && exit 0
+          git commit -m "fix: reparar Liga e interacoes [skip repair]"
+          git push
+
+      - name: Remover workflow temporario
+        if: success()
+        run: |
+          git rm .github/workflows/reparar-liga.yml || true
+          git diff --cached --quiet || (git commit -m "chore: remover workflow temporario [skip repair]" && git push)

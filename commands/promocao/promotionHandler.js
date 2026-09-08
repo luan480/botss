@@ -74,13 +74,9 @@ function registrarHallHandler(client) {
                 // Não bloquear aqui para evitar duplicar a configuração.
             }
 
-            if (interaction.isAutocomplete() && interaction.commandName === 'hall-gerenciar') {
-                const comando = client.commands?.get('hall-gerenciar');
-                if (comando?.autocomplete) {
-                    return await comando.autocomplete(interaction);
-                }
-                return interaction.respond([]).catch(() => {});
-            }
+            // AUTOCOMPLETE É TRATADO EXCLUSIVAMENTE PELO index.js.
+            // Manter um segundo respond() aqui causava Unknown interaction (10062).
+            if (interaction.isAutocomplete()) return;
 
             const customId = interaction.customId || '';
             const ehHallGerenciamento =
@@ -94,11 +90,9 @@ function registrarHallHandler(client) {
                 return await comando.handler(interaction);
             }
         } catch (erro) {
-            console.error('[HALL] Erro no autocomplete/gerenciamento:', erro);
+            console.error('[HALL] Erro no gerenciamento:', erro);
 
-            if (interaction.isAutocomplete()) {
-                return interaction.respond([]).catch(() => {});
-            }
+            if (interaction.isAutocomplete()) return;
 
             if (interaction.isRepliable() && !interaction.replied && !interaction.deferred) {
                 return interaction.reply({

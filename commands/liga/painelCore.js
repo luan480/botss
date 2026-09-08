@@ -26,12 +26,58 @@ const partidasPath = path.join(base, 'partidas.json');
 const temporadaPath = path.join(base, 'temporada.json');
 const painelPath = path.join(base, 'painel.json');
 const CANAL_PAINEL_LIGA = '1543636868682354748';
+const META_EDICAO_DIRETA = 'manualEdicaoDiretaV1';
 
-// A integridade e a pontuação materializada são sincronizadas uma vez por
-// processo. Assim o painel não mantém um saldo antigo depois de uma mudança
-// no histórico, inclusive após anulação de partida.
 let integridadeExecutada = false;
 let pontuacaoSincronizada = false;
+
+function numero(valor) {
+    const n = Number(valor);
+    return Number.isFinite(n) ? n : 0;
+}
+
+function idValido(id) {
+    return /^\d{17,20}$/.test(String(id || ''));
+}
+
+function capturarEdicoesManuaisDiretas() {
+    const dados = safeReadJson(pontuacaoPath) || {};
+    if (dados?._ligaMeta?.[META_EDICAO_DIRETA] !== true) return;
+
+    const historico = pontuacaoLiga.calcularEstatisticasTemporada(
+        partidasPath,
+        temporadaPath
+    );
+
+    let alterou = false;
+
+    for (const [id, perfil] of Object.entries(dados)) {
+        if (!idValido(id) || !perfil || typeof perfil !== 'object') continue;
+
+        const baseHistorica = numero(historico[id]?.pontos);
+        const pontosAtuais = numero(perfil.pontos ?? perfil.ptsLiga ?? perfil.pontuacao);
+        const ajusteAtual = pontosAtuais - baseHistorica;
+
+        // O próprio bot já materializa exatamente esta relação. Portanto,
+        // qualquer diferença encontrada aqui representa uma edição feita
+        // diretamente no pontuacao.json e deve virar ajuste manual.
+        const ajusteSalvo = perfil.ajusteManual === true
+            ? numero(perfil.ajusteManualValor)
+            : 0;
+
+        if (perfil.ajusteManual !== true || ajusteSalvo !== ajusteAtual) {
+            perfil.ajusteManual = true;
+            perfil.ajusteManualValor = ajusteAtual;
+            perfil.ajusteManualEm = new Date().toISOString();
+            perfil.ajusteManualPor = 'edicao direta em pontuacao.json';
+            alterou = true;
+        }
+    }
+
+    if (alterou) {
+        safeWriteJson(pontuacaoPath, dados);
+    }
+}
 
 function prepararEstadoUmaVez() {
     if (!integridadeExecutada) {
@@ -49,17 +95,44 @@ function prepararEstadoUmaVez() {
 
     if (!pontuacaoSincronizada) {
         try {
-            pontuacaoLiga.sincronizarArquivo(
-                pontuacaoPath,
-                partidasPath,
-                temporadaPath
-            );
+            const dados = safeReadJson(pontuacaoPath) || {};
+            const inicializado = dados?._ligaMeta?.[META_EDICAO_DIRETA] === true;
+
+            // Primeira inicialização: limpa os "pontos" antigos/stale e grava
+            // a base correta do histórico. Depois disso, diferenças editadas
+            // diretamente pelo administrador passam a ser ajustes manuais.
+            if (!inicializado) {
+                pontuacaoLiga.sincronizarArquivo(
+                    pontuacaoPath,
+                    partidasPath,
+                    temporadaPath
+                );
+
+                const atualizado = safeReadJson(pontuacaoPath) || {};
+                atualizado._ligaMeta = {
+                    ...(atualizado._ligaMeta || {}),
+                    [META_EDICAO_DIRETA]: true
+                };
+                safeWriteJson(pontuacaoPath, atualizado);
+            } else {
+                capturarEdicoesManuaisDiretas();
+                pontuacaoLiga.sincronizarArquivo(
+                    pontuacaoPath,
+                    partidasPath,
+                    temporadaPath
+                );
+            }
+
             pontuacaoSincronizada = true;
         } catch (erro) {
             console.error('[LIGA] Sincronização automática da pontuação falhou:', erro);
             throw erro;
         }
     }
+
+    // Permite que uma edição feita no GitHub/arquivo local seja reconhecida
+    // mesmo depois que o processo já sincronizou a pontuação uma vez.
+    capturarEdicoesManuaisDiretas();
 }
 
 function rankingAtual() {

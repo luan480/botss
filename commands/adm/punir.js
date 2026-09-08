@@ -18,6 +18,11 @@ const TEMPOS_PROGRESSIVOS = [60 * 60 * 1000, 2 * 60 * 60 * 1000, 4 * 60 * 60 * 1
 const PONTOS_PROGRESSIVOS = [20, 40, 80, 160];
 const TRES_MESES_MS = 90 * 24 * 60 * 60 * 1000;
 
+function numero(valor) {
+    const n = Number(valor);
+    return Number.isFinite(n) ? n : 0;
+}
+
 function calcularSanacao(d) {
     if (d.ultimaPunicao && Date.now() - d.ultimaPunicao > TRES_MESES_MS) {
         d.mutes = 0;
@@ -27,6 +32,38 @@ function calcularSanacao(d) {
 }
 
 function formatarTempoMs(ms) { return `${ms / (60 * 60 * 1000)} Hora(s)`; }
+
+/**
+ * Aplica uma perda disciplinar como AJUSTE MANUAL.
+ *
+ * pontuacao.json é estruturado. Nunca faça Number(pontuacao[id]) aqui,
+ * porque isso transforma o objeto do jogador em número e destrói o perfil.
+ * O ajuste fica registrado separadamente para sobreviver a uma reconstrução
+ * da pontuação pelo histórico da Liga.
+ */
+function aplicarPerdaLiga(pontuacao, userId, pontosPerdidos) {
+    if (!pontuacao || !userId || pontosPerdidos <= 0) return;
+
+    const id = String(userId);
+    const atual = pontuacao[id] && typeof pontuacao[id] === 'object'
+        ? pontuacao[id]
+        : {};
+
+    const pontosAtuais = numero(atual.pontos ?? atual.ptsLiga ?? atual.pontuacao);
+    const ajusteAnterior = atual.ajusteManual === true
+        ? numero(atual.ajusteManualValor)
+        : 0;
+
+    const novoAjuste = ajusteAnterior - pontosPerdidos;
+
+    atual.pontos = pontosAtuais - pontosPerdidos;
+    atual.ajusteManual = true;
+    atual.ajusteManualValor = novoAjuste;
+    atual.ajusteManualEm = new Date().toISOString();
+    atual.pontosPerdidos = numero(atual.pontosPerdidos) + pontosPerdidos;
+
+    pontuacao[id] = atual;
+}
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -110,8 +147,7 @@ module.exports = {
             } else return interaction.editReply('❌ Tipo de punição inválido.');
 
             if (pontosPerdidos > 0) {
-                const atuais = Number(pontuacao[alvo.id]) || 0;
-                pontuacao[alvo.id] = atuais - pontosPerdidos;
+                aplicarPerdaLiga(pontuacao, alvo.id, pontosPerdidos);
                 if (!safeWriteJson(pontuacaoPath, pontuacao)) throw new Error('Não foi possível salvar a pontuação da Liga.');
             }
             if (!safeWriteJson(punicoesPath, punicoes)) throw new Error('Não foi possível salvar o registro da punição.');

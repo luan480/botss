@@ -34,12 +34,10 @@ function calcularSanacao(d) {
 function formatarTempoMs(ms) { return `${ms / (60 * 60 * 1000)} Hora(s)`; }
 
 /**
- * Aplica uma perda disciplinar como AJUSTE MANUAL.
- *
- * pontuacao.json é estruturado. Nunca faça Number(pontuacao[id]) aqui,
- * porque isso transforma o objeto do jogador em número e destrói o perfil.
- * O ajuste fica registrado separadamente para sobreviver a uma reconstrução
- * da pontuação pelo histórico da Liga.
+ * pontuacao.json usa perfis estruturados.
+ * Uma punição não pertence ao histórico de partidas, então ela é registrada
+ * exclusivamente como ajuste manual. Assim /liga recalcular e sincronizar
+ * preservam a penalidade sem contaminar pontosGanhos/pontosPerdidos históricos.
  */
 function aplicarPerdaLiga(pontuacao, userId, pontosPerdidos) {
     if (!pontuacao || !userId || pontosPerdidos <= 0) return;
@@ -54,14 +52,13 @@ function aplicarPerdaLiga(pontuacao, userId, pontosPerdidos) {
         ? numero(atual.ajusteManualValor)
         : 0;
 
-    const novoAjuste = ajusteAnterior - pontosPerdidos;
-
     atual.pontos = pontosAtuais - pontosPerdidos;
     atual.ajusteManual = true;
-    atual.ajusteManualValor = novoAjuste;
+    atual.ajusteManualValor = ajusteAnterior - pontosPerdidos;
     atual.ajusteManualEm = new Date().toISOString();
-    atual.pontosPerdidos = numero(atual.pontosPerdidos) + pontosPerdidos;
 
+    // NÃO alterar pontosGanhos/pontosPerdidos: esses campos representam
+    // exclusivamente o histórico real das partidas.
     pontuacao[id] = atual;
 }
 

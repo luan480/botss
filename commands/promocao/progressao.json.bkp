@@ -2,7 +2,7 @@
   "357660457458466817": {
     "factionId": "874475520333578310",
     "currentRankId": "874485130964656208",
-    "totalWins": 287,
+    "totalWins": 306,
     "nome": "xubz0",
     "printsProcessados": [
       "1534702411179102310",
@@ -19,24 +19,24 @@
       "1541142289177378836",
       "1544138763758739507"
     ],
-    "vitoriasSemanais": 1,
-    "vitoriasMensais": 13,
-    "killsSemanais": 0,
-    "mortesSemanais": 0,
-    "partidasSemanais": 1,
-    "asiaSemanal": 0,
-    "europaSemanal": 0,
-    "oceaniaSemanal": 0,
+    "vitoriasSemanais": 6,
+    "vitoriasMensais": 18,
+    "killsSemanais": 7,
+    "mortesSemanais": 1,
+    "partidasSemanais": 12,
+    "asiaSemanal": 4,
+    "europaSemanal": 1,
+    "oceaniaSemanal": 6,
     "amsulSemanal": 1,
-    "amnorteSemanal": 0,
-    "africaSemanal": 0,
-    "partidasLigaTotal": 1,
-    "partidasConsideradasLiga": 1
+    "amnorteSemanal": 1,
+    "africaSemanal": 2,
+    "partidasLigaTotal": 12,
+    "partidasConsideradasLiga": 14
   },
   "1349484758769471609": {
     "factionId": "1090063773630484490",
     "currentRankId": "1090081598952702022",
-    "totalWins": 90,
+    "totalWins": 92,
     "nome": "z_coelho_z",
     "printsProcessados": [
       "1534577406315335680",
@@ -76,22 +76,22 @@
     ],
     "vitoriasSemanais": 0,
     "vitoriasMensais": 34,
-    "partidasSemanais": 2,
-    "killsSemanais": 0,
-    "mortesSemanais": 1,
+    "partidasSemanais": 5,
+    "killsSemanais": 1,
+    "mortesSemanais": 3,
     "asiaSemanal": 0,
     "europaSemanal": 0,
     "oceaniaSemanal": 0,
     "amsulSemanal": 0,
     "amnorteSemanal": 0,
     "africaSemanal": 0,
-    "partidasLigaTotal": 1,
-    "partidasConsideradasLiga": 1
+    "partidasLigaTotal": 4,
+    "partidasConsideradasLiga": 4
   },
   "730550615251615824": {
     "factionId": "1090063773630484490",
-    "currentRankId": "1090081294756618301",
-    "totalWins": 230,
+    "currentRankId": "1090081200124731442",
+    "totalWins": 257,
     "nome": "ntguilherme1",
     "printsProcessados": [
       "1534719688972697833",
@@ -133,22 +133,24 @@
       "1541320223775395901",
       "1541622040547557417"
     ],
-    "vitoriasSemanais": 4,
-    "vitoriasMensais": 41,
-    "partidasSemanais": 1,
+    "vitoriasSemanais": 7,
+    "vitoriasMensais": 44,
+    "partidasSemanais": 16,
     "oceaniaSemanal": 0,
-    "africaSemanal": 0,
-    "killsSemanais": 3,
-    "mortesSemanais": 0,
-    "asiaSemanal": 0,
-    "europaSemanal": 0,
-    "amsulSemanal": 0,
-    "amnorteSemanal": 0
+    "africaSemanal": 1,
+    "killsSemanais": 7,
+    "mortesSemanais": 1,
+    "asiaSemanal": 1,
+    "europaSemanal": 3,
+    "amsulSemanal": 5,
+    "amnorteSemanal": 2,
+    "partidasLigaTotal": 15,
+    "partidasConsideradasLiga": 15
   },
   "1135337155376467968": {
     "factionId": "874475515166216273",
     "currentRankId": "874481390635319306",
-    "totalWins": 123,
+    "totalWins": 0,
     "nome": "mathias_3002",
     "vitoriasSemanais": 0,
     "killsSemanais": 0,
@@ -164,23 +166,26 @@
   "804000178742493184": {
     "factionId": "874475517103976478",
     "currentRankId": "874483430761590805",
-    "totalWins": 155,
+    "totalWins": 163,
     "nome": "lexa8700",
-    "vitoriasSemanais": 0,
-    "killsSemanais": 0,
-    "mortesSemanais": 1,
-    "partidasSemanais": 1,
-    "asiaSemanal": 0,
-    "europaSemanal": 0,
+    "vitoriasSemanais": 5,
+    "killsSemanais": 8,
+    "mortesSemanais": 5,
+    "partidasSemanais": 18,
+    "asiaSemanal": 1,
+    "europaSemanal": 1,
     "oceaniaSemanal": 0,
-    "amsulSemanal": 0,
-    "amnorteSemanal": 0,
-    "africaSemanal": 0,
-    "vitoriasMensais": 4,
+    "amsulSemanal": 3,
+    "amnorteSemanal": 2,
+    "africaSemanal": 2,
+    "vitoriasMensais": 9,
     "printsProcessados": [
       "1540058417257783376",
-      "1540591243405295697"
-    ]
+      "1540591243405295697",
+      "1546276903772627034"
+    ],
+    "partidasLigaTotal": 17,
+    "partidasConsideradasLiga": 17
   },
   "883222479617814540": {
     "factionId": "874475515166216273",
@@ -200,8 +205,8 @@
   },
   "456624988636839937": {
     "factionId": "874475517103976478",
-    "currentRankId": "874483430547685476",
-    "totalWins": 146,
+    "currentRankId": "874483430761590805",
+    "totalWins": 157,
     "nome": "mikael_med",
     "printsProcessados": [
       "1535021175086911548",
@@ -221,17 +226,19 @@
       "1541320113905475605",
       "1541621618433064970"
     ],
-    "vitoriasSemanais": 3,
-    "vitoriasMensais": 16,
-    "partidasSemanais": 0,
-    "mortesSemanais": 0,
+    "vitoriasSemanais": 4,
+    "vitoriasMensais": 17,
+    "partidasSemanais": 9,
+    "mortesSemanais": 1,
     "asiaSemanal": 0,
-    "amnorteSemanal": 0,
+    "amnorteSemanal": 1,
     "killsSemanais": 0,
-    "europaSemanal": 0,
-    "oceaniaSemanal": 0,
-    "amsulSemanal": 0,
-    "africaSemanal": 0
+    "europaSemanal": 1,
+    "oceaniaSemanal": 2,
+    "amsulSemanal": 1,
+    "africaSemanal": 3,
+    "partidasLigaTotal": 9,
+    "partidasConsideradasLiga": 9
   },
   "248176536627183618": {
     "factionId": "874475520333578310",
@@ -267,8 +274,8 @@
   },
   "1078687427192955001": {
     "factionId": "874475515166216273",
-    "currentRankId": "874481359836549122",
-    "totalWins": 75,
+    "currentRankId": "874481279842799620",
+    "totalWins": 6,
     "nome": "zsnowzin",
     "vitoriasSemanais": 0,
     "killsSemanais": 0,
@@ -284,7 +291,7 @@
   "521456631427366924": {
     "factionId": "1090063773630484490",
     "currentRankId": "1090081736211308545",
-    "totalWins": 56,
+    "totalWins": 0,
     "nome": "coelho05951",
     "vitoriasSemanais": 0,
     "killsSemanais": 0,
@@ -315,8 +322,8 @@
   },
   "762166522709147649": {
     "factionId": "874475515166216273",
-    "currentRankId": "874481376848646175",
-    "totalWins": 102,
+    "currentRankId": "874481433517899796",
+    "totalWins": 137,
     "nome": "reginaldo0726",
     "printsProcessados": [
       "1535060790212829316",
@@ -338,19 +345,19 @@
       "1544116202391994458",
       "1544116242829283331"
     ],
-    "vitoriasSemanais": 3,
-    "vitoriasMensais": 20,
-    "killsSemanais": 0,
-    "mortesSemanais": 0,
-    "partidasSemanais": 1,
-    "asiaSemanal": 0,
-    "europaSemanal": 0,
-    "oceaniaSemanal": 0,
-    "amsulSemanal": 0,
-    "amnorteSemanal": 0,
-    "africaSemanal": 1,
-    "partidasLigaTotal": 1,
-    "partidasConsideradasLiga": 1
+    "vitoriasSemanais": 16,
+    "vitoriasMensais": 33,
+    "killsSemanais": 17,
+    "mortesSemanais": 13,
+    "partidasSemanais": 47,
+    "asiaSemanal": 6,
+    "europaSemanal": 5,
+    "oceaniaSemanal": 11,
+    "amsulSemanal": 2,
+    "amnorteSemanal": 3,
+    "africaSemanal": 3,
+    "partidasLigaTotal": 47,
+    "partidasConsideradasLiga": 54
   },
   "704450104194498584": {
     "factionId": "874475520333578310",
@@ -371,7 +378,7 @@
   "564467432224456715": {
     "factionId": "874475515166216273",
     "currentRankId": "874481315628593283",
-    "totalWins": 33,
+    "totalWins": 0,
     "nome": "7sasuke",
     "vitoriasSemanais": 0,
     "killsSemanais": 0,
@@ -387,7 +394,7 @@
   "574053222743015474": {
     "factionId": "874475517103976478",
     "currentRankId": "874483363212320779",
-    "totalWins": 33,
+    "totalWins": 40,
     "nome": "sanlps",
     "vitoriasSemanais": 0,
     "killsSemanais": 0,
@@ -514,8 +521,8 @@
   },
   "664581394445631510": {
     "factionId": "874475515166216273",
-    "currentRankId": "874481315628593283",
-    "totalWins": 33,
+    "currentRankId": "874481283131129866",
+    "totalWins": 18,
     "nome": "vhzero7",
     "printsProcessados": [
       "1535905669335613491",
@@ -534,19 +541,19 @@
       "1544152836344909894",
       "1544185879218888764"
     ],
-    "vitoriasSemanais": 5,
-    "vitoriasMensais": 15,
-    "killsSemanais": 1,
-    "mortesSemanais": 0,
-    "partidasSemanais": 1,
-    "asiaSemanal": 0,
-    "europaSemanal": 0,
-    "oceaniaSemanal": 0,
-    "amsulSemanal": 0,
-    "amnorteSemanal": 0,
-    "africaSemanal": 0,
-    "partidasLigaTotal": 1,
-    "partidasConsideradasLiga": 1
+    "vitoriasSemanais": 10,
+    "vitoriasMensais": 20,
+    "killsSemanais": 10,
+    "mortesSemanais": 11,
+    "partidasSemanais": 39,
+    "asiaSemanal": 1,
+    "europaSemanal": 2,
+    "oceaniaSemanal": 2,
+    "amsulSemanal": 6,
+    "amnorteSemanal": 5,
+    "africaSemanal": 6,
+    "partidasLigaTotal": 39,
+    "partidasConsideradasLiga": 45
   },
   "813278974078615572": {
     "factionId": "874475515166216273",
@@ -630,8 +637,8 @@
   },
   "723229341701505074": {
     "factionId": "874475515166216273",
-    "currentRankId": "874481359836549122",
-    "totalWins": 78,
+    "currentRankId": "874481363758243911",
+    "totalWins": 80,
     "nome": "fx_bak",
     "vitoriasSemanais": 0,
     "killsSemanais": 0,
@@ -677,9 +684,9 @@
     "africaSemanal": 0
   },
   "1121202243308372129": {
-    "factionId": "874475515166216273",
-    "currentRankId": "1090081405570138152",
-    "totalWins": 150,
+    "factionId": "1090063773630484490",
+    "currentRankId": "1090081333054804058",
+    "totalWins": 196,
     "nome": "dh_521",
     "printsProcessados": [
       "1535104408516563034",
@@ -716,17 +723,19 @@
       "1540572560213811220",
       "1540715480745250857"
     ],
-    "vitoriasSemanais": 0,
-    "vitoriasMensais": 33,
-    "killsSemanais": 0,
-    "mortesSemanais": 0,
-    "partidasSemanais": 0,
-    "asiaSemanal": 0,
-    "europaSemanal": 0,
-    "oceaniaSemanal": 0,
-    "amsulSemanal": 0,
-    "amnorteSemanal": 0,
-    "africaSemanal": 0
+    "vitoriasSemanais": 11,
+    "vitoriasMensais": 44,
+    "killsSemanais": 13,
+    "mortesSemanais": 6,
+    "partidasSemanais": 41,
+    "asiaSemanal": 2,
+    "europaSemanal": 6,
+    "oceaniaSemanal": 9,
+    "amsulSemanal": 8,
+    "amnorteSemanal": 6,
+    "africaSemanal": 5,
+    "partidasLigaTotal": 41,
+    "partidasConsideradasLiga": 47
   },
   "885585681529839707": {
     "factionId": "874475515166216273",
@@ -842,14 +851,15 @@
   },
   "661661474724511794": {
     "factionId": "874475515166216273",
-    "currentRankId": "1090082022329950229",
-    "totalWins": 8,
+    "currentRankId": "874481279842799620",
+    "totalWins": 9,
     "nome": "marcoalmeida00",
     "printsProcessados": [
-      "1536105591259267183"
+      "1536105591259267183",
+      "1547077618103357500"
     ],
-    "vitoriasSemanais": 0,
-    "vitoriasMensais": 1,
+    "vitoriasSemanais": 1,
+    "vitoriasMensais": 2,
     "killsSemanais": 0,
     "mortesSemanais": 0,
     "partidasSemanais": 0,
@@ -862,17 +872,17 @@
   },
   "1463159230642131134": {
     "factionId": "1090063773630484490",
-    "currentRankId": "1090082022329950229",
-    "totalWins": 9,
+    "currentRankId": "1090082057373372516",
+    "totalWins": 5,
     "nome": "vladimirput0",
     "vitoriasSemanais": 1,
     "killsSemanais": 0,
     "mortesSemanais": 0,
-    "partidasSemanais": 1,
+    "partidasSemanais": 3,
     "asiaSemanal": 0,
     "europaSemanal": 1,
     "oceaniaSemanal": 0,
-    "amsulSemanal": 1,
+    "amsulSemanal": 2,
     "amnorteSemanal": 0,
     "africaSemanal": 1,
     "printsProcessados": [
@@ -880,7 +890,9 @@
       "1538254030642610338",
       "1541541562666848306"
     ],
-    "vitoriasMensais": 3
+    "vitoriasMensais": 3,
+    "partidasLigaTotal": 2,
+    "partidasConsideradasLiga": 2
   },
   "649363398144032768": {
     "factionId": "874475520333578310",
@@ -1304,19 +1316,21 @@
     "nome": "eternodn1533",
     "vitoriasSemanais": 0,
     "killsSemanais": 0,
-    "mortesSemanais": 0,
-    "partidasSemanais": 0,
+    "mortesSemanais": 3,
+    "partidasSemanais": 8,
     "asiaSemanal": 0,
     "europaSemanal": 0,
     "oceaniaSemanal": 0,
     "amsulSemanal": 0,
     "amnorteSemanal": 0,
-    "africaSemanal": 0
+    "africaSemanal": 0,
+    "partidasLigaTotal": 8,
+    "partidasConsideradasLiga": 8
   },
   "864637025433157663": {
-    "factionId": "874475520333578310",
-    "currentRankId": "1090081598952702022",
-    "totalWins": 93,
+    "factionId": "1090063773630484490",
+    "currentRankId": "1090081430895337604",
+    "totalWins": 144,
     "nome": "lil_octu",
     "printsProcessados": [
       "1535110796982489090",
@@ -1358,19 +1372,28 @@
       "1541523381218713721",
       "1541583316195741849",
       "1541592968337821819",
-      "1541609673747075114"
+      "1541609673747075114",
+      "1544738699454189569",
+      "1544786726604644513",
+      "1545269341149339659",
+      "1546149241557225632",
+      "1546442305731559464",
+      "1546686745406341181",
+      "1546687524003385354"
     ],
-    "vitoriasSemanais": 5,
-    "vitoriasMensais": 41,
-    "killsSemanais": 0,
-    "mortesSemanais": 0,
-    "partidasSemanais": 0,
-    "asiaSemanal": 0,
-    "europaSemanal": 0,
-    "oceaniaSemanal": 0,
-    "amsulSemanal": 0,
-    "amnorteSemanal": 0,
-    "africaSemanal": 0
+    "vitoriasSemanais": 20,
+    "vitoriasMensais": 56,
+    "killsSemanais": 9,
+    "mortesSemanais": 2,
+    "partidasSemanais": 25,
+    "asiaSemanal": 4,
+    "europaSemanal": 2,
+    "oceaniaSemanal": 8,
+    "amsulSemanal": 2,
+    "amnorteSemanal": 2,
+    "africaSemanal": 4,
+    "partidasLigaTotal": 25,
+    "partidasConsideradasLiga": 35
   },
   "exemplo_id_usuario": {
     "factionId": "874475520333578310",
@@ -1578,23 +1601,25 @@
   },
   "793899198160437279": {
     "factionId": "874475520333578310",
-    "currentRankId": "874485010755899473",
-    "totalWins": 4,
+    "currentRankId": "874485011288584254",
+    "totalWins": 8,
     "nome": "susu3999",
-    "vitoriasSemanais": 1,
-    "killsSemanais": 0,
-    "mortesSemanais": 0,
-    "partidasSemanais": 0,
-    "asiaSemanal": 0,
-    "europaSemanal": 0,
-    "oceaniaSemanal": 0,
-    "amsulSemanal": 0,
-    "amnorteSemanal": 0,
+    "vitoriasSemanais": 3,
+    "killsSemanais": 2,
+    "mortesSemanais": 7,
+    "partidasSemanais": 21,
+    "asiaSemanal": 1,
+    "europaSemanal": 2,
+    "oceaniaSemanal": 4,
+    "amsulSemanal": 2,
+    "amnorteSemanal": 1,
     "africaSemanal": 0,
     "printsProcessados": [
       "1541555191059587143"
     ],
-    "vitoriasMensais": 1
+    "vitoriasMensais": 3,
+    "partidasLigaTotal": 21,
+    "partidasConsideradasLiga": 26
   },
   "862172254057922570": {
     "factionId": "874475515166216273",
@@ -1763,8 +1788,8 @@
   "455850267464957954": {
     "nome": "belo_777",
     "factionId": "874475515166216273",
-    "currentRankId": "874481262520315934",
-    "totalWins": 5,
+    "currentRankId": "874481279842799620",
+    "totalWins": 9,
     "vitoriasSemanais": 0,
     "vitoriasMensais": 5,
     "printsProcessados": [
@@ -2117,7 +2142,9 @@
     "oceaniaSemanal": 0,
     "amsulSemanal": 0,
     "amnorteSemanal": 0,
-    "africaSemanal": 0
+    "africaSemanal": 0,
+    "partidasLigaTotal": 0,
+    "partidasConsideradasLiga": 1
   },
   "938910535141965904": {
     "factionId": "874475520333578310",
@@ -4588,7 +4615,9 @@
     "amsulSemanal": 0,
     "amnorteSemanal": 0,
     "africaSemanal": 0,
-    "vitoriasMensais": 2
+    "vitoriasMensais": 2,
+    "partidasLigaTotal": 0,
+    "partidasConsideradasLiga": 1
   },
   "397110353881726986": {
     "factionId": "874475515166216273",
@@ -5277,18 +5306,21 @@
   "371459745246347264": {
     "factionId": "874475515166216273",
     "currentRankId": null,
-    "totalWins": 0,
+    "totalWins": 1,
     "nome": "quit_c137",
-    "vitoriasSemanais": 0,
+    "vitoriasSemanais": 1,
     "killsSemanais": 0,
     "mortesSemanais": 0,
-    "partidasSemanais": 0,
+    "partidasSemanais": 1,
     "asiaSemanal": 0,
     "europaSemanal": 0,
     "oceaniaSemanal": 0,
     "amsulSemanal": 0,
     "amnorteSemanal": 0,
-    "africaSemanal": 0
+    "africaSemanal": 0,
+    "vitoriasMensais": 1,
+    "partidasLigaTotal": 1,
+    "partidasConsideradasLiga": 1
   },
   "1201703266841534515": {
     "factionId": "874475520333578310",
@@ -6721,13 +6753,15 @@
     "vitoriasSemanais": 0,
     "killsSemanais": 0,
     "mortesSemanais": 0,
-    "partidasSemanais": 0,
+    "partidasSemanais": 1,
     "asiaSemanal": 0,
     "europaSemanal": 0,
     "oceaniaSemanal": 0,
     "amsulSemanal": 0,
     "amnorteSemanal": 0,
-    "africaSemanal": 0
+    "africaSemanal": 0,
+    "partidasLigaTotal": 1,
+    "partidasConsideradasLiga": 1
   },
   "800404878756413502": {
     "factionId": "874475515166216273",
@@ -7081,7 +7115,7 @@
     "africaSemanal": 0
   },
   "942601546674356275": {
-    "factionId": "874475515166216273",
+    "factionId": null,
     "currentRankId": null,
     "totalWins": 0,
     "nome": "enygma_spike",
@@ -7325,14 +7359,16 @@
     "nome": "arlindobaptista1521",
     "vitoriasSemanais": 0,
     "killsSemanais": 0,
-    "mortesSemanais": 0,
-    "partidasSemanais": 0,
+    "mortesSemanais": 1,
+    "partidasSemanais": 1,
     "asiaSemanal": 0,
     "europaSemanal": 0,
     "oceaniaSemanal": 0,
     "amsulSemanal": 0,
     "amnorteSemanal": 0,
-    "africaSemanal": 0
+    "africaSemanal": 0,
+    "partidasLigaTotal": 1,
+    "partidasConsideradasLiga": 1
   },
   "1031878278941769798": {
     "factionId": "874475515166216273",
@@ -8624,15 +8660,17 @@
     "totalWins": 0,
     "nome": "baixada7",
     "vitoriasSemanais": 0,
-    "killsSemanais": 0,
-    "mortesSemanais": 0,
-    "partidasSemanais": 0,
+    "killsSemanais": 1,
+    "mortesSemanais": 2,
+    "partidasSemanais": 4,
     "asiaSemanal": 0,
     "europaSemanal": 0,
     "oceaniaSemanal": 0,
-    "amsulSemanal": 0,
+    "amsulSemanal": 2,
     "amnorteSemanal": 0,
-    "africaSemanal": 0
+    "africaSemanal": 0,
+    "partidasLigaTotal": 4,
+    "partidasConsideradasLiga": 4
   },
   "1103476135473446912": {
     "factionId": "874475517103976478",
@@ -10865,9 +10903,9 @@
     "africaSemanal": 0
   },
   "763119784954822688": {
-    "factionId": null,
+    "factionId": "1090063773630484490",
     "currentRankId": null,
-    "totalWins": 1,
+    "totalWins": 3,
     "nome": "bbahia",
     "printsProcessados": [
       "1536410510482735275"
@@ -10956,13 +10994,15 @@
     "vitoriasSemanais": 0,
     "killsSemanais": 0,
     "mortesSemanais": 0,
-    "partidasSemanais": 0,
+    "partidasSemanais": 1,
     "asiaSemanal": 0,
     "europaSemanal": 0,
     "oceaniaSemanal": 0,
     "amsulSemanal": 0,
     "amnorteSemanal": 0,
-    "africaSemanal": 0
+    "africaSemanal": 0,
+    "partidasLigaTotal": 1,
+    "partidasConsideradasLiga": 1
   },
   "1099181092126331041": {
     "factionId": "1090063773630484490",
@@ -11100,13 +11140,15 @@
     "vitoriasSemanais": 0,
     "killsSemanais": 0,
     "mortesSemanais": 0,
-    "partidasSemanais": 0,
+    "partidasSemanais": 1,
     "asiaSemanal": 0,
     "europaSemanal": 0,
     "oceaniaSemanal": 0,
     "amsulSemanal": 0,
     "amnorteSemanal": 0,
-    "africaSemanal": 0
+    "africaSemanal": 0,
+    "partidasLigaTotal": 1,
+    "partidasConsideradasLiga": 1
   },
   "482234136757796883": {
     "factionId": "874475520333578310",
@@ -11792,20 +11834,22 @@
     "africaSemanal": 0
   },
   "758118946430910544": {
-    "factionId": "1090063773630484490",
+    "factionId": null,
     "currentRankId": null,
     "totalWins": 0,
     "nome": "joaodiniz21",
     "vitoriasSemanais": 0,
     "killsSemanais": 0,
     "mortesSemanais": 0,
-    "partidasSemanais": 0,
+    "partidasSemanais": 1,
     "asiaSemanal": 0,
     "europaSemanal": 0,
     "oceaniaSemanal": 0,
     "amsulSemanal": 0,
     "amnorteSemanal": 0,
-    "africaSemanal": 0
+    "africaSemanal": 0,
+    "partidasLigaTotal": 1,
+    "partidasConsideradasLiga": 1
   },
   "608796876975636500": {
     "factionId": "874475520333578310",
@@ -12387,15 +12431,17 @@
     "totalWins": 0,
     "nome": "isa6637",
     "vitoriasSemanais": 0,
-    "killsSemanais": 0,
+    "killsSemanais": 1,
     "mortesSemanais": 0,
-    "partidasSemanais": 0,
+    "partidasSemanais": 1,
     "asiaSemanal": 0,
-    "europaSemanal": 0,
+    "europaSemanal": 1,
     "oceaniaSemanal": 0,
     "amsulSemanal": 0,
     "amnorteSemanal": 0,
-    "africaSemanal": 0
+    "africaSemanal": 0,
+    "partidasLigaTotal": 1,
+    "partidasConsideradasLiga": 1
   },
   "1104536636366266481": {
     "factionId": "1090063773630484490",
@@ -13141,7 +13187,9 @@
     "oceaniaSemanal": 0,
     "amsulSemanal": 0,
     "amnorteSemanal": 0,
-    "africaSemanal": 0
+    "africaSemanal": 0,
+    "partidasLigaTotal": 0,
+    "partidasConsideradasLiga": 1
   },
   "706913253493833828": {
     "factionId": "874475520333578310",
@@ -13433,20 +13481,22 @@
     "africaSemanal": 0
   },
   "1394597924041658421": {
-    "factionId": "874475520333578310",
+    "factionId": null,
     "currentRankId": null,
     "totalWins": 0,
     "nome": "heimerzen",
     "vitoriasSemanais": 0,
     "killsSemanais": 0,
-    "mortesSemanais": 0,
-    "partidasSemanais": 0,
+    "mortesSemanais": 1,
+    "partidasSemanais": 1,
     "asiaSemanal": 0,
     "europaSemanal": 0,
     "oceaniaSemanal": 0,
     "amsulSemanal": 0,
     "amnorteSemanal": 0,
-    "africaSemanal": 0
+    "africaSemanal": 0,
+    "partidasLigaTotal": 1,
+    "partidasConsideradasLiga": 1
   },
   "505527029660385280": {
     "factionId": "1090063773630484490",
@@ -13525,7 +13575,9 @@
     "oceaniaSemanal": 0,
     "amsulSemanal": 0,
     "amnorteSemanal": 0,
-    "africaSemanal": 0
+    "africaSemanal": 0,
+    "partidasLigaTotal": 0,
+    "partidasConsideradasLiga": 1
   },
   "889626723359002645": {
     "factionId": "874475520333578310",
@@ -14209,7 +14261,9 @@
     "oceaniaSemanal": 0,
     "amsulSemanal": 0,
     "amnorteSemanal": 0,
-    "africaSemanal": 0
+    "africaSemanal": 0,
+    "partidasLigaTotal": 0,
+    "partidasConsideradasLiga": 1
   },
   "255462242789621760": {
     "factionId": "874475515166216273",
@@ -14379,13 +14433,15 @@
     "vitoriasSemanais": 0,
     "killsSemanais": 0,
     "mortesSemanais": 0,
-    "partidasSemanais": 0,
+    "partidasSemanais": 1,
     "asiaSemanal": 0,
     "europaSemanal": 0,
     "oceaniaSemanal": 0,
     "amsulSemanal": 0,
     "amnorteSemanal": 0,
-    "africaSemanal": 0
+    "africaSemanal": 0,
+    "partidasLigaTotal": 1,
+    "partidasConsideradasLiga": 1
   },
   "395422144282099717": {
     "factionId": "874475515166216273",
@@ -14544,7 +14600,9 @@
     "oceaniaSemanal": 0,
     "amsulSemanal": 0,
     "amnorteSemanal": 0,
-    "africaSemanal": 0
+    "africaSemanal": 0,
+    "partidasLigaTotal": 0,
+    "partidasConsideradasLiga": 1
   },
   "1100241438211571794": {
     "factionId": "874475515166216273",
@@ -15011,7 +15069,7 @@
     "africaSemanal": 0
   },
   "846507078457753630": {
-    "factionId": "1090063773630484490",
+    "factionId": null,
     "currentRankId": null,
     "totalWins": 0,
     "nome": "priorizada",
@@ -15252,8 +15310,8 @@
   },
   "496026963555778562": {
     "factionId": "874475517103976478",
-    "currentRankId": null,
-    "totalWins": 1,
+    "currentRankId": "874483313472053318",
+    "totalWins": 3,
     "nome": "castiel0797",
     "vitoriasSemanais": 0,
     "killsSemanais": 0,
@@ -15412,9 +15470,9 @@
     "africaSemanal": 0
   },
   "327827351377412096": {
-    "factionId": null,
+    "factionId": "1090063773630484490",
     "currentRankId": null,
-    "totalWins": 0,
+    "totalWins": 22,
     "nome": "cowboy4271",
     "vitoriasSemanais": 0,
     "killsSemanais": 0,
@@ -15621,23 +15679,25 @@
   },
   "1176260337004183586": {
     "factionId": "874475515166216273",
-    "currentRankId": "874481262520315934",
-    "totalWins": 5,
+    "currentRankId": "874481333169176576",
+    "totalWins": 45,
     "nome": "tgasparino",
-    "partidasSemanais": 1,
+    "partidasSemanais": 4,
     "killsSemanais": 1,
     "vitoriasSemanais": 0,
     "mortesSemanais": 0,
     "asiaSemanal": 0,
     "europaSemanal": 0,
     "oceaniaSemanal": 0,
-    "amsulSemanal": 0,
-    "amnorteSemanal": 0,
+    "amsulSemanal": 1,
+    "amnorteSemanal": 1,
     "africaSemanal": 0,
     "vitoriasMensais": 4,
     "printsProcessados": [
       "1538565141694783579"
-    ]
+    ],
+    "partidasLigaTotal": 3,
+    "partidasConsideradasLiga": 3
   },
   "766547033732808725": {
     "factionId": "874475515166216273",
@@ -15773,15 +15833,17 @@
     "totalWins": 0,
     "nome": "rjprokaique",
     "vitoriasSemanais": 0,
-    "killsSemanais": 0,
-    "mortesSemanais": 0,
-    "partidasSemanais": 0,
+    "killsSemanais": 1,
+    "mortesSemanais": 1,
+    "partidasSemanais": 2,
     "asiaSemanal": 0,
     "europaSemanal": 0,
-    "oceaniaSemanal": 0,
+    "oceaniaSemanal": 1,
     "amsulSemanal": 0,
     "amnorteSemanal": 0,
-    "africaSemanal": 0
+    "africaSemanal": 0,
+    "partidasLigaTotal": 2,
+    "partidasConsideradasLiga": 2
   },
   "1175830763464298537": {
     "factionId": "1090063773630484490",
@@ -15816,19 +15878,25 @@
   },
   "1147697455610204270": {
     "factionId": "874475520333578310",
-    "currentRankId": null,
-    "totalWins": 0,
+    "currentRankId": "874485010755899473",
+    "totalWins": 4,
     "nome": "luizbrico007",
-    "vitoriasSemanais": 0,
-    "killsSemanais": 0,
-    "mortesSemanais": 0,
-    "partidasSemanais": 0,
+    "vitoriasSemanais": 4,
+    "killsSemanais": 6,
+    "mortesSemanais": 4,
+    "partidasSemanais": 12,
     "asiaSemanal": 0,
     "europaSemanal": 0,
-    "oceaniaSemanal": 0,
-    "amsulSemanal": 0,
+    "oceaniaSemanal": 1,
+    "amsulSemanal": 3,
     "amnorteSemanal": 0,
-    "africaSemanal": 0
+    "africaSemanal": 3,
+    "partidasLigaTotal": 12,
+    "partidasConsideradasLiga": 12,
+    "printsProcessados": [
+      "1545574626824945735"
+    ],
+    "vitoriasMensais": 4
   },
   "1095741179313786920": {
     "factionId": "874475515166216273",
@@ -15895,20 +15963,27 @@
     "africaSemanal": 0
   },
   "1103411145110454426": {
-    "factionId": null,
-    "currentRankId": null,
-    "totalWins": 0,
+    "factionId": "874475517103976478",
+    "currentRankId": "874483316621967392",
+    "totalWins": 7,
     "nome": "brrrzzzz",
-    "vitoriasSemanais": 0,
-    "killsSemanais": 0,
-    "mortesSemanais": 0,
-    "partidasSemanais": 0,
-    "asiaSemanal": 0,
-    "europaSemanal": 0,
-    "oceaniaSemanal": 0,
-    "amsulSemanal": 0,
-    "amnorteSemanal": 0,
-    "africaSemanal": 0
+    "vitoriasSemanais": 7,
+    "killsSemanais": 8,
+    "mortesSemanais": 11,
+    "partidasSemanais": 40,
+    "asiaSemanal": 1,
+    "europaSemanal": 4,
+    "oceaniaSemanal": 4,
+    "amsulSemanal": 3,
+    "amnorteSemanal": 3,
+    "africaSemanal": 2,
+    "partidasLigaTotal": 40,
+    "partidasConsideradasLiga": 46,
+    "printsProcessados": [
+      "1545623278230577282",
+      "1545623349303054461"
+    ],
+    "vitoriasMensais": 7
   },
   "348993337761726467": {
     "factionId": "874475517103976478",
@@ -16438,19 +16513,19 @@
   },
   "965777952455417876": {
     "factionId": "874475517103976478",
-    "currentRankId": "874483316621967392",
-    "totalWins": 8,
+    "currentRankId": "874483317297250314",
+    "totalWins": 10,
     "nome": "tiagostoso2920",
-    "vitoriasSemanais": 0,
-    "killsSemanais": 0,
-    "mortesSemanais": 0,
-    "partidasSemanais": 0,
+    "vitoriasSemanais": 3,
+    "killsSemanais": 3,
+    "mortesSemanais": 8,
+    "partidasSemanais": 19,
     "asiaSemanal": 0,
     "europaSemanal": 0,
-    "oceaniaSemanal": 0,
-    "amsulSemanal": 0,
-    "amnorteSemanal": 0,
-    "africaSemanal": 0,
+    "oceaniaSemanal": 2,
+    "amsulSemanal": 1,
+    "amnorteSemanal": 1,
+    "africaSemanal": 2,
     "printsProcessados": [
       "1537268799156518972",
       "1537919517680861294",
@@ -16461,7 +16536,9 @@
       "1540159841484677200",
       "1540461533232894023"
     ],
-    "vitoriasMensais": 8
+    "vitoriasMensais": 11,
+    "partidasLigaTotal": 19,
+    "partidasConsideradasLiga": 27
   },
   "1460334282382901309": {
     "nome": "risada0973",
@@ -16502,88 +16579,101 @@
     "oceaniaSemanal": 0,
     "amsulSemanal": 0,
     "amnorteSemanal": 0,
-    "africaSemanal": 0
+    "africaSemanal": 0,
+    "factionId": null
   },
   "403361886567137290": {
     "nome": "troskovisk",
     "factionId": "874475515166216273",
     "currentRankId": "874481262520315934",
-    "totalWins": 3,
-    "vitoriasSemanais": 0,
-    "vitoriasMensais": 3,
+    "totalWins": 4,
+    "vitoriasSemanais": 1,
+    "vitoriasMensais": 4,
     "printsProcessados": [
       "1536818230650208297",
-      "1540096610414104636"
+      "1540096610414104636",
+      "1546668402506989718"
     ],
-    "killsSemanais": 0,
-    "mortesSemanais": 1,
-    "partidasSemanais": 1,
+    "killsSemanais": 1,
+    "mortesSemanais": 9,
+    "partidasSemanais": 16,
     "asiaSemanal": 0,
     "europaSemanal": 0,
     "oceaniaSemanal": 0,
-    "amsulSemanal": 0,
+    "amsulSemanal": 1,
     "amnorteSemanal": 0,
-    "africaSemanal": 0
+    "africaSemanal": 0,
+    "partidasLigaTotal": 15,
+    "partidasConsideradasLiga": 15
   },
   "802317302719840316": {
     "nome": "k.erick7",
-    "factionId": null,
+    "factionId": "874475515166216273",
     "currentRankId": "874481262520315934",
-    "totalWins": 1,
-    "vitoriasSemanais": 0,
-    "vitoriasMensais": 1,
+    "totalWins": 3,
+    "vitoriasSemanais": 2,
+    "vitoriasMensais": 3,
     "printsProcessados": [
-      "1536836352329519104"
+      "1536836352329519104",
+      "1545912705981087915"
     ],
-    "killsSemanais": 0,
-    "mortesSemanais": 0,
-    "partidasSemanais": 0,
+    "killsSemanais": 1,
+    "mortesSemanais": 4,
+    "partidasSemanais": 9,
     "asiaSemanal": 0,
-    "europaSemanal": 0,
+    "europaSemanal": 2,
     "oceaniaSemanal": 0,
     "amsulSemanal": 0,
     "amnorteSemanal": 0,
-    "africaSemanal": 0
+    "africaSemanal": 1,
+    "partidasLigaTotal": 9,
+    "partidasConsideradasLiga": 9
   },
   "1526379216952754319": {
     "nome": "luc45antos",
     "factionId": null,
     "currentRankId": "874485010755899473",
-    "totalWins": 1,
+    "totalWins": 2,
     "vitoriasSemanais": 0,
     "vitoriasMensais": 1,
     "printsProcessados": [
       "1536899529289498725"
     ],
-    "killsSemanais": 0,
-    "mortesSemanais": 0,
-    "partidasSemanais": 0,
+    "killsSemanais": 1,
+    "mortesSemanais": 2,
+    "partidasSemanais": 3,
     "asiaSemanal": 0,
     "europaSemanal": 0,
     "oceaniaSemanal": 0,
     "amsulSemanal": 0,
     "amnorteSemanal": 0,
-    "africaSemanal": 0
+    "africaSemanal": 0,
+    "partidasLigaTotal": 3,
+    "partidasConsideradasLiga": 3
   },
   "215158341515608065": {
-    "totalWins": 2,
-    "partidasSemanais": 1,
+    "totalWins": 31,
+    "partidasSemanais": 9,
     "asiaSemanal": 0,
-    "amnorteSemanal": 0,
-    "vitoriasSemanais": 0,
-    "killsSemanais": 0,
-    "mortesSemanais": 0,
-    "europaSemanal": 0,
+    "amnorteSemanal": 1,
+    "vitoriasSemanais": 3,
+    "killsSemanais": 2,
+    "mortesSemanais": 2,
+    "europaSemanal": 1,
     "oceaniaSemanal": 0,
-    "amsulSemanal": 0,
-    "africaSemanal": 0,
+    "amsulSemanal": 4,
+    "africaSemanal": 2,
     "nome": "yamato7043",
     "printsProcessados": [
-      "1538601059302506617"
+      "1538601059302506617",
+      "1544483234241318982",
+      "1544483355964215296"
     ],
-    "vitoriasMensais": 1,
-    "currentRankId": "874481262520315934",
-    "factionId": "874475515166216273"
+    "vitoriasMensais": 4,
+    "currentRankId": "874481283437322321",
+    "factionId": "874475515166216273",
+    "partidasLigaTotal": 8,
+    "partidasConsideradasLiga": 11
   },
   "313460030735253514": {
     "totalWins": 0,
@@ -16708,23 +16798,25 @@
   },
   "256065272853561344": {
     "nome": "maikolyu",
-    "factionId": null,
+    "factionId": "1090063773630484490",
     "currentRankId": "1090082057373372516",
-    "totalWins": 1,
+    "totalWins": 62,
     "vitoriasSemanais": 0,
     "vitoriasMensais": 1,
     "printsProcessados": [
       "1537944162375045230"
     ],
-    "partidasSemanais": 0,
+    "partidasSemanais": 1,
     "amsulSemanal": 0,
-    "mortesSemanais": 0,
+    "mortesSemanais": 1,
     "killsSemanais": 0,
     "asiaSemanal": 0,
     "europaSemanal": 0,
     "oceaniaSemanal": 0,
     "amnorteSemanal": 0,
-    "africaSemanal": 0
+    "africaSemanal": 0,
+    "partidasLigaTotal": 1,
+    "partidasConsideradasLiga": 1
   },
   "243849816721850369": {
     "totalWins": 0,
@@ -16812,7 +16904,7 @@
     "africaSemanal": 0
   },
   "1484350391146516581": {
-    "totalWins": 11,
+    "totalWins": 45,
     "nome": "xxx.xx.1",
     "factionId": "1090063773630484490",
     "printsProcessados": [
@@ -16827,20 +16919,20 @@
       "1540926085284368474",
       "1544399451077087312"
     ],
-    "vitoriasSemanais": 2,
-    "vitoriasMensais": 11,
-    "currentRankId": "1090081988939100240",
-    "partidasSemanais": 1,
-    "mortesSemanais": 0,
-    "killsSemanais": 1,
+    "vitoriasSemanais": 4,
+    "vitoriasMensais": 13,
+    "currentRankId": "1090081759942676480",
+    "partidasSemanais": 10,
+    "mortesSemanais": 4,
+    "killsSemanais": 2,
     "asiaSemanal": 0,
-    "europaSemanal": 0,
+    "europaSemanal": 2,
     "oceaniaSemanal": 1,
-    "amsulSemanal": 0,
-    "amnorteSemanal": 0,
-    "africaSemanal": 0,
-    "partidasLigaTotal": 1,
-    "partidasConsideradasLiga": 1
+    "amsulSemanal": 2,
+    "amnorteSemanal": 1,
+    "africaSemanal": 1,
+    "partidasLigaTotal": 10,
+    "partidasConsideradasLiga": 11
   },
   "1538233170053566566": {
     "totalWins": 0,
@@ -16858,7 +16950,7 @@
     "africaSemanal": 0
   },
   "436322520015044619": {
-    "totalWins": 0,
+    "totalWins": 2,
     "nome": "lennoxplayer",
     "partidasSemanais": 0,
     "mortesSemanais": 0,
@@ -16928,21 +17020,25 @@
     "oceaniaSemanal": 0,
     "amsulSemanal": 0,
     "amnorteSemanal": 0,
-    "africaSemanal": 0
+    "africaSemanal": 0,
+    "factionId": "874475515166216273"
   },
   "402193490055790594": {
     "totalWins": 115,
     "nome": ".lopipo",
     "vitoriasSemanais": 0,
     "killsSemanais": 0,
-    "mortesSemanais": 0,
-    "partidasSemanais": 0,
+    "mortesSemanais": 1,
+    "partidasSemanais": 2,
     "asiaSemanal": 0,
     "europaSemanal": 0,
     "oceaniaSemanal": 0,
     "amsulSemanal": 0,
     "amnorteSemanal": 0,
-    "africaSemanal": 0
+    "africaSemanal": 0,
+    "partidasLigaTotal": 2,
+    "partidasConsideradasLiga": 2,
+    "factionId": "1090063773630484490"
   },
   "848297319602061362": {
     "totalWins": 105,
@@ -16956,30 +17052,33 @@
     "oceaniaSemanal": 0,
     "amsulSemanal": 0,
     "amnorteSemanal": 0,
-    "africaSemanal": 0
+    "africaSemanal": 0,
+    "factionId": "874475520333578310"
   },
   "1456876470210138262": {
     "nome": "monarquinho",
     "factionId": "874475515166216273",
-    "currentRankId": "874481262520315934",
-    "totalWins": 4,
-    "vitoriasSemanais": 1,
-    "vitoriasMensais": 4,
+    "currentRankId": "874481347526279209",
+    "totalWins": 54,
+    "vitoriasSemanais": 8,
+    "vitoriasMensais": 11,
     "printsProcessados": [
       "1538624446280237156",
       "1539714348908552343",
       "1539772849001070644",
       "1543789476323664034"
     ],
-    "partidasSemanais": 0,
-    "killsSemanais": 0,
-    "mortesSemanais": 0,
-    "asiaSemanal": 0,
-    "europaSemanal": 0,
-    "oceaniaSemanal": 0,
-    "amsulSemanal": 0,
-    "amnorteSemanal": 0,
-    "africaSemanal": 0
+    "partidasSemanais": 33,
+    "killsSemanais": 10,
+    "mortesSemanais": 2,
+    "asiaSemanal": 1,
+    "europaSemanal": 1,
+    "oceaniaSemanal": 3,
+    "amsulSemanal": 4,
+    "amnorteSemanal": 2,
+    "africaSemanal": 6,
+    "partidasLigaTotal": 33,
+    "partidasConsideradasLiga": 39
   },
   "633816912048029696": {
     "totalWins": 0,
@@ -17104,7 +17203,9 @@
     "africaSemanal": 0,
     "mortesSemanais": 0,
     "oceaniaSemanal": 0,
-    "amsulSemanal": 0
+    "amsulSemanal": 0,
+    "partidasLigaTotal": 0,
+    "partidasConsideradasLiga": 1
   },
   "825877423886958613": {
     "totalWins": 0,
@@ -17396,24 +17497,28 @@
     "africaSemanal": 0
   },
   "756979020482216076": {
-    "totalWins": 1,
+    "totalWins": 26,
     "nome": ".minipedra",
     "factionId": "874475515166216273",
-    "vitoriasSemanais": 1,
-    "killsSemanais": 0,
-    "mortesSemanais": 0,
-    "partidasSemanais": 0,
+    "vitoriasSemanais": 6,
+    "killsSemanais": 10,
+    "mortesSemanais": 5,
+    "partidasSemanais": 24,
     "asiaSemanal": 0,
-    "europaSemanal": 0,
-    "oceaniaSemanal": 0,
-    "amsulSemanal": 0,
-    "amnorteSemanal": 0,
-    "africaSemanal": 0,
+    "europaSemanal": 1,
+    "oceaniaSemanal": 3,
+    "amsulSemanal": 3,
+    "amnorteSemanal": 2,
+    "africaSemanal": 3,
     "printsProcessados": [
-      "1541217352337596507"
+      "1541217352337596507",
+      "1545163320779341965",
+      "1545199057956241428"
     ],
-    "vitoriasMensais": 1,
-    "currentRankId": "874481262520315934"
+    "vitoriasMensais": 6,
+    "currentRankId": "874481283437322321",
+    "partidasLigaTotal": 24,
+    "partidasConsideradasLiga": 24
   },
   "1207392017970372700": {
     "totalWins": 0,
@@ -17477,7 +17582,7 @@
     "factionId": null
   },
   "257651474903990272": {
-    "totalWins": 0,
+    "totalWins": 1,
     "nome": "furia2464",
     "partidasSemanais": 1
   },
@@ -17487,23 +17592,235 @@
     "factionId": null
   },
   "552700033674379265": {
-    "totalWins": 2,
+    "totalWins": 4,
     "nome": "tarcosbelmonts",
-    "factionId": null,
+    "factionId": "1090063773630484490",
     "printsProcessados": [
       "1541642379906252840",
-      "1541642523020361869"
+      "1541642523020361869",
+      "1545152733257015296"
     ],
-    "vitoriasSemanais": 2,
-    "vitoriasMensais": 2,
-    "currentRankId": "1090082057373372516"
+    "vitoriasSemanais": 4,
+    "vitoriasMensais": 4,
+    "currentRankId": "1090082057373372516",
+    "partidasSemanais": 16,
+    "partidasLigaTotal": 16,
+    "partidasConsideradasLiga": 21,
+    "mortesSemanais": 6,
+    "europaSemanal": 1,
+    "killsSemanais": 5,
+    "amnorteSemanal": 1,
+    "amsulSemanal": 2,
+    "africaSemanal": 1
   },
   "723021581340901397": {
     "totalWins": 0,
     "nome": "murilo_freitas2504",
+    "partidasSemanais": 10,
+    "partidasLigaTotal": 10,
+    "partidasConsideradasLiga": 10,
+    "africaSemanal": 1,
+    "mortesSemanais": 3,
+    "killsSemanais": 1,
+    "oceaniaSemanal": 1
+  },
+  "499308165943525386": {
+    "totalWins": 0,
+    "nome": "bruno_mardegan",
+    "partidasSemanais": 1,
+    "partidasLigaTotal": 1,
+    "partidasConsideradasLiga": 1
+  },
+  "1529544156924481746": {
+    "totalWins": 0,
+    "nome": "mraoba",
+    "partidasSemanais": 4,
+    "partidasLigaTotal": 4,
+    "partidasConsideradasLiga": 4,
+    "mortesSemanais": 2,
+    "killsSemanais": 1,
+    "africaSemanal": 1
+  },
+  "1217706313191129103": {
+    "totalWins": 0,
+    "nome": "qwerasd11m_b665",
+    "partidasSemanais": 1,
+    "partidasLigaTotal": 1,
+    "partidasConsideradasLiga": 1
+  },
+  "1256417776516599910": {
+    "totalWins": 0,
+    "nome": "campoxjoao",
+    "factionId": null
+  },
+  "840412060843507731": {
+    "totalWins": 0,
+    "nome": "barrone1788",
+    "factionId": null
+  },
+  "1532887510370353182": {
+    "totalWins": 0,
+    "nome": "zech.a",
+    "factionId": null
+  },
+  "1545210833729093682": {
+    "totalWins": 0,
+    "nome": "bendenis10",
+    "factionId": null
+  },
+  "701282826506731550": {
+    "totalWins": 0,
+    "nome": "marzeli",
+    "partidasSemanais": 3,
+    "partidasLigaTotal": 3,
+    "partidasConsideradasLiga": 3,
+    "europaSemanal": 1,
+    "mortesSemanais": 1
+  },
+  "491726415126069261": {
+    "totalWins": 0,
+    "nome": "luan_sousa123",
     "partidasSemanais": 1,
     "partidasLigaTotal": 1,
     "partidasConsideradasLiga": 1,
     "mortesSemanais": 1
+  },
+  "1278684997905027162": {
+    "totalWins": 0,
+    "nome": "xnaod",
+    "partidasSemanais": 2,
+    "partidasLigaTotal": 2,
+    "partidasConsideradasLiga": 2,
+    "mortesSemanais": 1
+  },
+  "1042853520451321866": {
+    "totalWins": 0,
+    "nome": "d_e_l_t_4",
+    "factionId": null
+  },
+  "658128254607032320": {
+    "totalWins": 0,
+    "nome": "thiagohowllyng",
+    "factionId": null
+  },
+  "1488907384381247549": {
+    "totalWins": 0,
+    "nome": "erenkids",
+    "factionId": null
+  },
+  "1512077073076977788": {
+    "totalWins": 0,
+    "nome": "ekaaa0750_10991",
+    "factionId": null
+  },
+  "485964560474439700": {
+    "totalWins": 0,
+    "nome": "calango5228",
+    "partidasSemanais": 4,
+    "partidasLigaTotal": 4,
+    "partidasConsideradasLiga": 4,
+    "killsSemanais": 2,
+    "mortesSemanais": 2
+  },
+  "1463739773582708809": {
+    "totalWins": 0,
+    "nome": "aalleencar",
+    "partidasSemanais": 1,
+    "partidasLigaTotal": 1,
+    "partidasConsideradasLiga": 1,
+    "africaSemanal": 1,
+    "amsulSemanal": 1
+  },
+  "1057167178614444153": {
+    "totalWins": 0,
+    "nome": ".delta.r",
+    "factionId": null
+  },
+  "922021827029635102": {
+    "totalWins": 0,
+    "nome": "zyyx._",
+    "factionId": null
+  },
+  "818895188294500362": {
+    "totalWins": 1,
+    "nome": ".neozinha"
+  },
+  "1529205716647280711": {
+    "totalWins": 1,
+    "nome": "xijinping_rustico",
+    "partidasSemanais": 1,
+    "partidasLigaTotal": 1,
+    "partidasConsideradasLiga": 1,
+    "mortesSemanais": 1
+  },
+  "1546428978825400393": {
+    "totalWins": 0,
+    "nome": "henryamerica",
+    "factionId": null
+  },
+  "1132772194443870262": {
+    "totalWins": 29,
+    "nome": "itachinhojiro",
+    "factionId": "1090063773630484490"
+  },
+  "590236764518744065": {
+    "totalWins": 24,
+    "nome": "coleu22k"
+  },
+  "822561061067816961": {
+    "totalWins": 4,
+    "nome": "dantas3518"
+  },
+  "964932986946600990": {
+    "totalWins": 35,
+    "nome": "leshy.7",
+    "factionId": "874475517103976478"
+  },
+  "987761308428541952": {
+    "totalWins": 0,
+    "nome": "bruuunooohhh",
+    "factionId": null
+  },
+  "586608471475093524": {
+    "totalWins": 0,
+    "nome": "brunoteste2853",
+    "factionId": null,
+    "partidasSemanais": 1,
+    "partidasLigaTotal": 1,
+    "partidasConsideradasLiga": 1,
+    "mortesSemanais": 1
+  },
+  "692050228190248971": {
+    "totalWins": 0,
+    "nome": "joaoterrivel",
+    "factionId": null,
+    "partidasSemanais": 1,
+    "partidasLigaTotal": 1,
+    "partidasConsideradasLiga": 1
+  },
+  "932858298259107840": {
+    "totalWins": 0,
+    "nome": "allisongenari4370",
+    "factionId": null
+  },
+  "712648227681468466": {
+    "totalWins": 0,
+    "nome": "bruxo035",
+    "factionId": null
+  },
+  "1540095864859795478": {
+    "totalWins": 0,
+    "nome": "errdex",
+    "factionId": null
+  },
+  "490610999074881547": {
+    "totalWins": 0,
+    "nome": "amaral91",
+    "factionId": null
+  },
+  "1347357751822651402": {
+    "totalWins": 0,
+    "nome": "maur0h",
+    "factionId": null
   }
 }

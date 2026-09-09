@@ -1,5 +1,5 @@
 {
-  "destaque": "🏆 **@Mathias3002** - Campeão do 1° campeonato do servidor!",
+  "destaque": "",
   "liga": [
     {
       "id": "legacy-liga-2022",
@@ -27,7 +27,7 @@
       "meses": [
         "Janeiro: @Vini",
         "Fevereiro: @• NT Guizinho™ 🧛 Millior",
-        "Março: @usuário-desconhecido",
+        "Março: @DasRuas",
         "Abril: @Vini",
         "Maio: @Anarco10",
         "Agosto: @Mikael",
@@ -2955,6 +2955,28 @@
         "id": "1349484758769471609",
         "username": "z_coelho_z"
       }
+    },
+    {
+      "id": "1788816374486-456624988636839937",
+      "categoria": "liga",
+      "tipo": "campeonato",
+      "nome": "Temporada 2026",
+      "participantes": null,
+      "vencedor": null,
+      "segundo": null,
+      "terceiro": null,
+      "premio": null,
+      "valor": null,
+      "descricao": null,
+      "observacoes": null,
+      "imagem": null,
+      "data": "07/09/2026",
+      "horario": "21:26",
+      "registradoPor": {
+        "id": "456624988636839937",
+        "username": "mikael_med"
+      },
+      "timestamp": "2026-09-07T21:26:14.486Z"
     }
   ],
   "imperador": [
@@ -2994,6 +3016,47 @@
         "Setembro: @• NT Guizinho™ 🧛 Millior"
       ],
       "timestamp": "2023-12-31T23:59:59.000Z"
+    },
+    {
+      "chave": "semanal-2026-8-31-2026-9-7",
+      "inicio": "2026-08-31T00:00:00.000Z",
+      "fim": "2026-09-07T00:00:00.000Z",
+      "imperadores": {
+        "europa": "762166522709147649",
+        "asia": "762166522709147649",
+        "africa": "1456876470210138262",
+        "amnorte": "1121202243308372129",
+        "amsul": "1121202243308372129",
+        "oceania": "762166522709147649"
+      },
+      "olimpíadas": "Brasil",
+      "kills": "762166522709147649",
+      "mortes": "1103411145110454426",
+      "partidas": "762166522709147649",
+      "streak": null,
+      "evolucao": "762166522709147649"
+    },
+    {
+      "id": "1788742668350-456624988636839937",
+      "categoria": "imperador",
+      "tipo": "campeonato",
+      "nome": "Temporada 2026",
+      "participantes": null,
+      "vencedor": null,
+      "segundo": null,
+      "terceiro": null,
+      "premio": null,
+      "valor": null,
+      "descricao": null,
+      "observacoes": null,
+      "imagem": null,
+      "data": "07/09/2026",
+      "horario": "00:57",
+      "registradoPor": {
+        "id": "456624988636839937",
+        "username": "mikael_med"
+      },
+      "timestamp": "2026-09-07T00:57:48.350Z"
     }
   ],
   "eventos": [
@@ -3068,5 +3131,15 @@
   "mural": {
     "channelId": "1079671915431608372",
     "messageId": "1541555871581208668"
+  },
+  "paineis": {
+    "hall": {
+      "channelId": "1079671915431608372",
+      "messageId": "1541555871581208668"
+    },
+    "ranking": {
+      "channelId": "1090178120910389349",
+      "messageId": "1544736566021324886"
+    }
   }
 }

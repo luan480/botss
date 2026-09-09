@@ -50,9 +50,7 @@ async function atualizarCargoPatente(member) {
     );
 
     try {
-        if (cargosParaRemover.size > 0) {
-            await member.roles.remove(cargosParaRemover);
-        }
+        if (cargosParaRemover.size > 0) await member.roles.remove(cargosParaRemover);
         await member.roles.add(cargoDiscord);
         console.log(`[CARGOS] ✅ Cargo "${cargoDiscord.name}" (${cargoDiscord.id}) entregue a ${member.user.tag}.`);
         return true;
@@ -64,38 +62,41 @@ async function atualizarCargoPatente(member) {
 
 function registrarHallHandler(client) {
     if (client.__hallManagerInteractionHandler) return;
-
     client.__hallManagerInteractionHandler = true;
 
     client.on('interactionCreate', async interaction => {
         try {
-            if (interaction.guildId && interaction.guildId !== String(interaction.client.config?.guildId || '8496966981924687914')) {
-                // O index.js já faz a validação principal de servidor.
-                // Não bloquear aqui para evitar duplicar a configuração.
-            }
-
-            // AUTOCOMPLETE É TRATADO EXCLUSIVAMENTE PELO index.js.
-            // Manter um segundo respond() aqui causava Unknown interaction (10062).
             if (interaction.isAutocomplete()) return;
 
             const customId = interaction.customId || '';
-            const ehHallGerenciamento =
-                (interaction.isButton() && customId.startsWith('hall_manage_')) ||
-                (interaction.isModalSubmit() && customId.startsWith('hall_edit_submit_'));
+            const hallGerenciar =
+                (interaction.isButton() && customId.startsWith('hallmgr_')) ||
+                (interaction.isModalSubmit() && customId.startsWith('hallmgr_edit:'));
+            const hallAdmin =
+                (interaction.isButton() && customId.startsWith('hallmgr_admin_')) ||
+                (interaction.isModalSubmit() && customId.startsWith('hallmgr_admin_edit_modal_'));
 
-            if (!ehHallGerenciamento) return;
+            if (!hallGerenciar && !hallAdmin) return;
+
+            if (hallAdmin) {
+                const handler = require('./hall-admin-handler.js');
+                return await handler(interaction);
+            }
 
             const comando = client.commands?.get('hall-gerenciar') || require('./hall-gerenciar.js');
-            if (typeof comando.handler === 'function') {
-                return await comando.handler(interaction);
+            const handler = comando?.processarInteracao;
+            if (typeof handler !== 'function') {
+                if (!interaction.replied && !interaction.deferred) {
+                    await interaction.reply({ content: '❌ O gerenciador do Hall da Fama não está disponível.', flags: 64 }).catch(() => {});
+                }
+                return;
             }
+
+            return await handler(interaction);
         } catch (erro) {
             console.error('[HALL] Erro no gerenciamento:', erro);
-
-            if (interaction.isAutocomplete()) return;
-
             if (interaction.isRepliable() && !interaction.replied && !interaction.deferred) {
-                return interaction.reply({
+                await interaction.reply({
                     content: '❌ Ocorreu um erro ao processar o gerenciamento do Hall.',
                     flags: 64
                 }).catch(() => {});
@@ -104,7 +105,7 @@ function registrarHallHandler(client) {
     });
 }
 
-module.exports = (client) => {
+module.exports = client => {
     client.atualizarCargoPatente = atualizarCargoPatente;
     registrarHallHandler(client);
     console.log('✅ Sistema de atribuição de cargos por ID (PromotionHandler) ativado.');

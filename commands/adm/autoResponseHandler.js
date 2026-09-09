@@ -11,7 +11,8 @@
    - resolução ambígua de jogadores;
    - permissões antes de pensamentos automáticos;
    - escrita segura e tratamento explícito de JSON inválido;
-   - limpeza de memória sem crescimento indefinido.
+   - limpeza de memória sem crescimento indefinido;
+   - movimentos de ranking anunciados apenas uma vez por mudança.
    ============================================================================ */
 
 const { Events, ChannelType, PermissionsBitField } = require('discord.js');
@@ -200,9 +201,6 @@ function limparMemoria() {
     for (const [key, when] of mensagensProcessadas) {
         if (agora - when > CONFIG.contextoMs) mensagensProcessadas.delete(key);
     }
-    for (const [key] of ultimoModelo) {
-        if (key.length > 250) ultimoModelo.delete(key);
-    }
 }
 
 function tem(texto, termos) {
@@ -261,10 +259,6 @@ function perfil(id) {
 
 function ranking(limite = CONFIG.maxRanking) {
     try { return estatisticasLiga.rankingPorPontos(limite) || []; } catch { return []; }
-}
-
-function resumo() {
-    try { return estatisticasLiga.resumoLiga() || {}; } catch { return {}; }
 }
 
 function winrate(j) {
@@ -353,15 +347,17 @@ function movimento() {
     caindo.sort((a, b) => b.delta - a.delta);
 
     const ultrapassagens = [];
-    for (let i = 0; i < atualLista.length; i++) {
-        const a = atualLista[i];
-        const oldA = anterior[String(a.id)];
-        if (!oldA) continue;
-        for (let j = i + 1; j < atualLista.length; j++) {
-            const b = atualLista[j];
-            const oldB = anterior[String(b.id)];
-            if (!oldB) continue;
-            if (oldA.posicao > oldB.posicao && i < j) ultrapassagens.push({ acima: a, abaixo: b });
+    let maiorPosicaoAnterior = -Infinity;
+    let maiorJogadorAnterior = null;
+    for (const jogador of atualLista) {
+        const antigo = anterior[String(jogador.id)];
+        if (!antigo) continue;
+        if (maiorJogadorAnterior && num(antigo.posicao) > maiorPosicaoAnterior) {
+            ultrapassagens.push({ acima: jogador, abaixo: maiorJogadorAnterior });
+        }
+        if (num(antigo.posicao) > maiorPosicaoAnterior) {
+            maiorPosicaoAnterior = num(antigo.posicao);
+            maiorJogadorAnterior = jogador;
         }
     }
     return { anterior, atual: atualLista, subindo, caindo, ultrapassagens };
@@ -381,26 +377,72 @@ function garantirSnapshotInicial() {
     return salvarSnapshot();
 }
 
+function carregarInteligencia() {
+    const leitura = lerJsonSeguro(inteligenciaPath, {}, 'auto_inteligencia.json');
+    return leitura.ok ? leitura.data : {};
+}
+
+function hashMovimento(tipo, item) {
+    if (!item?.id) return '';
+    return `${tipo}:${item.id}:${item.posicao}:${item.delta}:${num(item.pontos)}`;
+}
+
+function marcarMovimentosAnunciados(movimentos) {
+    const base = carregarInteligencia();
+    const atuais = Array.isArray(base.movimentosAnunciados) ? base.movimentosAnunciados : [];
+    const set = new Set(atuais);
+    for (const item of movimentos) if (item) set.add(item);
+    base.movimentosAnunciados = [...set].slice(-500);
+    base.ultimaClassificacao = snapshotAtual();
+    base.atualizadoEm = new Date().toISOString();
+    return salvarJsonAtomico(inteligenciaPath, base);
+}
+
 async function analiseRanking(guild) {
     const r = ranking(CONFIG.maxRanking);
     if (!r.length) return null;
     garantirSnapshotInicial();
     const mov = movimento();
+    const inteligencia = carregarInteligencia();
+    const anunciados = new Set(Array.isArray(inteligencia.movimentosAnunciados) ? inteligencia.movimentosAnunciados : []);
     const lider = r[0];
     const segundo = r[1];
     const topKills = [...r].sort((a, b) => num(b.kills) - num(a.kills))[0];
     const ativo = [...r].sort((a, b) => num(b.partidas) - num(a.partidas))[0];
     const win = [...r].filter(j => num(j.partidas) >= 3).sort((a, b) => winrate(b) - winrate(a))[0];
     const opcoes = [];
-    if (mov.subindo[0]) opcoes.push(`🚀 ${await mentionarJogador(guild, mov.subindo[0].id)} subiu **${fmt(mov.subindo[0].delta)} posições** e agora está em **${mov.subindo[0].posicao}º**.`);
-    if (mov.caindo[0]) opcoes.push(`📉 ${await mentionarJogador(guild, mov.caindo[0].id)} caiu **${fmt(mov.caindo[0].delta)} posições** e precisa reagir.`);
-    if (mov.ultrapassagens[0]) opcoes.push(`⚔️ ${await mentionarJogador(guild, mov.ultrapassagens[0].acima.id)} ultrapassou ${await mentionarJogador(guild, mov.ultrapassagens[0].abaixo.id)} no ranking.`);
-    if (lider && segundo) opcoes.push(`👑 O líder é ${await mentionarJogador(guild, lider.id)} com **${fmt(lider.pontos)} pontos**. ${await mentionarJogador(guild, segundo.id)} vem logo atrás com **${fmt(segundo.pontos)}**.`);
-    if (topKills) opcoes.push(`💥 Quem mais elimina no ranking atual é ${await mentionarJogador(guild, topKills.id)} com **${fmt(topKills.kills)} kills**.`);
-    if (ativo) opcoes.push(`🎮 O mais ativo é ${await mentionarJogador(guild, ativo.id)} com **${fmt(ativo.partidas)} partidas**.`);
-    if (win) opcoes.push(`📊 Melhor winrate entre quem tem 3+ partidas: ${await mentionarJogador(guild, win.id)} com **${fmt(winrate(win))}%**.`);
+    const novosHashes = [];
+
+    if (mov.subindo[0]) {
+        const hash = hashMovimento('subiu', mov.subindo[0]);
+        if (!anunciados.has(hash)) {
+            novosHashes.push(hash);
+            opcoes.push(`🚀 ${await mentionarJogador(guild, mov.subindo[0].id)} subiu **${fmt(mov.subindo[0].delta)} posições** e agora está em **${mov.subindo[0].posicao}º**.`);
+        }
+    }
+    if (mov.caindo[0]) {
+        const hash = hashMovimento('caiu', mov.caindo[0]);
+        if (!anunciados.has(hash)) {
+            novosHashes.push(hash);
+            opcoes.push(`📉 ${await mentionarJogador(guild, mov.caindo[0].id)} caiu **${fmt(mov.caindo[0].delta)} posições** e precisa reagir.`);
+        }
+    }
+    if (mov.ultrapassagens[0]) {
+        const item = mov.ultrapassagens[0];
+        const hash = `ultrapassagem:${item.acima.id}:${item.abaixo.id}:${num(item.acima.pontos)}`;
+        if (!anunciados.has(hash)) {
+            novosHashes.push(hash);
+            opcoes.push(`⚔️ ${await mentionarJogador(guild, item.acima.id)} ultrapassou ${await mentionarJogador(guild, item.abaixo.id)} no ranking.`);
+        }
+    }
+
+    if (!opcoes.length && lider && segundo) opcoes.push(`👑 O líder é ${await mentionarJogador(guild, lider.id)} com **${fmt(lider.pontos)} pontos**. ${await mentionarJogador(guild, segundo.id)} vem logo atrás com **${fmt(segundo.pontos)}**.`);
+    if (!opcoes.length && topKills) opcoes.push(`💥 Quem mais elimina no ranking atual é ${await mentionarJogador(guild, topKills.id)} com **${fmt(topKills.kills)} kills**.`);
+    if (!opcoes.length && ativo) opcoes.push(`🎮 O mais ativo é ${await mentionarJogador(guild, ativo.id)} com **${fmt(ativo.partidas)} partidas**.`);
+    if (!opcoes.length && win) opcoes.push(`📊 Melhor winrate entre quem tem 3+ partidas: ${await mentionarJogador(guild, win.id)} com **${fmt(winrate(win))}%**.`);
+
     const resposta = escolher(opcoes, `${guild.id}:analise-liga`);
-    if (resposta) salvarSnapshot();
+    if (resposta) marcarMovimentosAnunciados(novosHashes);
     return resposta;
 }
 

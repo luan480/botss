@@ -8,6 +8,7 @@ const {
 } = require('discord.js');
 const path = require('path');
 const pontuacaoLiga = require('./utils/pontuacaoLiga.js');
+const historico = require('../historico/historico.js');
 
 const base = __dirname;
 const pontuacaoPath = path.join(base, 'pontuacao.json');
@@ -16,7 +17,7 @@ const temporadaPath = path.join(base, 'temporada.json');
 const numero = v => Number.isFinite(Number(v)) ? Number(v) : 0;
 const percentual = (parte, total) => total > 0 ? Number(((parte / total) * 100).toFixed(1)) : 0;
 
-function criarSeletor() {
+function criarSeletorUsuario() {
     return new ActionRowBuilder().addComponents(
         new UserSelectMenuBuilder()
             .setCustomId('estatisticas_usuario')
@@ -26,19 +27,45 @@ function criarSeletor() {
     );
 }
 
-function criarBotoes() {
-    return new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId('estatisticas_selecionar').setLabel('Escolher outro').setEmoji('🔄').setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId('estatisticas_voltar').setLabel('Voltar ao painel').setEmoji('🏠').setStyle(ButtonStyle.Secondary)
+function criarBotoes(userId = null) {
+    const botoes = [];
+
+    if (userId) {
+        botoes.push(
+            new ButtonBuilder()
+                .setCustomId(`estatisticas_historico_${userId}`)
+                .setLabel('Histórico de Partidas')
+                .setEmoji('📜')
+                .setStyle(ButtonStyle.Secondary)
+        );
+    }
+
+    botoes.push(
+        new ButtonBuilder()
+            .setCustomId('estatisticas_selecionar')
+            .setLabel('Escolher outro')
+            .setEmoji('🔄')
+            .setStyle(ButtonStyle.Primary),
+        new ButtonBuilder()
+            .setCustomId('estatisticas_voltar')
+            .setLabel('Voltar ao painel')
+            .setEmoji('🏠')
+            .setStyle(ButtonStyle.Secondary)
     );
+
+    return new ActionRowBuilder().addComponents(botoes);
 }
 
 async function mostrarSelecao(interaction) {
     const payload = {
         content: '',
-        embeds: [new EmbedBuilder().setTitle('📊 ESTATÍSTICAS DA LIGA').setColor('#2ECC71').setDescription('Selecione **um jogador** abaixo para consultar as estatísticas completas da temporada atual.')],
-        components: [criarSeletor()]
+        embeds: [new EmbedBuilder()
+            .setTitle('📊 ESTATÍSTICAS DA LIGA')
+            .setColor('#2ECC71')
+            .setDescription('Selecione **um jogador** abaixo para consultar as estatísticas completas da liga em andamento.')],
+        components: [criarSeletorUsuario()]
     };
+
     if (interaction.deferred || interaction.replied) return interaction.editReply(payload);
     return interaction.reply({ ...payload, flags: MessageFlags.Ephemeral });
 }
@@ -104,17 +131,29 @@ function dominioFavorito(c) {
     return dominios[0]?.[1] > 0 ? `${dominios[0][0]} (**${dominios[0][1]}**)` : 'Nenhum ainda';
 }
 
+function temporadaAtual() {
+    try {
+        const fs = require('fs');
+        const dados = JSON.parse(fs.readFileSync(temporadaPath, 'utf8'));
+        return Number(dados.numero);
+    } catch {
+        return null;
+    }
+}
+
 async function mostrarJogador(interaction, userId) {
-    // O painel, o ranking e esta tela precisam consultar exatamente a mesma
-    // projeção. normalizarTodos reconstrói partidas/estatísticas das partidas
-    // válidas e calcula pontos como histórico + ajuste manual.
     const dados = pontuacaoLiga.carregar(pontuacaoPath);
     const perfis = pontuacaoLiga.normalizarTodos(dados, partidasPath, temporadaPath);
     const jogador = perfis[String(userId)];
     const membro = await interaction.guild.members.fetch(userId).catch(() => null);
+    const temporada = temporadaAtual();
 
     if (!jogador) {
-        return interaction.update({ content: '❌ Esse jogador ainda não possui estatísticas registradas nesta temporada.', embeds: [], components: [criarBotoes()] });
+        return interaction.update({
+            content: '❌ Esse jogador ainda não possui estatísticas registradas na liga em andamento.',
+            embeds: [],
+            components: [criarBotoes()]
+        });
     }
 
     const m = calcularMetricas(jogador);
@@ -124,13 +163,14 @@ async function mostrarJogador(interaction, userId) {
     const perdidos = numero(jogador.pontosPerdidos);
     const warCoins = numero(jogador.warCoins);
     const nome = membro?.displayName || membro?.user?.globalName || membro?.user?.username || jogador.nome || `Usuário ${userId}`;
-    const c = jogador.continentesDetalhes || {};
+    const c = jogador.continentesDetalhes || jogador;
     const titulos = especialidades(m);
 
     const embed = new EmbedBuilder()
         .setTitle(`📊 ESTATÍSTICAS — ${nome}`)
         .setColor('#2ECC71')
         .setDescription(
+            `🏆 **Temporada ${temporada}**\n` +
             `🏆 **${pontos} pts**  •  🎮 **${m.partidas} partidas**  •  📈 **${m.winrate}% winrate**\n` +
             `🥇 **${m.primeiro}**  •  🥈 **${m.segundo}**  •  🥉 **${m.terceiro}**  •  🏅 **${m.podium} pódios** (**${m.taxaPodio}%**)`
         )
@@ -170,19 +210,39 @@ async function mostrarJogador(interaction, userId) {
         })
         .setFooter({ text: 'Liga das Nações • Estatísticas derivadas do histórico válido + ajustes manuais' });
 
-    return interaction.update({ content: '', embeds: [embed], components: [criarBotoes()] });
+    return interaction.update({ content: '', embeds: [embed], components: [criarBotoes(userId)] });
 }
 
 module.exports = async function estatisticasSelecionar(interaction) {
     const id = String(interaction.customId || '');
+
+    if (id.startsWith('estatisticas_historico_paginacao_')) {
+        return historico.tratarPaginacao(interaction);
+    }
+
     if (id === 'estatisticas_selecionar' || id === 'liga_estatisticas' || id.startsWith('liga_estatisticas_prev_') || id.startsWith('liga_estatisticas_next_') || id.startsWith('liga_estatisticas_pagina_')) {
         return mostrarSelecao(interaction);
     }
+
     if (id === 'estatisticas_usuario') {
         const userId = interaction.values?.[0];
         if (!userId) return interaction.reply({ content: '❌ Nenhum jogador foi selecionado.', flags: MessageFlags.Ephemeral });
         return mostrarJogador(interaction, userId);
     }
+
+    if (id.startsWith('estatisticas_historico_')) {
+        const userId = id.replace('estatisticas_historico_', '');
+        if (!/^\d{15,22}$/.test(userId)) {
+            return interaction.reply({
+                content: '❌ Não foi possível identificar o jogador selecionado.',
+                flags: MessageFlags.Ephemeral
+            });
+        }
+
+        // O histórico aberto pelas estatísticas sempre consulta a liga em andamento.
+        return historico.mostrarHistorico(interaction, userId);
+    }
+
     if (id === 'estatisticas_voltar' || id === 'liga_estatisticas_voltar') {
         await interaction.deferUpdate().catch(() => {});
         return require('./painel.js')(interaction.guild, '1543636868682354748');

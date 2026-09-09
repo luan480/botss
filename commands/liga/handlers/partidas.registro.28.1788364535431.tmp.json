@@ -1,0 +1,1482 @@
+{
+  "1544410009797005313": {
+    "adminId": "1484350391146516581",
+    "respostas": {
+      "vencedor": "1484350391146516581",
+      "segundo": "357660457458466817",
+      "terceiro": "664581394445631510",
+      "maisTropas": "1484350391146516581",
+      "modo": "territorios",
+      "abates": [
+        {
+          "matador": "1484350391146516581",
+          "vitima": "1349484758769471609"
+        },
+        {
+          "matador": "664581394445631510",
+          "vitima": "723021581340901397"
+        }
+      ],
+      "continentes": [
+        {
+          "cont": "oceania",
+          "dono": "1484350391146516581"
+        },
+        {
+          "cont": "africa",
+          "dono": "762166522709147649"
+        },
+        {
+          "cont": "amsul",
+          "dono": "357660457458466817"
+        }
+      ]
+    },
+    "jogadoresBrutos": [
+      {
+        "id": "357660457458466817",
+        "username": "xubz0"
+      },
+      {
+        "id": "762166522709147649",
+        "username": "reginaldo0726"
+      },
+      {
+        "id": "1484350391146516581",
+        "username": "xxx.xx.1"
+      },
+      {
+        "id": "723021581340901397",
+        "username": "murilo_freitas2504"
+      },
+      {
+        "id": "664581394445631510",
+        "username": "vhzero7"
+      },
+      {
+        "id": "1349484758769471609",
+        "username": "z_coelho_z"
+      }
+    ],
+    "pontos": {
+      "357660457458466817": {
+        "ptsLiga": 17,
+        "wcRecebido": 1700,
+        "vitoria": 0,
+        "migradoEm": "2026-09-01T23:10:08.183Z"
+      },
+      "762166522709147649": {
+        "ptsLiga": 8,
+        "wcRecebido": 800,
+        "vitoria": 0,
+        "migradoEm": "2026-09-01T23:10:08.183Z"
+      },
+      "1484350391146516581": {
+        "ptsLiga": 42,
+        "wcRecebido": 4200,
+        "vitoria": 1,
+        "migradoEm": "2026-09-01T23:10:08.183Z"
+      },
+      "723021581340901397": {
+        "ptsLiga": -15,
+        "wcRecebido": 0,
+        "vitoria": 0,
+        "migradoEm": "2026-09-01T23:10:08.183Z"
+      },
+      "664581394445631510": {
+        "ptsLiga": 20,
+        "wcRecebido": 2000,
+        "vitoria": 0,
+        "migradoEm": "2026-09-01T23:10:08.183Z"
+      },
+      "1349484758769471609": {
+        "ptsLiga": -15,
+        "wcRecebido": 0,
+        "vitoria": 0,
+        "migradoEm": "2026-09-01T23:10:08.183Z"
+      }
+    },
+    "meta": {
+      "limiteLiga": 80,
+      "registradaEm": 1788286441577
+    }
+  },
+  "1544410639114567700": {
+    "adminId": "1349484758769471609",
+    "respostas": {
+      "vencedor": "664581394445631510",
+      "segundo": "730550615251615824",
+      "terceiro": "762166522709147649",
+      "maisTropas": "664581394445631510",
+      "modo": "territorios",
+      "abates": [
+        {
+          "matador": "762166522709147649",
+          "vitima": "965777952455417876"
+        },
+        {
+          "matador": "730550615251615824",
+          "vitima": "552700033674379265"
+        }
+      ],
+      "continentes": [
+        {
+          "cont": "asia",
+          "dono": "664581394445631510"
+        },
+        {
+          "cont": "oceania",
+          "dono": "664581394445631510"
+        },
+        {
+          "cont": "amsul",
+          "dono": "730550615251615824"
+        }
+      ]
+    },
+    "jogadoresBrutos": [
+      {
+        "id": "552700033674379265",
+        "username": "tarcosbelmonts"
+      },
+      {
+        "id": "762166522709147649",
+        "username": "reginaldo0726"
+      },
+      {
+        "id": "730550615251615824",
+        "username": "ntguilherme1"
+      },
+      {
+        "id": "965777952455417876",
+        "username": "tiagostoso2920"
+      },
+      {
+        "id": "664581394445631510",
+        "username": "vhzero7"
+      },
+      {
+        "id": "793899198160437279",
+        "username": "susu3999"
+      }
+    ],
+    "pontos": {
+      "552700033674379265": {
+        "ptsLiga": -15,
+        "wcRecebido": 0,
+        "vitoria": 0,
+        "migradoEm": "2026-09-01T23:10:08.183Z"
+      },
+      "762166522709147649": {
+        "ptsLiga": 20,
+        "wcRecebido": 2000,
+        "vitoria": 0,
+        "migradoEm": "2026-09-01T23:10:08.183Z"
+      },
+      "730550615251615824": {
+        "ptsLiga": 27,
+        "wcRecebido": 2700,
+        "vitoria": 0,
+        "migradoEm": "2026-09-01T23:10:08.183Z"
+      },
+      "965777952455417876": {
+        "ptsLiga": -15,
+        "wcRecebido": 0,
+        "vitoria": 0,
+        "migradoEm": "2026-09-01T23:10:08.183Z"
+      },
+      "664581394445631510": {
+        "ptsLiga": 39,
+        "wcRecebido": 3900,
+        "vitoria": 1,
+        "migradoEm": "2026-09-01T23:10:08.184Z"
+      },
+      "793899198160437279": {
+        "ptsLiga": 5,
+        "wcRecebido": 500,
+        "vitoria": 0,
+        "migradoEm": "2026-09-01T23:10:08.184Z"
+      }
+    },
+    "meta": {
+      "limiteLiga": 80,
+      "registradaEm": 1788286590648
+    }
+  },
+  "1544484529811628045": {
+    "adminId": "664581394445631510",
+    "respostas": {
+      "vencedor": "762166522709147649",
+      "segundo": "965777952455417876",
+      "terceiro": "1484350391146516581",
+      "maisTropas": "762166522709147649",
+      "modo": "objetivo",
+      "abates": [],
+      "continentes": [
+        {
+          "cont": "amnorte",
+          "dono": "762166522709147649"
+        },
+        {
+          "cont": "europa",
+          "dono": "1484350391146516581"
+        },
+        {
+          "cont": "africa",
+          "dono": "723021581340901397"
+        }
+      ]
+    },
+    "jogadoresBrutos": [
+      {
+        "id": "762166522709147649",
+        "username": "reginaldo0726"
+      },
+      {
+        "id": "1484350391146516581",
+        "username": "xxx.xx.1"
+      },
+      {
+        "id": "965777952455417876",
+        "username": "tiagostoso2920"
+      },
+      {
+        "id": "723021581340901397",
+        "username": "murilo_freitas2504"
+      },
+      {
+        "id": "664581394445631510",
+        "username": "vhzero7"
+      },
+      {
+        "id": "793899198160437279",
+        "username": "susu3999"
+      }
+    ],
+    "pontos": {
+      "762166522709147649": {
+        "ptsLiga": 45,
+        "wcRecebido": 4500,
+        "vitoria": 1,
+        "migradoEm": "2026-09-01T23:15:58.844Z"
+      },
+      "1484350391146516581": {
+        "ptsLiga": 15,
+        "wcRecebido": 1500,
+        "vitoria": 0,
+        "migradoEm": "2026-09-01T23:15:58.844Z"
+      },
+      "965777952455417876": {
+        "ptsLiga": 15,
+        "wcRecebido": 1500,
+        "vitoria": 0,
+        "migradoEm": "2026-09-01T23:15:58.844Z"
+      },
+      "723021581340901397": {
+        "ptsLiga": 8,
+        "wcRecebido": 800,
+        "vitoria": 0,
+        "migradoEm": "2026-09-01T23:15:58.844Z"
+      },
+      "664581394445631510": {
+        "ptsLiga": 5,
+        "wcRecebido": 500,
+        "vitoria": 0,
+        "migradoEm": "2026-09-01T23:15:58.844Z"
+      },
+      "793899198160437279": {
+        "ptsLiga": 5,
+        "wcRecebido": 500,
+        "vitoria": 0,
+        "migradoEm": "2026-09-01T23:15:58.844Z"
+      }
+    },
+    "meta": {
+      "limiteLiga": 80,
+      "registradaEm": 1788304208179
+    }
+  },
+  "1544486000107986964": {
+    "adminId": "215158341515608065",
+    "respostas": {
+      "vencedor": "215158341515608065",
+      "segundo": "762166522709147649",
+      "terceiro": "403361886567137290",
+      "maisTropas": "1121202243308372129",
+      "modo": "territorios",
+      "abates": [
+        {
+          "matador": "762166522709147649",
+          "vitima": "965777952455417876"
+        },
+        {
+          "matador": "762166522709147649",
+          "vitima": "664581394445631510"
+        }
+      ],
+      "continentes": [
+        {
+          "cont": "amsul",
+          "dono": "215158341515608065"
+        },
+        {
+          "cont": "amnorte",
+          "dono": "215158341515608065"
+        }
+      ]
+    },
+    "jogadoresBrutos": [
+      {
+        "id": "215158341515608065",
+        "username": "yamato7043"
+      },
+      {
+        "id": "762166522709147649",
+        "username": "reginaldo0726"
+      },
+      {
+        "id": "1121202243308372129",
+        "username": "dh_521"
+      },
+      {
+        "id": "403361886567137290",
+        "username": "troskovisk"
+      },
+      {
+        "id": "965777952455417876",
+        "username": "tiagostoso2920"
+      },
+      {
+        "id": "664581394445631510",
+        "username": "vhzero7"
+      }
+    ],
+    "pontos": {
+      "215158341515608065": {
+        "ptsLiga": 32,
+        "wcRecebido": 3200,
+        "vitoria": 1,
+        "migradoEm": "2026-09-01T23:24:39.944Z"
+      },
+      "762166522709147649": {
+        "ptsLiga": 35,
+        "wcRecebido": 3500,
+        "vitoria": 0,
+        "migradoEm": "2026-09-01T23:24:39.944Z"
+      },
+      "1121202243308372129": {
+        "ptsLiga": 10,
+        "wcRecebido": 1000,
+        "vitoria": 0,
+        "migradoEm": "2026-09-01T23:24:39.944Z"
+      },
+      "403361886567137290": {
+        "ptsLiga": 10,
+        "wcRecebido": 1000,
+        "vitoria": 0,
+        "migradoEm": "2026-09-01T23:24:39.944Z"
+      },
+      "965777952455417876": {
+        "ptsLiga": -15,
+        "wcRecebido": 0,
+        "vitoria": 0,
+        "migradoEm": "2026-09-01T23:24:39.944Z"
+      },
+      "664581394445631510": {
+        "ptsLiga": -15,
+        "wcRecebido": 0,
+        "vitoria": 0,
+        "migradoEm": "2026-09-01T23:24:39.944Z"
+      }
+    },
+    "meta": {
+      "limiteLiga": 80,
+      "registradaEm": 1788304558842
+    }
+  },
+  "1544488178029690910": {
+    "adminId": "762166522709147649",
+    "respostas": {
+      "vencedor": "762166522709147649",
+      "segundo": "664581394445631510",
+      "terceiro": "965777952455417876",
+      "maisTropas": "664581394445631510",
+      "modo": "territorios",
+      "abates": [
+        {
+          "matador": "664581394445631510",
+          "vitima": "1394597924041658421"
+        }
+      ],
+      "continentes": [
+        {
+          "cont": "europa",
+          "dono": "762166522709147649"
+        },
+        {
+          "cont": "amnorte",
+          "dono": "965777952455417876"
+        },
+        {
+          "cont": "africa",
+          "dono": "664581394445631510"
+        },
+        {
+          "cont": "amsul",
+          "dono": "664581394445631510"
+        }
+      ]
+    },
+    "jogadoresBrutos": [
+      {
+        "id": "762166522709147649",
+        "username": "reginaldo0726"
+      },
+      {
+        "id": "1484350391146516581",
+        "username": "xxx.xx.1"
+      },
+      {
+        "id": "965777952455417876",
+        "username": "tiagostoso2920"
+      },
+      {
+        "id": "1394597924041658421",
+        "username": "heimerzen"
+      },
+      {
+        "id": "723021581340901397",
+        "username": "murilo_freitas2504"
+      },
+      {
+        "id": "664581394445631510",
+        "username": "vhzero7"
+      }
+    ],
+    "pontos": {
+      "762166522709147649": {
+        "ptsLiga": 30,
+        "wcRecebido": 3000,
+        "vitoria": 1,
+        "migradoEm": "2026-09-02T00:09:07.274Z"
+      },
+      "1484350391146516581": {
+        "ptsLiga": 5,
+        "wcRecebido": 500,
+        "vitoria": 0,
+        "migradoEm": "2026-09-02T00:09:07.274Z"
+      },
+      "965777952455417876": {
+        "ptsLiga": 15,
+        "wcRecebido": 1500,
+        "vitoria": 0,
+        "migradoEm": "2026-09-02T00:09:07.274Z"
+      },
+      "1394597924041658421": {
+        "ptsLiga": -15,
+        "wcRecebido": 0,
+        "vitoria": 0,
+        "migradoEm": "2026-09-02T00:09:07.274Z"
+      },
+      "723021581340901397": {
+        "ptsLiga": 5,
+        "wcRecebido": 500,
+        "vitoria": 0,
+        "migradoEm": "2026-09-02T00:09:07.274Z"
+      },
+      "664581394445631510": {
+        "ptsLiga": 35,
+        "wcRecebido": 3500,
+        "vitoria": 0,
+        "migradoEm": "2026-09-02T00:09:07.274Z"
+      }
+    },
+    "meta": {
+      "limiteLiga": 80,
+      "registradaEm": 1788305079939
+    }
+  },
+  "1544501228556390420": {
+    "adminId": "1121202243308372129",
+    "respostas": {
+      "vencedor": "1121202243308372129",
+      "segundo": "0",
+      "terceiro": "499308165943525386",
+      "maisTropas": "1121202243308372129",
+      "modo": "objetivo",
+      "abates": [
+        {
+          "matador": "1121202243308372129",
+          "vitima": "1526379216952754319"
+        },
+        {
+          "matador": "1121202243308372129",
+          "vitima": "965777952455417876"
+        },
+        {
+          "matador": "1121202243308372129",
+          "vitima": "664581394445631510"
+        },
+        {
+          "matador": "1121202243308372129",
+          "vitima": "793899198160437279"
+        }
+      ],
+      "continentes": [
+        {
+          "cont": "asia",
+          "dono": "1121202243308372129"
+        },
+        {
+          "cont": "amnorte",
+          "dono": "1121202243308372129"
+        },
+        {
+          "cont": "europa",
+          "dono": "1121202243308372129"
+        },
+        {
+          "cont": "africa",
+          "dono": "1121202243308372129"
+        },
+        {
+          "cont": "amsul",
+          "dono": "1121202243308372129"
+        },
+        {
+          "cont": "oceania",
+          "dono": "1121202243308372129"
+        }
+      ]
+    },
+    "jogadoresBrutos": [
+      {
+        "id": "1121202243308372129",
+        "username": "dh_521"
+      },
+      {
+        "id": "499308165943525386",
+        "username": "bruno_mardegan"
+      },
+      {
+        "id": "1526379216952754319",
+        "username": "luc45antos"
+      },
+      {
+        "id": "965777952455417876",
+        "username": "tiagostoso2920"
+      },
+      {
+        "id": "664581394445631510",
+        "username": "vhzero7"
+      },
+      {
+        "id": "793899198160437279",
+        "username": "susu3999"
+      }
+    ],
+    "pontos": {
+      "1121202243308372129": {
+        "ptsLiga": 104,
+        "wcRecebido": 10400,
+        "vitoria": 1,
+        "migradoEm": "2026-09-02T00:17:41.614Z"
+      },
+      "499308165943525386": {
+        "ptsLiga": 10,
+        "wcRecebido": 1000,
+        "vitoria": 0,
+        "migradoEm": "2026-09-02T00:17:41.614Z"
+      },
+      "1526379216952754319": {
+        "ptsLiga": -15,
+        "wcRecebido": 0,
+        "vitoria": 0,
+        "migradoEm": "2026-09-02T00:17:41.614Z"
+      },
+      "965777952455417876": {
+        "ptsLiga": -15,
+        "wcRecebido": 0,
+        "vitoria": 0,
+        "migradoEm": "2026-09-02T00:17:41.614Z"
+      },
+      "664581394445631510": {
+        "ptsLiga": -15,
+        "wcRecebido": 0,
+        "vitoria": 0,
+        "migradoEm": "2026-09-02T00:17:41.614Z"
+      },
+      "793899198160437279": {
+        "ptsLiga": -15,
+        "wcRecebido": 0,
+        "vitoria": 0,
+        "migradoEm": "2026-09-02T00:17:41.614Z"
+      }
+    },
+    "meta": {
+      "limiteLiga": 80,
+      "registradaEm": 1788308193345
+    }
+  },
+  "1544507695858589766": {
+    "adminId": "762166522709147649",
+    "respostas": {
+      "vencedor": "762166522709147649",
+      "segundo": "664581394445631510",
+      "terceiro": "965777952455417876",
+      "maisTropas": "664581394445631510",
+      "modo": "territorios",
+      "abates": [
+        {
+          "matador": "664581394445631510",
+          "vitima": "403361886567137290"
+        },
+        {
+          "matador": "762166522709147649",
+          "vitima": "723021581340901397"
+        }
+      ],
+      "continentes": [
+        {
+          "cont": "europa",
+          "dono": "664581394445631510"
+        },
+        {
+          "cont": "africa",
+          "dono": "664581394445631510"
+        },
+        {
+          "cont": "oceania",
+          "dono": "762166522709147649"
+        }
+      ]
+    },
+    "jogadoresBrutos": [
+      {
+        "id": "762166522709147649",
+        "username": "reginaldo0726"
+      },
+      {
+        "id": "403361886567137290",
+        "username": "troskovisk"
+      },
+      {
+        "id": "965777952455417876",
+        "username": "tiagostoso2920"
+      },
+      {
+        "id": "723021581340901397",
+        "username": "murilo_freitas2504"
+      },
+      {
+        "id": "664581394445631510",
+        "username": "vhzero7"
+      },
+      {
+        "id": "1456876470210138262",
+        "username": "monarquinho"
+      }
+    ],
+    "pontos": {
+      "762166522709147649": {
+        "ptsLiga": 37,
+        "wcRecebido": 3700,
+        "vitoria": 1,
+        "migradoEm": "2026-09-02T00:54:01.056Z"
+      },
+      "403361886567137290": {
+        "ptsLiga": -15,
+        "wcRecebido": 0,
+        "vitoria": 0,
+        "migradoEm": "2026-09-02T00:54:01.056Z"
+      },
+      "965777952455417876": {
+        "ptsLiga": 10,
+        "wcRecebido": 1000,
+        "vitoria": 0,
+        "migradoEm": "2026-09-02T00:54:01.056Z"
+      },
+      "723021581340901397": {
+        "ptsLiga": -15,
+        "wcRecebido": 0,
+        "vitoria": 0,
+        "migradoEm": "2026-09-02T00:54:01.056Z"
+      },
+      "664581394445631510": {
+        "ptsLiga": 38,
+        "wcRecebido": 3800,
+        "vitoria": 0,
+        "migradoEm": "2026-09-02T00:54:01.056Z"
+      },
+      "1456876470210138262": {
+        "ptsLiga": 5,
+        "wcRecebido": 500,
+        "vitoria": 0,
+        "migradoEm": "2026-09-02T00:54:01.056Z"
+      }
+    },
+    "meta": {
+      "limiteLiga": 80,
+      "registradaEm": 1788309731351
+    },
+    "anulada": true,
+    "anuladaEm": "2026-09-02T03:57:42.896Z",
+    "anuladaPor": "456624988636839937",
+    "motivoAnulacao": "Anulação manual pela Liga"
+  },
+  "1544521555344625748": {
+    "adminId": "357660457458466817",
+    "respostas": {
+      "vencedor": "357660457458466817",
+      "segundo": "965777952455417876",
+      "terceiro": "1121202243308372129",
+      "maisTropas": "357660457458466817",
+      "modo": "objetivo",
+      "abates": [
+        {
+          "matador": "357660457458466817",
+          "vitima": "804000178742493184"
+        },
+        {
+          "matador": "357660457458466817",
+          "vitima": "456624988636839937"
+        }
+      ],
+      "continentes": [
+        {
+          "cont": "asia",
+          "dono": "357660457458466817"
+        },
+        {
+          "cont": "amnorte",
+          "dono": "357660457458466817"
+        },
+        {
+          "cont": "oceania",
+          "dono": "357660457458466817"
+        },
+        {
+          "cont": "africa",
+          "dono": "965777952455417876"
+        },
+        {
+          "cont": "amsul",
+          "dono": "965777952455417876"
+        }
+      ]
+    },
+    "jogadoresBrutos": [
+      {
+        "id": "804000178742493184",
+        "username": "lexa8700"
+      },
+      {
+        "id": "357660457458466817",
+        "username": "xubz0"
+      },
+      {
+        "id": "1121202243308372129",
+        "username": "dh_521"
+      },
+      {
+        "id": "456624988636839937",
+        "username": "mikael_med"
+      },
+      {
+        "id": "965777952455417876",
+        "username": "tiagostoso2920"
+      },
+      {
+        "id": "793899198160437279",
+        "username": "susu3999"
+      }
+    ],
+    "pontos": {
+      "804000178742493184": {
+        "ptsLiga": -15,
+        "wcRecebido": 0,
+        "vitoria": 0,
+        "migradoEm": "2026-09-02T02:05:01.989Z"
+      },
+      "357660457458466817": {
+        "ptsLiga": 74,
+        "wcRecebido": 7400,
+        "vitoria": 1,
+        "migradoEm": "2026-09-02T02:05:01.989Z"
+      },
+      "1121202243308372129": {
+        "ptsLiga": 10,
+        "wcRecebido": 1000,
+        "vitoria": 0,
+        "migradoEm": "2026-09-02T02:05:01.990Z"
+      },
+      "456624988636839937": {
+        "ptsLiga": -15,
+        "wcRecebido": 0,
+        "vitoria": 0,
+        "migradoEm": "2026-09-02T02:05:01.990Z"
+      },
+      "965777952455417876": {
+        "ptsLiga": 20,
+        "wcRecebido": 2000,
+        "vitoria": 0,
+        "migradoEm": "2026-09-02T02:05:01.990Z"
+      },
+      "793899198160437279": {
+        "ptsLiga": 5,
+        "wcRecebido": 500,
+        "vitoria": 0,
+        "migradoEm": "2026-09-02T02:05:01.990Z"
+      }
+    },
+    "meta": {
+      "limiteLiga": 80,
+      "registradaEm": 1788313035683
+    }
+  },
+  "1544528539724947520": {
+    "adminId": "1456876470210138262",
+    "respostas": {
+      "vencedor": "1456876470210138262",
+      "segundo": "1121202243308372129",
+      "terceiro": "552700033674379265",
+      "maisTropas": "1121202243308372129",
+      "modo": "objetivo",
+      "abates": [],
+      "continentes": []
+    },
+    "jogadoresBrutos": [
+      {
+        "id": "552700033674379265",
+        "username": "tarcosbelmonts"
+      },
+      {
+        "id": "1121202243308372129",
+        "username": "dh_521"
+      },
+      {
+        "id": "965777952455417876",
+        "username": "tiagostoso2920"
+      },
+      {
+        "id": "1456876470210138262",
+        "username": "monarquinho"
+      },
+      {
+        "id": "864637025433157663",
+        "username": "lil_octu"
+      },
+      {
+        "id": "793899198160437279",
+        "username": "susu3999"
+      }
+    ],
+    "pontos": {
+      "552700033674379265": {
+        "ptsLiga": 10,
+        "wcRecebido": 1000,
+        "vitoria": 0,
+        "migradoEm": "2026-09-02T03:14:42.032Z"
+      },
+      "1121202243308372129": {
+        "ptsLiga": 20,
+        "wcRecebido": 2000,
+        "vitoria": 0,
+        "migradoEm": "2026-09-02T03:14:42.032Z"
+      },
+      "965777952455417876": {
+        "ptsLiga": 5,
+        "wcRecebido": 500,
+        "vitoria": 0,
+        "migradoEm": "2026-09-02T03:14:42.032Z"
+      },
+      "1456876470210138262": {
+        "ptsLiga": 35,
+        "wcRecebido": 3500,
+        "vitoria": 1,
+        "migradoEm": "2026-09-02T03:14:42.032Z"
+      },
+      "864637025433157663": {
+        "ptsLiga": 5,
+        "wcRecebido": 500,
+        "vitoria": 0,
+        "migradoEm": "2026-09-02T03:14:42.032Z"
+      },
+      "793899198160437279": {
+        "ptsLiga": 5,
+        "wcRecebido": 500,
+        "vitoria": 0,
+        "migradoEm": "2026-09-02T03:14:42.032Z"
+      }
+    },
+    "meta": {
+      "limiteLiga": 80,
+      "registradaEm": 1788314701987
+    },
+    "anulada": true,
+    "anuladaEm": "2026-09-02T03:51:32.553Z",
+    "anuladaPor": "456624988636839937",
+    "motivoAnulacao": "Anulação manual pela Liga"
+  },
+  "1544546073178284054": {
+    "adminId": "762166522709147649",
+    "respostas": {
+      "vencedor": "762166522709147649",
+      "segundo": "664581394445631510",
+      "terceiro": "403361886567137290",
+      "maisTropas": "762166522709147649",
+      "modo": "objetivo",
+      "abates": [
+        {
+          "matador": "762166522709147649",
+          "vitima": "1103411145110454426"
+        },
+        {
+          "matador": "762166522709147649",
+          "vitima": "793899198160437279"
+        }
+      ],
+      "continentes": [
+        {
+          "cont": "europa",
+          "dono": "762166522709147649"
+        },
+        {
+          "cont": "amsul",
+          "dono": "664581394445631510"
+        }
+      ]
+    },
+    "jogadoresBrutos": [
+      {
+        "id": "762166522709147649",
+        "username": "reginaldo0726"
+      },
+      {
+        "id": "403361886567137290",
+        "username": "troskovisk"
+      },
+      {
+        "id": "965777952455417876",
+        "username": "tiagostoso2920"
+      },
+      {
+        "id": "664581394445631510",
+        "username": "vhzero7"
+      },
+      {
+        "id": "1103411145110454426",
+        "username": "brrrzzzz"
+      },
+      {
+        "id": "793899198160437279",
+        "username": "susu3999"
+      }
+    ],
+    "pontos": {
+      "762166522709147649": {
+        "ptsLiga": 65,
+        "wcRecebido": 6500,
+        "vitoria": 1,
+        "migradoEm": "2026-09-02T03:20:25.279Z"
+      },
+      "403361886567137290": {
+        "ptsLiga": 10,
+        "wcRecebido": 1000,
+        "vitoria": 0,
+        "migradoEm": "2026-09-02T03:20:25.279Z"
+      },
+      "965777952455417876": {
+        "ptsLiga": 5,
+        "wcRecebido": 500,
+        "vitoria": 0,
+        "migradoEm": "2026-09-02T03:20:25.279Z"
+      },
+      "664581394445631510": {
+        "ptsLiga": 17,
+        "wcRecebido": 1700,
+        "vitoria": 0,
+        "migradoEm": "2026-09-02T03:20:25.279Z"
+      },
+      "1103411145110454426": {
+        "ptsLiga": -15,
+        "wcRecebido": 0,
+        "vitoria": 0,
+        "migradoEm": "2026-09-02T03:20:25.279Z"
+      },
+      "793899198160437279": {
+        "ptsLiga": -15,
+        "wcRecebido": 0,
+        "vitoria": 0,
+        "migradoEm": "2026-09-02T03:20:25.279Z"
+      }
+    },
+    "meta": {
+      "limiteLiga": 80,
+      "registradaEm": 1788318882029
+    }
+  },
+  "1544547882818994247": {
+    "adminId": "762166522709147649",
+    "respostas": {
+      "vencedor": "762166522709147649",
+      "segundo": "357660457458466817",
+      "terceiro": "804000178742493184",
+      "maisTropas": "357660457458466817",
+      "modo": "objetivo",
+      "abates": [
+        {
+          "matador": "1349484758769471609",
+          "vitima": "756979020482216076"
+        },
+        {
+          "matador": "762166522709147649",
+          "vitima": "1349484758769471609"
+        }
+      ],
+      "continentes": [
+        {
+          "cont": "oceania",
+          "dono": "762166522709147649"
+        },
+        {
+          "cont": "amsul",
+          "dono": "762166522709147649"
+        },
+        {
+          "cont": "europa",
+          "dono": "357660457458466817"
+        },
+        {
+          "cont": "africa",
+          "dono": "730550615251615824"
+        }
+      ]
+    },
+    "jogadoresBrutos": [
+      {
+        "id": "804000178742493184",
+        "username": "lexa8700"
+      },
+      {
+        "id": "762166522709147649",
+        "username": "reginaldo0726"
+      },
+      {
+        "id": "357660457458466817",
+        "username": "xubz0"
+      },
+      {
+        "id": "756979020482216076",
+        "username": ".minipedra"
+      },
+      {
+        "id": "730550615251615824",
+        "username": "ntguilherme1"
+      },
+      {
+        "id": "1349484758769471609",
+        "username": "z_coelho_z"
+      }
+    ],
+    "pontos": {
+      "804000178742493184": {
+        "ptsLiga": 10,
+        "wcRecebido": 1000,
+        "vitoria": 0,
+        "migradoEm": "2026-09-02T03:49:39.554Z"
+      },
+      "762166522709147649": {
+        "ptsLiga": 49,
+        "wcRecebido": 4900,
+        "vitoria": 1,
+        "migradoEm": "2026-09-02T03:49:39.554Z"
+      },
+      "357660457458466817": {
+        "ptsLiga": 25,
+        "wcRecebido": 2500,
+        "vitoria": 0,
+        "migradoEm": "2026-09-02T03:49:39.554Z"
+      },
+      "756979020482216076": {
+        "ptsLiga": -15,
+        "wcRecebido": 0,
+        "vitoria": 0,
+        "migradoEm": "2026-09-02T03:49:39.555Z"
+      },
+      "730550615251615824": {
+        "ptsLiga": 8,
+        "wcRecebido": 800,
+        "vitoria": 0,
+        "migradoEm": "2026-09-02T03:49:39.555Z"
+      },
+      "1349484758769471609": {
+        "ptsLiga": -5,
+        "wcRecebido": 0,
+        "vitoria": 0,
+        "migradoEm": "2026-09-02T03:49:39.555Z"
+      }
+    },
+    "meta": {
+      "limiteLiga": 80,
+      "registradaEm": 1788319313133
+    }
+  },
+  "1544554873113288726": {
+    "adminId": "1456876470210138262",
+    "respostas": {
+      "vencedor": "1456876470210138262",
+      "segundo": "1121202243308372129",
+      "terceiro": "552700033674379265",
+      "maisTropas": "1121202243308372129",
+      "modo": "objetivo",
+      "abates": [
+        {
+          "matador": "1456876470210138262",
+          "vitima": "793899198160437279"
+        }
+      ],
+      "continentes": [
+        {
+          "cont": "africa",
+          "dono": "1456876470210138262"
+        },
+        {
+          "cont": "amnorte",
+          "dono": "1121202243308372129"
+        },
+        {
+          "cont": "europa",
+          "dono": "552700033674379265"
+        }
+      ]
+    },
+    "jogadoresBrutos": [
+      {
+        "id": "1121202243308372129",
+        "username": "dh_521"
+      },
+      {
+        "id": "552700033674379265",
+        "username": "tarcosbelmonts"
+      },
+      {
+        "id": "965777952455417876",
+        "username": "tiagostoso2920"
+      },
+      {
+        "id": "1456876470210138262",
+        "username": "monarquinho"
+      },
+      {
+        "id": "864637025433157663",
+        "username": "lil_octu"
+      },
+      {
+        "id": "793899198160437279",
+        "username": "susu3999"
+      }
+    ],
+    "pontos": {
+      "1121202243308372129": {
+        "ptsLiga": 25,
+        "wcRecebido": 2500,
+        "vitoria": 0,
+        "migradoEm": "2026-09-02T03:50:12.626Z"
+      },
+      "552700033674379265": {
+        "ptsLiga": 15,
+        "wcRecebido": 1500,
+        "vitoria": 0,
+        "migradoEm": "2026-09-02T03:50:12.626Z"
+      },
+      "965777952455417876": {
+        "ptsLiga": 5,
+        "wcRecebido": 500,
+        "vitoria": 0,
+        "migradoEm": "2026-09-02T03:50:12.626Z"
+      },
+      "1456876470210138262": {
+        "ptsLiga": 48,
+        "wcRecebido": 4800,
+        "vitoria": 1,
+        "migradoEm": "2026-09-02T03:50:12.626Z"
+      },
+      "864637025433157663": {
+        "ptsLiga": 5,
+        "wcRecebido": 500,
+        "vitoria": 0,
+        "migradoEm": "2026-09-02T03:50:12.626Z"
+      },
+      "793899198160437279": {
+        "ptsLiga": -15,
+        "wcRecebido": 0,
+        "vitoria": 0,
+        "migradoEm": "2026-09-02T03:50:12.626Z"
+      }
+    },
+    "meta": {
+      "limiteLiga": 80,
+      "registradaEm": 1788320979551
+    },
+    "anulada": true,
+    "anuladaEm": "2026-09-02T03:56:28.867Z",
+    "anuladaPor": "456624988636839937",
+    "motivoAnulacao": "Anulação manual pela Liga"
+  },
+  "1544733279289090060": {
+    "adminId": "357660457458466817",
+    "respostas": {
+      "vencedor": "357660457458466817",
+      "segundo": "452995021688537109",
+      "terceiro": "723021581340901397",
+      "maisTropas": "357660457458466817",
+      "modo": "objetivo",
+      "abates": [
+        {
+          "matador": "357660457458466817",
+          "vitima": "793899198160437279"
+        },
+        {
+          "matador": "357660457458466817",
+          "vitima": "1529544156924481746"
+        },
+        {
+          "matador": "723021581340901397",
+          "vitima": "1103411145110454426"
+        }
+      ],
+      "continentes": [
+        {
+          "cont": "africa",
+          "dono": "357660457458466817"
+        },
+        {
+          "cont": "oceania",
+          "dono": "357660457458466817"
+        },
+        {
+          "cont": "amsul",
+          "dono": "452995021688537109"
+        }
+      ]
+    },
+    "jogadoresBrutos": [
+      {
+        "id": "357660457458466817",
+        "username": "xubz0"
+      },
+      {
+        "id": "1529544156924481746",
+        "username": "mraoba"
+      },
+      {
+        "id": "723021581340901397",
+        "username": "murilo_freitas2504"
+      },
+      {
+        "id": "452995021688537109",
+        "username": "baixada7"
+      },
+      {
+        "id": "1103411145110454426",
+        "username": "brrrzzzz"
+      },
+      {
+        "id": "793899198160437279",
+        "username": "susu3999"
+      }
+    ],
+    "pontos": {
+      "357660457458466817": {
+        "ptsLiga": 65,
+        "wcRecebido": 6500,
+        "vitoria": 1,
+        "migradoEm": "2026-09-02T15:43:04.419Z"
+      },
+      "1529544156924481746": {
+        "ptsLiga": -15,
+        "wcRecebido": 0,
+        "vitoria": 0,
+        "migradoEm": "2026-09-02T15:43:04.419Z"
+      },
+      "723021581340901397": {
+        "ptsLiga": 20,
+        "wcRecebido": 2000,
+        "vitoria": 0,
+        "migradoEm": "2026-09-02T15:43:04.419Z"
+      },
+      "452995021688537109": {
+        "ptsLiga": 17,
+        "wcRecebido": 1700,
+        "vitoria": 0,
+        "migradoEm": "2026-09-02T15:43:04.419Z"
+      },
+      "1103411145110454426": {
+        "ptsLiga": -15,
+        "wcRecebido": 0,
+        "vitoria": 0,
+        "migradoEm": "2026-09-02T15:43:04.419Z"
+      },
+      "793899198160437279": {
+        "ptsLiga": -15,
+        "wcRecebido": 0,
+        "vitoria": 0,
+        "migradoEm": "2026-09-02T15:43:04.419Z"
+      }
+    },
+    "meta": {
+      "limiteLiga": 80,
+      "registradaEm": 1788363519226
+    }
+  },
+  "1544734410123902987": {
+    "adminId": "357660457458466817",
+    "respostas": {
+      "vencedor": "357660457458466817",
+      "segundo": "865062063424143390",
+      "terceiro": "664581394445631510",
+      "maisTropas": "357660457458466817",
+      "modo": "objetivo",
+      "abates": [
+        {
+          "matador": "865062063424143390",
+          "vitima": "723021581340901397"
+        },
+        {
+          "matador": "664581394445631510",
+          "vitima": "452995021688537109"
+        }
+      ],
+      "continentes": [
+        {
+          "cont": "asia",
+          "dono": "357660457458466817"
+        },
+        {
+          "cont": "oceania",
+          "dono": "357660457458466817"
+        },
+        {
+          "cont": "europa",
+          "dono": "865062063424143390"
+        },
+        {
+          "cont": "amsul",
+          "dono": "664581394445631510"
+        }
+      ]
+    },
+    "jogadoresBrutos": [
+      {
+        "id": "357660457458466817",
+        "username": "xubz0"
+      },
+      {
+        "id": "452995021688537109",
+        "username": "baixada7"
+      },
+      {
+        "id": "723021581340901397",
+        "username": "murilo_freitas2504"
+      },
+      {
+        "id": "664581394445631510",
+        "username": "vhzero7"
+      },
+      {
+        "id": "865062063424143390",
+        "username": "isa6637"
+      },
+      {
+        "id": "793899198160437279",
+        "username": "susu3999"
+      }
+    ],
+    "pontos": {
+      "357660457458466817": {
+        "ptsLiga": 49,
+        "wcRecebido": 4900,
+        "vitoria": 1,
+        "migradoEm": "2026-09-02T15:53:21.082Z"
+      },
+      "452995021688537109": {
+        "ptsLiga": -15,
+        "wcRecebido": 0,
+        "vitoria": 0,
+        "migradoEm": "2026-09-02T15:53:21.082Z"
+      },
+      "723021581340901397": {
+        "ptsLiga": -15,
+        "wcRecebido": 0,
+        "vitoria": 0,
+        "migradoEm": "2026-09-02T15:53:21.082Z"
+      },
+      "664581394445631510": {
+        "ptsLiga": 22,
+        "wcRecebido": 2200,
+        "vitoria": 0,
+        "migradoEm": "2026-09-02T15:53:21.082Z"
+      },
+      "865062063424143390": {
+        "ptsLiga": 30,
+        "wcRecebido": 3000,
+        "vitoria": 0,
+        "migradoEm": "2026-09-02T15:53:21.082Z"
+      },
+      "793899198160437279": {
+        "ptsLiga": 5,
+        "wcRecebido": 500,
+        "vitoria": 0,
+        "migradoEm": "2026-09-02T15:53:21.082Z"
+      }
+    },
+    "meta": {
+      "limiteLiga": 80,
+      "registradaEm": 1788363784417
+    }
+  },
+  "1544736993819365488": {
+    "adminId": "1349484758769471609",
+    "respostas": {
+      "vencedor": "371459745246347264",
+      "segundo": "380416025654591490",
+      "terceiro": "1217706313191129103",
+      "maisTropas": "1217706313191129103",
+      "modo": "objetivo",
+      "abates": [],
+      "continentes": []
+    },
+    "jogadoresBrutos": [
+      {
+        "id": "371459745246347264",
+        "username": "quit_c137"
+      },
+      {
+        "id": "380416025654591490",
+        "username": "aquele_cara_la_"
+      },
+      {
+        "id": "1217706313191129103",
+        "username": "qwerasd11m_b665"
+      },
+      {
+        "id": "911630970749349968",
+        "username": "quinalle5220"
+      },
+      {
+        "id": "734149613631701013",
+        "username": "queronescau003"
+      },
+      {
+        "id": "867809011256262686",
+        "username": "qeiroz"
+      }
+    ],
+    "pontos": {},
+    "meta": {
+      "limiteLiga": 80,
+      "registradaEm": 1788364401078
+    }
+  }
+}

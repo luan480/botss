@@ -204,18 +204,13 @@ function aplicarResultado(perfis, message, estatisticas) {
             perfil.nome = obterNome(message, item.id, item.nome);
         }
 
-        // O total do EXTRATO FINAL é a fonte oficial do saldo.
         perfil.pontos += item.pontos;
 
-        // Ganhos/perdas são os valores BRUTOS de cada componente do extrato,
-        // e não o saldo líquido da linha. Ex.: +10 Abate -15 Morte -15 Morte
-        // => pontos -20, pontosGanhos 10, pontosPerdidos 30.
         const { ganhos, perdas } = extrairGanhosEPerdasDoDetalhamento(item.detalhamento);
         if (item.detalhamento) {
             perfil.pontosGanhos += ganhos;
             perfil.pontosPerdidos += perdas;
         } else {
-            // Compatibilidade com linhas antigas que não possuíam detalhamento.
             if (item.pontos >= 0) perfil.pontosGanhos += item.pontos;
             else perfil.pontosPerdidos += Math.abs(item.pontos);
         }
@@ -229,6 +224,81 @@ function aplicarResultado(perfis, message, estatisticas) {
     estatisticas.mensagensValidas.push(message.id);
     estatisticas.pontos += itens.reduce((soma, item) => soma + item.pontos, 0);
     return true;
+}
+
+function extrairPartidaDoResultado(message, itens) {
+    const obterCampo = regex => acharField(message, regex);
+    const vencedores = itens.filter(item => /\bVit[oó]ria\b/i.test(item.detalhamento));
+    const segundo = itens.find(item => /\b2º\s*Lugar\b/i.test(item.detalhamento));
+    const terceiro = itens.find(item => /\b3º\s*Lugar\b/i.test(item.detalhamento));
+    const maisTropas = itens.find(item => /\bMais\s+tropas\b/i.test(item.detalhamento));
+
+    const vencedorCampo = obterCampo(/VENCEDOR/i);
+    const vencedorId = vencedorCampo.match(/<@!?(\d{17,20})>/)?.[1] || vencedores[0]?.id || null;
+    const segundoId = segundo?.id || obterCampo(/2º\s*LUGAR/i).match(/<@!?(\d{17,20})>/)?.[1] || '0';
+    const terceiroId = terceiro?.id || obterCampo(/3º\s*LUGAR/i).match(/<@!?(\d{17,20})>/)?.[1] || null;
+    const maisTropasId = maisTropas?.id || obterCampo(/MAIS\s+TROPAS/i).match(/<@!?(\d{17,20})>/)?.[1] || null;
+
+    const vencedorTexto = obterCampo(/VENCEDOR/i);
+    const modo = /Territ[oó]rios/i.test(vencedorTexto) ? 'territorios' : 'objetivo';
+
+    const abatesTexto = obterCampo(/COMBATES|HIST[ÓO]RICO\s+DE\s+ABATES/i);
+    const abates = [];
+    for (const linha of abatesTexto.split(/\r?\n/)) {
+        const matador = linha.match(/<@!?(\d{17,20})>.*?(?:eliminou|matou).*?<@!?(\d{17,20})>/i);
+        if (matador) abates.push({ matador: matador[1], vitima: matador[2] });
+    }
+
+    const continentesTexto = obterCampo(/DOM[ÍI]NIOS|MAPA\s+GLOBAL/i);
+    const continentes = [];
+    for (const linha of continentesTexto.split(/\r?\n/)) {
+        const dono = linha.match(/<@!?(\d{17,20})>/)?.[1];
+        if (!dono) continue;
+        const nomes = linha.match(/\*\*([^*]+)\*\*/g) || [];
+        for (const nomeMarcado of nomes) {
+            const nome = nomeMarcado.replace(/\*/g, '').trim().toLowerCase();
+            const mapa = {
+                'asia': 'asia', 'ásia': 'asia', 'europa': 'europa', 'áfrica': 'africa', 'africa': 'africa',
+                'américa do norte': 'amnorte', 'america do norte': 'amnorte',
+                'américa do sul': 'amsul', 'america do sul': 'amsul', 'oceania': 'oceania'
+            };
+            if (mapa[nome]) continentes.push({ cont: mapa[nome], dono });
+        }
+    }
+
+    const jogadoresBrutos = itens.map(item => ({
+        id: item.id,
+        username: obterNome(message, item.id, item.nome)
+    }));
+
+    const pontos = Object.fromEntries(itens.map(item => [item.id, {
+        ptsLiga: item.pontos,
+        entraNaLiga: true,
+        numeroPartida: null,
+        wcRecebido: item.pontos > 0 ? item.pontos * 100 : 0,
+        vitoria: vencedorId === item.id ? 1 : 0
+    }]));
+
+    return {
+        adminId: message.author?.id || message.webhookId || 'recalculado',
+        respostas: {
+            vencedor: vencedorId,
+            segundo: segundoId,
+            terceiro: terceiroId,
+            maisTropas: maisTropasId,
+            modo,
+            abates,
+            continentes
+        },
+        jogadoresBrutos,
+        pontos,
+        meta: {
+            limiteLiga: 80,
+            registradaEm: message.createdTimestamp,
+            recalculada: true,
+            mensagemResultadoId: message.id
+        }
+    };
 }
 
 // Busca do mais novo para o mais antigo e PARA assim que chega antes do início do mês.
@@ -248,9 +318,6 @@ async function buscarMensagensDoMes(channel, inicioMesTimestamp, onProgress) {
         before = lote.last()?.id;
 
         if (onProgress) await onProgress(mensagens.length);
-
-        // Como o histórico vem do mais novo para o mais antigo, não há motivo
-        // para continuar lendo milhares de mensagens históricas.
         if (menorTimestamp < inicioMesTimestamp) break;
         if (lote.size < 100 || !before) break;
     }
@@ -317,14 +384,10 @@ module.exports = {
 
         if (subcommand === 'painel') {
             const canal = interaction.options.getChannel('canal');
-            if (!canal) {
-                return interaction.reply({ content: '❌ Canal da Liga não informado.', flags: MessageFlags.Ephemeral });
-            }
+            if (!canal) return interaction.reply({ content: '❌ Canal da Liga não informado.', flags: MessageFlags.Ephemeral });
 
             await interaction.deferReply({ flags: MessageFlags.Ephemeral }).catch(() => {});
-            if (typeof painel !== 'function') {
-                return interaction.editReply({ content: '❌ O `painel.js` não está exportando uma função válida.' });
-            }
+            if (typeof painel !== 'function') return interaction.editReply({ content: '❌ O `painel.js` não está exportando uma função válida.' });
 
             try {
                 await painel(interaction.guild, canal.id);
@@ -339,6 +402,7 @@ module.exports = {
 
         await interaction.deferReply({ flags: MessageFlags.Ephemeral }).catch(() => {});
         const pontuacaoPath = path.join(__dirname, 'pontuacao.json');
+        const partidasPath = path.join(__dirname, 'partidas.json');
 
         try {
             const { inicioMes, inicioProximoMes } = obterPeriodoAtual();
@@ -351,12 +415,8 @@ module.exports = {
             }
 
             const perms = channel.permissionsFor(interaction.guild.members.me);
-            if (perms && !perms.has(PermissionsBitField.Flags.ViewChannel)) {
-                throw new Error('O bot não possui a permissão **Ver Canal** no canal de resultados da Liga.');
-            }
-            if (perms && !perms.has(PermissionsBitField.Flags.ReadMessageHistory)) {
-                throw new Error('O bot não possui a permissão **Ler Histórico de Mensagens** no canal de resultados da Liga.');
-            }
+            if (perms && !perms.has(PermissionsBitField.Flags.ViewChannel)) throw new Error('O bot não possui a permissão **Ver Canal** no canal de resultados da Liga.');
+            if (perms && !perms.has(PermissionsBitField.Flags.ReadMessageHistory)) throw new Error('O bot não possui a permissão **Ler Histórico de Mensagens** no canal de resultados da Liga.');
 
             await interaction.editReply({
                 content:
@@ -389,15 +449,26 @@ module.exports = {
                 pontos: 0
             };
 
+            let partidasAtuais = {};
+            if (fs.existsSync(partidasPath)) {
+                try {
+                    partidasAtuais = JSON.parse(fs.readFileSync(partidasPath, 'utf8')) || {};
+                } catch (erro) {
+                    console.error('[LIGA] Erro ao ler partidas.json antes do recálculo:', erro);
+                    throw new Error('Não foi possível ler o partidas.json atual com segurança.');
+                }
+            }
+
+            const partidasRecalculadas = {};
             const vistos = new Set();
             let encontradas = 0;
             let duplicadas = 0;
+            let partidasNovas = 0;
+            let partidasAtualizadas = 0;
 
             mensagens.sort((a, b) => a.createdTimestamp - b.createdTimestamp);
 
             for (const message of mensagens) {
-                // Proteção dupla: mesmo que o fetch retorne algo fora da janela,
-                // somente mensagens dentro do mês atual podem ser contabilizadas.
                 if (message.createdTimestamp < inicioTimestamp || message.createdTimestamp >= fimTimestamp) continue;
                 if (!ehResultadoDaLiga(message)) continue;
 
@@ -406,9 +477,26 @@ module.exports = {
                     duplicadas++;
                     continue;
                 }
-
                 vistos.add(message.id);
-                aplicarResultado(perfis, message, estatisticas);
+
+                const itens = extrairPontosDoExtrato(message);
+                const aplicado = aplicarResultado(perfis, message, estatisticas);
+
+                if (aplicado && itens.length) {
+                    const partida = extrairPartidaDoResultado(message, itens);
+                    const jogadoresIds = new Set(Object.keys(partida.pontos));
+
+                    for (const jogadorId of jogadoresIds) {
+                        const partidasAnteriores = Object.values(partidasAtuais).filter(p =>
+                            Array.isArray(p?.jogadoresBrutos) &&
+                            p.jogadoresBrutos.some(j => String(j?.id) === String(jogadorId)) &&
+                            !p?.meta?.recalculada
+                        ).length;
+                        partida.pontos[jogadorId].numeroPartida = partidasAnteriores + 1;
+                    }
+
+                    partidasRecalculadas[message.id] = partida;
+                }
             }
 
             if (estatisticas.validas === 0) {
@@ -416,6 +504,12 @@ module.exports = {
                     `Nenhum resultado válido da Liga foi encontrado entre ${formatarData(inicioMes)} e ${formatarData(new Date(fimTimestamp - 1))}. ` +
                     `Foram verificadas ${mensagens.length} mensagens do mês atual.`
                 );
+            }
+
+            for (const [messageId, partida] of Object.entries(partidasRecalculadas)) {
+                if (Object.prototype.hasOwnProperty.call(partidasAtuais, messageId)) partidasAtualizadas++;
+                else partidasNovas++;
+                partidasAtuais[messageId] = partida;
             }
 
             preservarAjustesManuais(perfis, dadosAtuais);
@@ -431,10 +525,13 @@ module.exports = {
             if (fs.existsSync(pontuacaoPath)) {
                 fs.copyFileSync(pontuacaoPath, path.join(__dirname, `pontuacao.backup-${Date.now()}.json`));
             }
-
-            if (!pontuacaoLiga.salvar(pontuacaoPath, perfis)) {
-                throw new Error('Não foi possível salvar o novo pontuacao.json.');
+            if (fs.existsSync(partidasPath)) {
+                fs.copyFileSync(partidasPath, path.join(__dirname, `partidas.backup-${Date.now()}.json`));
             }
+
+            if (!pontuacaoLiga.salvar(pontuacaoPath, perfis)) throw new Error('Não foi possível salvar o novo pontuacao.json.');
+
+            fs.writeFileSync(partidasPath, JSON.stringify(partidasAtuais, null, 2), 'utf8');
 
             const jogadores = Object.values(perfis);
             const soma = campo => jogadores.reduce((total, jogador) => total + numero(jogador[campo]), 0);
@@ -451,6 +548,8 @@ module.exports = {
                     `🚫 Resultados anulados ignorados: **${estatisticas.anuladas}**\n` +
                     `⚠️ Resultados com erro: **${estatisticas.erros}**\n` +
                     `♻️ Duplicados ignorados: **${duplicadas}**\n` +
+                    `📝 Partidas novas no partidas.json: **${partidasNovas}**\n` +
+                    `🔄 Partidas atualizadas no partidas.json: **${partidasAtualizadas}**\n` +
                     `👥 Jogadores no ranking: **${jogadores.length}**\n` +
                     `🏆 Vitórias: **${soma('vitorias')}**\n` +
                     `🥇 1º lugares: **${soma('primeiroLugar')}**\n` +
@@ -463,13 +562,13 @@ module.exports = {
                     `📉 Pontos perdidos: **${soma('pontosPerdidos')}**\n` +
                     `🔒 Ajustes manuais preservados: **${manual}**\n\n` +
                     '📌 **Fonte:** somente o `EXTRATO FINAL` dos resultados oficiais da Liga.\n' +
-                    '🚫 `partidas.json` não participa deste recálculo.' +
+                    '📝 `partidas.json` agora também é reconstruído/atualizado com cada resultado válido recalculado.' +
                     (estatisticas.errosDetalhes.length ? `\n\n⚠️ Primeiro erro: ${estatisticas.errosDetalhes[0]}` : '')
             });
         } catch (erro) {
-            console.error('[LIGA] Erro ao reconstruir pontuacao.json:', erro);
+            console.error('[LIGA] Erro ao reconstruir pontuacao.json/partidas.json:', erro);
             return interaction.editReply({
-                content: `❌ **Falha ao reconstruir a pontuação pelos resultados do mês atual.**\n\n${String(erro.message || erro).slice(0, 1800)}`
+                content: `❌ **Falha ao reconstruir os dados da Liga pelo mês atual.**\n\n${String(erro.message || erro).slice(0, 1800)}`
             }).catch(() => {});
         }
     }

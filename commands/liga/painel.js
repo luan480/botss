@@ -10,6 +10,5 @@ module.exports = async function painelLiga(guild, canalId) {
     const canalFinal = String(canalId || '') === CANAL_ANTIGO_AUTOMATICO
         ? CANAL_PAINEL_LIGA
         : String(canalId || CANAL_PAINEL_LIGA);
-
     return core(guild, canalFinal);
 };

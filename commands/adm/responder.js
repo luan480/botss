@@ -12,6 +12,7 @@ const fs = require('fs');
 const path = require('path');
 
 const dbPath = path.join(__dirname, 'auto_respostas.json');
+const auditPath = path.join(__dirname, 'auto_respostas_audit.json');
 const MAX_GATILHO = 100;
 const MAX_RESPOSTA = 2000;
 let filaDb = Promise.resolve();
@@ -37,6 +38,13 @@ function lerBanco() {
         return dados;
     } catch (erro) {
         console.error('[RESPONDER] Banco inválido:', erro.message);
+        try {
+            const backup = `${dbPath}.corrompido-${Date.now()}.bak`;
+            if (fs.existsSync(dbPath)) fs.copyFileSync(dbPath, backup);
+            console.error('[RESPONDER] Backup do arquivo inválido:', backup);
+        } catch (backupError) {
+            console.error('[RESPONDER] Não foi possível criar backup:', backupError.message);
+        }
         throw new Error('O banco de auto-respostas está inválido. Corrija o arquivo antes de alterá-lo.');
     }
 }
@@ -65,6 +73,41 @@ function atualizarBanco(mutator) {
 
 function lerBancoSerializado() {
     return filaDb.then(() => lerBanco());
+}
+
+function salvarArquivoAuditoria(registros) {
+    const tmp = `${auditPath}.${process.pid}.${Date.now()}.tmp`;
+    try {
+        fs.writeFileSync(tmp, JSON.stringify(registros, null, 2), 'utf8');
+        fs.renameSync(tmp, auditPath);
+    } catch (erro) {
+        try { if (fs.existsSync(tmp)) fs.unlinkSync(tmp); } catch {}
+        throw erro;
+    }
+}
+
+function registrarAuditoria(interaction, acao, dados = {}) {
+    try {
+        let registros = [];
+        if (fs.existsSync(auditPath)) {
+            const bruto = fs.readFileSync(auditPath, 'utf8');
+            if (bruto.trim()) {
+                const parsed = JSON.parse(bruto);
+                if (Array.isArray(parsed)) registros = parsed;
+            }
+        }
+        registros.push({
+            em: new Date().toISOString(),
+            guildId: interaction.guildId,
+            usuarioId: interaction.user?.id || null,
+            usuario: interaction.user?.tag || interaction.user?.username || null,
+            acao,
+            ...dados
+        });
+        salvarArquivoAuditoria(registros.slice(-1000));
+    } catch (erro) {
+        console.error('[RESPONDER] Falha no log de auditoria:', erro.message);
+    }
 }
 
 function formatarLista(chaves, db) {
@@ -168,6 +211,7 @@ module.exports = {
                 .setDescription(`Gatilho: **\"${gatilho}\"**\n\n> ${resposta}`)
                 .setFooter({ text: `${resultado.quantidade} resposta(s) cadastrada(s)` });
 
+            registrarAuditoria(interaction, 'adicionar', { gatilho, resposta, quantidade: resultado.quantidade });
             return interaction.reply({ embeds: [embed] });
         }
 
@@ -207,8 +251,10 @@ module.exports = {
                 return interaction.reply({ content: `❌ Esse gatilho possui ${resultado.quantidade} resposta(s).`, ephemeral: true });
             }
             if (!resultado.removeuTudo) {
+                registrarAuditoria(interaction, 'remover_resposta', { gatilho, indice, resposta: resultado.removida });
                 return interaction.reply({ content: `🗑️ Resposta removida de **\"${gatilho}\"**:\n> ${resultado.removida}`, ephemeral: true });
             }
+            registrarAuditoria(interaction, 'remover_gatilho', { gatilho, quantidade: resultado.quantidade });
             return interaction.reply({ content: `🗑️ Todas as ${resultado.quantidade} resposta(s) de **\"${gatilho}\"** foram removidas.`, ephemeral: true });
         }
 
